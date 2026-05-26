@@ -1,0 +1,24 @@
+{
+  "name": "sc-mission-board",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Star Citizen group mission tracking dashboard",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "lint": "eslint src --ext .js,.jsx"
+  },
+  "dependencies": {
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "react-router-dom": "^6.23.1"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-react": "^4.3.1",
+    "eslint": "^9.3.0",
+    "eslint-plugin-react": "^7.34.2",
+    "eslint-plugin-react-hooks": "^5.0.0",
+    "vite": "^5.2.13"
+  }
+}
