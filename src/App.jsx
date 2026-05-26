@@ -1,7 +1,10 @@
-import { useState } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
+import { supabase } from '@/lib/supabase.js';
 import CalendarView from '@/components/Calendar/CalendarView.jsx';
 import SessionView from '@/components/Session/SessionView.jsx';
 import AddContractModal from '@/components/Contract/AddContractModal.jsx';
+import LoginScreen from '@/components/Auth/LoginScreen.jsx';
+import AuthLog from '@/components/Auth/AuthLog.jsx';
 import { DEFAULT_PLAYERS, PLAYER_COLORS } from '@/data/players.js';
 import { fmtKey } from '@/utils/dateUtils.js';
 
@@ -30,6 +33,15 @@ const SAMPLE_SESSIONS = {
     ],
   },
 };
+
+const getUserName = (user) =>
+  user?.user_metadata?.full_name ||
+  user?.user_metadata?.user_name ||
+  user?.user_metadata?.name ||
+  (user?.email ? user.email.split('@')[0] : null) ||
+  'Pilot';
+
+// ─── NEW SESSION MODAL ────────────────────────────────────────────────────────
 
 function NewSessionModal({ dateKey, onSave, onClose }) {
   const [players, setPlayers] = useState([]);
@@ -77,13 +89,58 @@ function NewSessionModal({ dateKey, onSave, onClose }) {
   );
 }
 
+// ─── ROOT APP ─────────────────────────────────────────────────────────────────
+
 export default function App() {
+  // ── Auth ──
+  const [authSession, setAuthSession] = useState(null);
+  const [authLoading, setAuthLoading] = useState(true);
+  const [authLog, setAuthLog] = useState([]);
+  const lastNameRef = useRef('Pilot');
+
+  // ── App ──
   const [sessions, setSessions] = useState(SAMPLE_SESSIONS);
   const [view, setView] = useState('calendar');
   const [viewDate, setViewDate] = useState(new Date(TODAY.getFullYear(), TODAY.getMonth(), 1));
   const [selectedDate, setSelectedDate] = useState(null);
   const [modal, setModal] = useState(null);
 
+  const addLog = useCallback((event, name) => {
+    setAuthLog((prev) => [
+      { id: Date.now() + Math.random(), time: new Date(), event, name },
+      ...prev,
+    ].slice(0, 100));
+  }, []);
+
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setAuthSession(session);
+      if (session?.user) lastNameRef.current = getUserName(session.user);
+      setAuthLoading(false);
+    });
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      setAuthSession(session);
+
+      if (event === 'SIGNED_IN' && session?.user) {
+        const name = getUserName(session.user);
+        lastNameRef.current = name;
+        addLog('SIGNED_IN', name);
+      } else if (event === 'SIGNED_OUT') {
+        addLog('SIGNED_OUT', lastNameRef.current);
+      } else if (event === 'INITIAL_SESSION' && session?.user) {
+        const name = getUserName(session.user);
+        lastNameRef.current = name;
+        addLog('INITIAL_SESSION', name);
+      } else if (event === 'TOKEN_REFRESHED') {
+        addLog('TOKEN_REFRESHED', lastNameRef.current);
+      }
+    });
+
+    return () => subscription.unsubscribe();
+  }, [addLog]);
+
+  // ── Handlers ──
   const navMonth = (dir) => setViewDate(new Date(viewDate.getFullYear(), viewDate.getMonth() + dir, 1));
   const openSession = (key) => { setSelectedDate(key); setView('session'); };
 
@@ -110,13 +167,32 @@ export default function App() {
   const totalSCU = Object.values(sessions).reduce((t, s) => t + s.contracts.reduce((ct, c) => ct + c.cargo.reduce((cg, x) => cg + Number(x.scu || 0), 0), 0), 0);
   const monthName = viewDate.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
 
+  // ── Auth gates ──
+  if (authLoading) {
+    return (
+      <div style={{ minHeight: '100vh', background: 'var(--bg-0)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <div style={{ fontFamily: 'var(--font-mono)', fontSize: 12, color: 'var(--muted)', letterSpacing: '0.14em' }}>
+          INITIALIZING…
+        </div>
+      </div>
+    );
+  }
+
+  if (!authSession) return <LoginScreen />;
+
+  const userName = getUserName(authSession.user);
+  const avatarUrl = authSession.user?.user_metadata?.avatar_url;
+
   return (
     <div style={{ minHeight: '100vh', background: 'var(--bg-0)', color: 'var(--text)' }}>
-      <div style={{ background: 'var(--bg-1)', borderBottom: '1px solid var(--border)', padding: '12px 24px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+
+      {/* ── Top bar ── */}
+      <div style={{ background: 'var(--bg-1)', borderBottom: '1px solid var(--border)', padding: '12px 24px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 16 }}>
         <div>
           <div style={{ fontFamily: 'var(--font-mono)', fontSize: 14, letterSpacing: '0.14em', color: 'var(--gold)', textTransform: 'uppercase' }}>UEE Cargo Ops</div>
           <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: 'var(--muted)', letterSpacing: '0.16em', marginTop: 1 }}>Mission Tracking System · v0.1</div>
         </div>
+
         <div style={{ display: 'flex', gap: 28 }}>
           {[['Sessions', totalSessions], ['Contracts', totalContracts], ['Total SCU', totalSCU.toLocaleString()]].map(([l, v]) => (
             <div key={l} style={{ textAlign: 'center' }}>
@@ -125,16 +201,38 @@ export default function App() {
             </div>
           ))}
         </div>
+
+        {/* User + sign-out */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+          {avatarUrl && (
+            <img src={avatarUrl} alt={userName}
+              style={{ width: 28, height: 28, borderRadius: '50%', border: '1px solid var(--border)', flexShrink: 0 }}
+            />
+          )}
+          <span style={{ fontFamily: 'var(--font-mono)', fontSize: 12, color: 'var(--text)', maxWidth: 130, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+            {userName}
+          </span>
+          <button
+            onClick={() => supabase.auth.signOut()}
+            style={{
+              padding: '4px 10px', borderRadius: 5, cursor: 'pointer',
+              border: '1px solid var(--border)', background: 'transparent',
+              color: 'var(--muted)', fontFamily: 'var(--font-mono)', fontSize: 11,
+            }}
+            onMouseEnter={(e) => { e.currentTarget.style.color = '#E24B4A'; e.currentTarget.style.borderColor = '#E24B4A'; }}
+            onMouseLeave={(e) => { e.currentTarget.style.color = 'var(--muted)'; e.currentTarget.style.borderColor = 'var(--border)'; }}
+          >
+            Sign out
+          </button>
+        </div>
       </div>
 
+      {/* ── Main content ── */}
       <div style={{ maxWidth: 800, margin: '0 auto' }}>
         {view === 'calendar' && (
           <div>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '14px 20px 4px' }}>
-              {[['←', -1], ['→', 1]].map(([label, dir], i) => i === 0
-                ? <button key={label} style={{ background: 'none', border: '1px solid var(--border)', color: 'var(--muted)', padding: '5px 12px', borderRadius: 6, cursor: 'pointer', fontSize: 13 }} onClick={() => navMonth(dir)}>{label}</button>
-                : null
-              )}
+              <button style={{ background: 'none', border: '1px solid var(--border)', color: 'var(--muted)', padding: '5px 12px', borderRadius: 6, cursor: 'pointer', fontSize: 13 }} onClick={() => navMonth(-1)}>←</button>
               <div style={{ fontFamily: 'var(--font-mono)', fontSize: 15, color: 'var(--text)' }}>{monthName}</div>
               <button style={{ background: 'none', border: '1px solid var(--border)', color: 'var(--muted)', padding: '5px 12px', borderRadius: 6, cursor: 'pointer', fontSize: 13 }} onClick={() => navMonth(1)}>→</button>
             </div>
@@ -149,8 +247,12 @@ export default function App() {
         )}
       </div>
 
+      {/* ── Modals ── */}
       {modal?.type === 'new-session' && <NewSessionModal dateKey={modal.dateKey} onSave={saveSession} onClose={() => setModal(null)} />}
       {modal?.type === 'add-contract' && <AddContractModal onSave={addContract} onClose={() => setModal(null)} />}
+
+      {/* ── Auth log (testing panel) ── */}
+      <AuthLog entries={authLog} />
     </div>
   );
 }
