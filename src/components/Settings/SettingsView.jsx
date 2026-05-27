@@ -1,4 +1,5 @@
 import { useState, useRef } from 'react';
+import { supabase } from '@/lib/supabase.js';
 
 const SWATCH_COLORS = [
   '#378ADD', '#1D9E75', '#7F77DD', '#D85A30',
@@ -53,36 +54,6 @@ export default function SettingsView({ profile, updateProfile, checkCallsign }) 
 
   const flash = (setter) => { setter(true); setTimeout(() => setter(false), 2000); };
 
-  // Preprocess image for OCR:
-  // 1. Blur (0.8px) — kills moiré noise from phone photos of monitors
-  // 2. Grayscale + 2.2× contrast — sharpens edges
-  // 3. Invert — SC's light-on-dark becomes dark-on-white, Tesseract's sweet spot
-  const preprocessForOCR = (file) => new Promise((resolve, reject) => {
-    const img = new Image();
-    const url = URL.createObjectURL(file);
-    img.onload = () => {
-      const canvas = document.createElement('canvas');
-      canvas.width = img.width;
-      canvas.height = img.height;
-      const ctx = canvas.getContext('2d');
-      ctx.filter = 'blur(0.8px)';
-      ctx.drawImage(img, 0, 0);
-      ctx.filter = 'none';
-      const id = ctx.getImageData(0, 0, canvas.width, canvas.height);
-      const d = id.data;
-      for (let i = 0; i < d.length; i += 4) {
-        const g = 0.299 * d[i] + 0.587 * d[i + 1] + 0.114 * d[i + 2];
-        const c = Math.min(255, Math.max(0, 2.2 * (g - 128) + 128));
-        d[i] = d[i + 1] = d[i + 2] = 255 - c;
-      }
-      ctx.putImageData(id, 0, 0);
-      URL.revokeObjectURL(url);
-      canvas.toBlob(resolve, 'image/png');
-    };
-    img.onerror = reject;
-    img.src = url;
-  });
-
   const saveRsiHandle = async () => {
     if (!rsiHandle.trim()) return;
     setSaving(true);
@@ -91,54 +62,30 @@ export default function SettingsView({ profile, updateProfile, checkCallsign }) 
     flash(setRsiHandleSaved);
   };
 
-  const parseAmount = (str) => {
-    const n = parseInt(str.replace(/[,\s]/g, ''), 10);
-    return (!isNaN(n) && n >= 10000) ? n : null;
-  };
-
-  // Find the RSI handle in the OCR text, then read the number immediately above it.
-  // In SC's HUD the balance sits on the line above the handle, so in OCR output
-  // (top-to-bottom) the balance appears in the text *before* the handle.
-  const extractBalanceAnchored = (text, handle) => {
-    const needle = handle.toUpperCase().trim();
-    const upper  = text.toUpperCase();
-    const idx    = upper.indexOf(needle);
-    if (idx === -1) return { handleFound: false, amount: null };
-    const lookback = text.slice(Math.max(0, idx - 200), idx);
-    const nums = [...lookback.matchAll(/\b\d{1,3}(?:,\d{3})+\b|\b\d{5,}\b/g)]
-      .map(m => parseAmount(m[0]))
-      .filter(Boolean);
-    return { handleFound: true, amount: nums.length > 0 ? Math.max(...nums) : null };
-  };
-
   const handleAuecScan = async (file) => {
     if (!file || !rsiHandle.trim()) return;
     setAuecScanning(true);
     setAuecScanError(null);
     setAuecExtracted(null);
     try {
-      const processed = await preprocessForOCR(file);
-      const { createWorker } = await import('tesseract.js');
+      const base64 = await new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(reader.result.split(',')[1]);
+        reader.onerror = reject;
+        reader.readAsDataURL(file);
+      });
 
-      // Pass 1: auto layout — best for clean direct screenshots
-      const w1 = await createWorker('eng', 1, { logger: () => {} });
-      const { data: { text: t1 } } = await w1.recognize(processed);
-      await w1.terminate();
-      const r1 = extractBalanceAnchored(t1, rsiHandle);
-      if (r1.amount) { setAuecExtracted(r1.amount); return; }
+      const { data, error } = await supabase.functions.invoke('extract-auec-balance', {
+        body: { imageBase64: base64, mimeType: file.type, rsiHandle: rsiHandle.trim() },
+      });
 
-      // Pass 2: PSM 11 sparse text — finds scattered HUD elements, better for phone photos
-      const w2 = await createWorker('eng', 1, { logger: () => {} });
-      await w2.setParameters({ tessedit_pageseg_mode: '11' });
-      const { data: { text: t2 } } = await w2.recognize(processed);
-      await w2.terminate();
-      const r2 = extractBalanceAnchored(t2, rsiHandle);
-      if (r2.amount) { setAuecExtracted(r2.amount); return; }
+      if (error) throw error;
 
-      if (r1.handleFound || r2.handleFound) {
-        setAuecScanError('Your RSI handle was found but the balance next to it wasn\'t readable. Try a clearer image or enter your balance manually below.');
+      const amount = data?.amount ?? 0;
+      if (amount >= 1000) {
+        setAuecExtracted(amount);
       } else {
-        setAuecScanError(`Handle "${rsiHandle.trim()}" wasn't found in the image — make sure it's visible in your screenshot, or enter your balance manually below.`);
+        setAuecScanError(`Couldn't detect a balance for "${rsiHandle.trim()}" in that image. Make sure your RSI handle and aUEC balance are both visible, or enter your balance manually below.`);
       }
     } catch {
       setAuecScanError('Scan failed — please try again');
@@ -300,9 +247,8 @@ export default function SettingsView({ profile, updateProfile, checkCallsign }) 
       <div style={{ border: '2px solid #000', background: '#fff', padding: '20px' }}>
         {sectionTitle('aUEC Balance Verification')}
         <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--muted)', marginBottom: 16, lineHeight: 1.7 }}>
-          Enter your RSI handle, then upload any screenshot where your HUD is visible.
-          The scanner locates your handle in the image and reads the balance number directly above it.
-          Runs entirely in your browser — no image data leaves your device.
+          Enter your RSI handle, then upload a screenshot where your HUD is visible.
+          AI vision locates your handle in the image and reads the aUEC balance next to it.
         </div>
 
         {/* RSI handle input */}
@@ -436,7 +382,7 @@ export default function SettingsView({ profile, updateProfile, checkCallsign }) 
         )}
 
         <div style={{ marginTop: 14, fontFamily: 'var(--font-mono)', fontSize: 9, color: 'var(--muted)', lineHeight: 1.7, letterSpacing: '0.02em' }}>
-          <strong style={{ color: 'var(--text)' }}>How it works:</strong> any screenshot or photo where your HUD is visible works — the scanner finds your RSI handle in the image and reads the ≡ balance number directly above it. Direct game screenshots give the best results; phone photos of your monitor also work.
+          <strong style={{ color: 'var(--text)' }}>How it works:</strong> upload any screenshot where your RSI handle and ≡ aUEC balance are visible. Direct game screenshots and phone photos of your monitor both work.
         </div>
       </div>
 
