@@ -15,7 +15,7 @@ export default function AuthLog({ entries }) {
 
   return (
     <div style={{
-      position: 'fixed', bottom: 16, right: 16, zIndex: 9000,
+      position: 'fixed', bottom: 16, left: 16, zIndex: 9000,
       fontFamily: 'var(--font-mono)', fontSize: 11,
     }}>
       {/* Toggle tab */}

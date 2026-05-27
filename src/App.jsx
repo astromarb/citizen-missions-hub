@@ -10,7 +10,6 @@ import SessionView from '@/components/Session/SessionView.jsx';
 import AddContractModal from '@/components/Contract/AddContractModal.jsx';
 import LoginScreen from '@/components/Auth/LoginScreen.jsx';
 import AuthLog from '@/components/Auth/AuthLog.jsx';
-import RosterView from '@/components/Roster/RosterView.jsx';
 import StatsView from '@/components/Stats/StatsView.jsx';
 import FriendsView from '@/components/Friends/FriendsView.jsx';
 import SettingsView from '@/components/Settings/SettingsView.jsx';
@@ -49,25 +48,25 @@ function NewSessionModal({ dateKey, onSave, onClose, profiles, friends }) {
       display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 999, padding: 20,
     }}
       onClick={e => { if (e.target === e.currentTarget) { SFX.back(); onClose(); } }}>
-      <div style={{ background: '#fff', border: '2px solid #000', padding: '32px 28px', width: 420 }}>
+      <div style={{ background: 'var(--bg-1)', border: '2px solid var(--border)', padding: '32px 28px', width: 420 }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 6 }}>
           <div style={{
             fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 22,
             textTransform: 'uppercase', letterSpacing: '-0.01em',
           }}>New Session</div>
-          <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: '#888', letterSpacing: '0.06em' }}>{label}</div>
+          <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--muted)', letterSpacing: '0.06em' }}>{label}</div>
         </div>
         <div style={{ height: 3, background: '#c41e3a', marginBottom: 22 }} />
 
         <div style={{
           fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 10,
-          letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: 12, color: '#000',
+          letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: 12, color: 'var(--text)',
         }}>Select crew from friends</div>
 
         {!hasFriends ? (
           <div style={{ padding: '18px 14px', background: 'var(--bg-2)', border: '2px dashed #ccc', marginBottom: 28, textAlign: 'center' }}>
-            <div style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 13, color: '#555', marginBottom: 4 }}>No friends yet</div>
-            <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: '#888' }}>Add crew from the Friends tab first.</div>
+            <div style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 13, color: 'var(--muted)', marginBottom: 4 }}>No friends yet</div>
+            <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--muted)' }}>Add crew from the Friends tab first.</div>
           </div>
         ) : (
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginBottom: 28 }}>
@@ -79,9 +78,9 @@ function NewSessionModal({ dateKey, onSave, onClose, profiles, friends }) {
                   padding: '7px 16px', cursor: 'pointer',
                   fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 12,
                   textTransform: 'uppercase', letterSpacing: '0.06em',
-                  border: `2px solid ${active ? color : '#000'}`,
-                  background: active ? `${color}20` : '#fff',
-                  color: active ? color : '#000',
+                  border: `2px solid ${active ? color : 'var(--border)'}`,
+                  background: active ? `${color}20` : 'var(--bg-1)',
+                  color: active ? color : 'var(--text)',
                 }}>{p.callsign}</button>
               );
             })}
@@ -93,10 +92,10 @@ function NewSessionModal({ dateKey, onSave, onClose, profiles, friends }) {
             style={{
               padding: '10px 24px', fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 12,
               textTransform: 'uppercase', letterSpacing: '0.06em',
-              border: '2px solid #000', background: '#fff', color: '#000', cursor: 'pointer',
+              border: '2px solid var(--border)', background: 'var(--bg-1)', color: 'var(--text)', cursor: 'pointer',
             }}
             onMouseEnter={e => { e.currentTarget.style.background = '#000'; e.currentTarget.style.color = '#fff'; }}
-            onMouseLeave={e => { e.currentTarget.style.background = '#fff'; e.currentTarget.style.color = '#000'; }}
+            onMouseLeave={e => { e.currentTarget.style.background = getComputedStyle(document.documentElement).getPropertyValue('--bg-1').trim(); e.currentTarget.style.color = getComputedStyle(document.documentElement).getPropertyValue('--text').trim(); }}
             onClick={() => { SFX.back(); onClose(); }}
           >Cancel</button>
           <button
@@ -104,7 +103,7 @@ function NewSessionModal({ dateKey, onSave, onClose, profiles, friends }) {
               padding: '10px 24px', fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 12,
               textTransform: 'uppercase', letterSpacing: '0.06em',
               border: `2px solid ${players.length ? '#c41e3a' : '#ccc'}`,
-              background: players.length ? '#c41e3a' : '#e5e5e5',
+              background: players.length ? '#c41e3a' : 'var(--bg-3)',
               color: players.length ? '#fff' : '#999',
               cursor: players.length ? 'pointer' : 'default',
             }}
@@ -129,6 +128,13 @@ function AppInner() {
 
   // ── Profiles ──
   const [profiles, setProfiles] = useState([]);
+
+  // ── Dark mode ──
+  const [darkMode, setDarkMode] = useState(() => localStorage.getItem('theme') === 'dark');
+  useEffect(() => {
+    document.documentElement.setAttribute('data-theme', darkMode ? 'dark' : 'light');
+    localStorage.setItem('theme', darkMode ? 'dark' : 'light');
+  }, [darkMode]);
 
   // ── Nav ──
   const [activeTab, setActiveTab] = useState('missions');
@@ -316,7 +322,6 @@ function AppInner() {
   const TABS = [
     ['missions', 'Missions'],
     ['calendar', 'Calendar'],
-    ['roster',   'Roster'],
     ['stats',    'Stats'],
     ['friends',  'Friends'],
     ['settings', 'Settings'],
@@ -371,6 +376,20 @@ function AppInner() {
           ))}
         </div>
 
+        {/* Dark/Light toggle */}
+        <button
+          onClick={() => setDarkMode(d => !d)}
+          style={{
+            padding: '5px 12px', cursor: 'pointer',
+            border: '1px solid rgba(255,255,255,0.25)',
+            background: 'transparent', color: 'rgba(255,255,255,0.5)',
+            fontFamily: 'var(--font-mono)', fontWeight: 700, fontSize: 11,
+            letterSpacing: '0.06em', textTransform: 'uppercase',
+          }}
+          onMouseEnter={e => { e.currentTarget.style.color = '#c41e3a'; e.currentTarget.style.borderColor = '#c41e3a'; }}
+          onMouseLeave={e => { e.currentTarget.style.color = 'rgba(255,255,255,0.5)'; e.currentTarget.style.borderColor = 'rgba(255,255,255,0.25)'; }}
+        >{darkMode ? 'Light' : 'Dark'}</button>
+
         {/* User info */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
           {avatarUrl && (
@@ -413,7 +432,7 @@ function AppInner() {
 
       {/* ── Tab nav ── */}
       <div style={{
-        background: '#fff',
+        background: 'var(--bg-1)',
         borderBottom: '2px solid #000',
         display: 'flex',
         padding: '0 24px',
@@ -451,26 +470,26 @@ function AppInner() {
               }}>
                 <button
                   style={{
-                    border: '2px solid #000', background: '#fff', color: '#000', padding: '5px 14px',
+                    border: '2px solid var(--border)', background: 'var(--bg-1)', color: 'var(--text)', padding: '5px 14px',
                     cursor: 'pointer', fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 12,
                     textTransform: 'uppercase', letterSpacing: '0.04em',
                   }}
                   onMouseEnter={e => { e.currentTarget.style.background = '#000'; e.currentTarget.style.color = '#fff'; }}
-                  onMouseLeave={e => { e.currentTarget.style.background = '#fff'; e.currentTarget.style.color = '#000'; }}
+                  onMouseLeave={e => { e.currentTarget.style.background = getComputedStyle(document.documentElement).getPropertyValue('--bg-1').trim(); e.currentTarget.style.color = getComputedStyle(document.documentElement).getPropertyValue('--text').trim(); }}
                   onClick={() => { SFX.back(); navMonth(-1); }}
                 >←</button>
                 <div style={{
                   fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 16,
-                  letterSpacing: '-0.01em', color: '#000', textTransform: 'uppercase',
+                  letterSpacing: '-0.01em', color: 'var(--text)', textTransform: 'uppercase',
                 }}>{monthName}</div>
                 <button
                   style={{
-                    border: '2px solid #000', background: '#fff', color: '#000', padding: '5px 14px',
+                    border: '2px solid var(--border)', background: 'var(--bg-1)', color: 'var(--text)', padding: '5px 14px',
                     cursor: 'pointer', fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 12,
                     textTransform: 'uppercase', letterSpacing: '0.04em',
                   }}
                   onMouseEnter={e => { e.currentTarget.style.background = '#000'; e.currentTarget.style.color = '#fff'; }}
-                  onMouseLeave={e => { e.currentTarget.style.background = '#fff'; e.currentTarget.style.color = '#000'; }}
+                  onMouseLeave={e => { e.currentTarget.style.background = getComputedStyle(document.documentElement).getPropertyValue('--bg-1').trim(); e.currentTarget.style.color = getComputedStyle(document.documentElement).getPropertyValue('--text').trim(); }}
                   onClick={() => { SFX.back(); navMonth(1); }}
                 >→</button>
               </div>
@@ -504,7 +523,6 @@ function AppInner() {
           )}
 
           {activeTab === 'missions'  && <MissionsView sessions={sessions} myProfileId={myProfileId} profile={profile} avatarUrl={avatarUrl} />}
-          {activeTab === 'roster'    && <RosterView sessions={sessions} profiles={profiles} />}
           {activeTab === 'stats'     && <StatsView sessions={sessions} />}
           {activeTab === 'friends'  && (
             <FriendsView

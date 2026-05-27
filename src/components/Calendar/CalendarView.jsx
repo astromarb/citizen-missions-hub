@@ -12,7 +12,7 @@ export default function CalendarView({ sessions, viewDate, onSelectDate, onNewSe
   return (
     <div style={{ padding: '0 20px 24px' }}>
       {/* Calendar container with hard border */}
-      <div style={{ border: '2px solid #000', background: '#fff' }}>
+      <div style={{ border: '2px solid var(--border)', background: 'var(--bg-1)' }}>
 
         {/* Day-of-week headers */}
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', borderBottom: '2px solid #000', background: 'var(--bg-2)' }}>
@@ -20,7 +20,7 @@ export default function CalendarView({ sessions, viewDate, onSelectDate, onNewSe
             <div key={d} style={{
               padding: '10px 4px', textAlign: 'center',
               fontFamily: 'var(--font-display)', fontSize: 9, fontWeight: 800,
-              letterSpacing: '0.12em', textTransform: 'uppercase', color: '#000',
+              letterSpacing: '0.12em', textTransform: 'uppercase', color: 'var(--text)',
               borderRight: i < 6 ? '1px solid #000' : 'none',
             }}>{d}</div>
           ))}
@@ -43,17 +43,17 @@ export default function CalendarView({ sessions, viewDate, onSelectDate, onNewSe
                 style={{
                   aspectRatio: '1', padding: '6px 8px', cursor: 'pointer',
                   border: isToday ? '2px solid #c41e3a' : '1px solid var(--bg-3)',
-                  background: isToday ? 'rgba(196,30,58,0.05)' : session ? '#fff' : '#fff',
+                  background: isToday ? 'rgba(196,30,58,0.05)' : session ? 'var(--bg-1)' : 'var(--bg-1)',
                   display: 'flex', flexDirection: 'column', justifyContent: 'space-between',
                   transition: 'background 0.1s',
                   outline: session && !isToday ? '1px solid #ccc' : 'none',
                 }}
                 onMouseEnter={e => { e.currentTarget.style.background = isToday ? 'rgba(196,30,58,0.1)' : 'var(--bg-2)'; }}
-                onMouseLeave={e => { e.currentTarget.style.background = isToday ? 'rgba(196,30,58,0.05)' : '#fff'; }}
+                onMouseLeave={e => { e.currentTarget.style.background = isToday ? 'rgba(196,30,58,0.05)' : getComputedStyle(document.documentElement).getPropertyValue('--bg-1').trim(); }}
               >
                 <div style={{
                   fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 12,
-                  color: isToday ? '#c41e3a' : '#000',
+                  color: isToday ? '#c41e3a' : 'var(--text)',
                 }}>{day}</div>
 
                 {session && (
