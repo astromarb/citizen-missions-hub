@@ -217,9 +217,13 @@ export default function SessionView({
   session, onBack, onAddContract, onToggleDone, onDeleteContract,
   onSetWaypointStatus, onCastRemovalVote, onWithdrawVote, onAddPlayer,
   onStartSession, onPauseSession, onResumeSession, onEndSession,
+  onDeleteSession, onUpdateSession,
   playerColors, myProfileId, myCallsign, friends,
 }) {
   const [showInvite, setShowInvite] = useState(false);
+  const [confirmDelete, setConfirmDelete] = useState(false);
+  const [editingDate, setEditingDate] = useState(false);
+  const [newDate, setNewDate] = useState(session.date);
   const label = keyToLabel(session.date);
   const totalSCU = session.contracts.reduce((t, c) => t + c.cargo.reduce((s, x) => s + Number(x.scu || 0), 0), 0);
 
@@ -297,6 +301,49 @@ export default function SessionView({
             onMouseEnter={e => { e.currentTarget.style.background = '#a01830'; }}
             onMouseLeave={e => { e.currentTarget.style.background = '#c41e3a'; }}
           >+ Add Contract</button>
+
+          {/* Edit date inline */}
+          {editingDate ? (
+            <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
+              <input type="date" value={newDate} onChange={e => setNewDate(e.target.value)}
+                style={{ padding: '6px 10px', border: '2px solid #000', background: '#fff', fontFamily: 'var(--font-mono)', fontSize: 12, outline: 'none' }} />
+              <button onClick={async () => { await onUpdateSession?.(session.id, { date: newDate }); setEditingDate(false); }}
+                style={{ padding: '6px 12px', background: '#2d8659', border: '2px solid #000', color: '#fff', cursor: 'pointer', fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 11 }}>
+                Save
+              </button>
+              <button onClick={() => { setEditingDate(false); setNewDate(session.date); }}
+                style={{ padding: '6px 12px', background: 'transparent', border: '2px solid rgba(255,255,255,0.3)', color: 'rgba(255,255,255,0.6)', cursor: 'pointer', fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 11 }}>
+                Cancel
+              </button>
+            </div>
+          ) : (
+            <button onClick={() => setEditingDate(true)}
+              style={{ padding: '8px 12px', background: 'transparent', border: '2px solid rgba(255,255,255,0.25)', color: 'rgba(255,255,255,0.5)', cursor: 'pointer', fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.04em' }}
+              onMouseEnter={e => { e.currentTarget.style.color = '#fff'; e.currentTarget.style.borderColor = 'rgba(255,255,255,0.5)'; }}
+              onMouseLeave={e => { e.currentTarget.style.color = 'rgba(255,255,255,0.5)'; e.currentTarget.style.borderColor = 'rgba(255,255,255,0.25)'; }}
+            >Edit Date</button>
+          )}
+
+          {/* Delete session */}
+          {!confirmDelete ? (
+            <button onClick={() => setConfirmDelete(true)}
+              style={{ padding: '8px 12px', background: 'transparent', border: '2px solid rgba(196,30,58,0.4)', color: 'rgba(196,30,58,0.6)', cursor: 'pointer', fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.04em' }}
+              onMouseEnter={e => { e.currentTarget.style.color = '#c41e3a'; e.currentTarget.style.borderColor = '#c41e3a'; }}
+              onMouseLeave={e => { e.currentTarget.style.color = 'rgba(196,30,58,0.6)'; e.currentTarget.style.borderColor = 'rgba(196,30,58,0.4)'; }}
+            >Delete</button>
+          ) : (
+            <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
+              <span style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: '#fff', opacity: 0.7 }}>Confirm?</span>
+              <button onClick={() => onDeleteSession?.(session.id)}
+                style={{ padding: '6px 12px', background: '#c41e3a', border: '2px solid #c41e3a', color: '#fff', cursor: 'pointer', fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 11, textTransform: 'uppercase' }}>
+                Yes, Delete
+              </button>
+              <button onClick={() => setConfirmDelete(false)}
+                style={{ padding: '6px 12px', background: 'transparent', border: '2px solid rgba(255,255,255,0.3)', color: 'rgba(255,255,255,0.6)', cursor: 'pointer', fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 11 }}>
+                Cancel
+              </button>
+            </div>
+          )}
         </div>
       </div>
 

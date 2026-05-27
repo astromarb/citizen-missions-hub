@@ -16,7 +16,7 @@ function sessionDurationMs(session) {
   return end - start - (session.totalPausedMs || 0);
 }
 
-function SessionDebrief({ session, myProfileId }) {
+function SessionDebrief({ session, myProfileId, onOpenSession }) {
   const totalSCU = session.contracts.reduce((t, c) =>
     t + c.cargo.reduce((s, ci) => s + Number(ci.scu || 0), 0), 0);
   const totalPayout = session.contracts.reduce((t, c) => t + (c.payout || 0), 0);
@@ -64,7 +64,19 @@ function SessionDebrief({ session, myProfileId }) {
             {session.endedAt ? ' · COMPLETE' : session.startedAt ? ' · IN PROGRESS' : ''}
           </div>
         </div>
-        <div style={{ display: 'flex', gap: 20 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 20 }}>
+          {onOpenSession && (
+            <button onClick={() => onOpenSession(session.id)}
+              style={{
+                padding: '7px 16px', cursor: 'pointer',
+                fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 11,
+                textTransform: 'uppercase', letterSpacing: '0.06em',
+                border: '2px solid rgba(255,255,255,0.3)', background: 'transparent', color: 'rgba(255,255,255,0.7)',
+              }}
+              onMouseEnter={e => { e.currentTarget.style.background = '#c41e3a'; e.currentTarget.style.borderColor = '#c41e3a'; e.currentTarget.style.color = '#fff'; }}
+              onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.borderColor = 'rgba(255,255,255,0.3)'; e.currentTarget.style.color = 'rgba(255,255,255,0.7)'; }}
+            >Open →</button>
+          )}
           {[['TOTAL SCU', totalSCU.toLocaleString()], ['PAYOUT', `${totalPayout.toLocaleString()} aUEC`], ['PER PILOT', `${payoutPerPilot.toLocaleString()} aUEC`]].map(([l, v]) => (
             <div key={l} style={{ textAlign: 'center' }}>
               <div style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 16, color: '#c41e3a', lineHeight: 1 }}>{v}</div>
@@ -165,7 +177,7 @@ function SessionDebrief({ session, myProfileId }) {
   );
 }
 
-export default function MissionsView({ sessions, myProfileId, profile, avatarUrl }) {
+export default function MissionsView({ sessions, myProfileId, profile, avatarUrl, onOpenSession }) {
   const mySessions = Object.values(sessions)
     .filter(s => s.members?.some(m => m.id === myProfileId))
     .sort((a, b) => new Date(b.date) - new Date(a.date));
@@ -262,7 +274,7 @@ export default function MissionsView({ sessions, myProfileId, profile, avatarUrl
             </div>
           </div>
         ) : (
-          mySessions.map(s => <SessionDebrief key={s.id} session={s} myProfileId={myProfileId} />)
+          mySessions.map(s => <SessionDebrief key={s.id} session={s} myProfileId={myProfileId} onOpenSession={onOpenSession} />)
         )}
       </div>
     </div>

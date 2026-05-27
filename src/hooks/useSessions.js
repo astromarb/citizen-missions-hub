@@ -69,7 +69,7 @@ export function useSessions(enabled = true, userId) {
     if (error) { console.error('useSessions:', error); setLoading(false); return; }
 
     const map = {};
-    for (const s of (data || [])) map[s.date] = xf(s);
+    for (const s of (data || [])) map[s.id] = xf(s);
     setSessions(map);
     setLoading(false);
   }, []);
@@ -113,8 +113,8 @@ export function useSessions(enabled = true, userId) {
       }
     }
 
-    const newSession = { id: sess.id, date: dateKey, players, members: [], contracts: [] };
-    setSessions(prev => ({ ...prev, [dateKey]: newSession }));
+    const newSession = { id: sess.id, date: dateKey, players, members: [], contracts: [], startedAt: null, pausedAt: null, totalPausedMs: 0, endedAt: null };
+    setSessions(prev => ({ ...prev, [sess.id]: newSession }));
     return newSession;
   }, []);
 
@@ -288,10 +288,26 @@ export function useSessions(enabled = true, userId) {
     await load();
   }, [sessions, load]);
 
+  // ── deleteSession ──────────────────────────────────────────
+  const deleteSession = useCallback(async (sessionId) => {
+    setSessions(prev => { const n = { ...prev }; delete n[sessionId]; return n; });
+    const { error } = await supabase.from('sessions').delete().eq('id', sessionId);
+    if (error) { console.error('deleteSession:', error); load(); }
+  }, [load]);
+
+  // ── updateSession ──────────────────────────────────────────
+  const updateSession = useCallback(async (sessionId, updates) => {
+    const { error } = await supabase.from('sessions').update(updates).eq('id', sessionId);
+    if (error) { console.error('updateSession:', error); return false; }
+    await load();
+    return true;
+  }, [load]);
+
   return {
     sessions, loading,
     createSession, createContract, toggleDone, deleteContract,
     setWaypointStatus, castRemovalVote, withdrawRemovalVote, addPlayerToSession,
     startSession, pauseSession, resumeSession, endSession,
+    deleteSession, updateSession,
   };
 }

@@ -3,7 +3,7 @@ import { fmtKey, daysInMonth, firstWeekday } from '../../utils/dateUtils.js';
 
 const TODAY_KEY = fmtKey(new Date());
 
-export default function CalendarView({ sessions, viewDate, onSelectDate, onNewSession }) {
+export default function CalendarView({ sessionsByDate, viewDate, onSelectDate, onShowPicker, onNewSession }) {
   const year = viewDate.getFullYear(), month = viewDate.getMonth();
   const cells = [];
   for (let i = 0; i < firstWeekday(year, month); i++) cells.push(null);
@@ -11,7 +11,6 @@ export default function CalendarView({ sessions, viewDate, onSelectDate, onNewSe
 
   return (
     <div style={{ padding: '0 20px 24px' }}>
-      {/* Calendar container with hard border */}
       <div style={{ border: '2px solid var(--border)', background: 'var(--bg-1)' }}>
 
         {/* Day-of-week headers */}
@@ -34,42 +33,54 @@ export default function CalendarView({ sessions, viewDate, onSelectDate, onNewSe
             );
 
             const key = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
-            const session = sessions[key], isToday = key === TODAY_KEY;
-            const allDone = session?.contracts.length > 0 && session.contracts.every(c => c.done);
+            const dateSessions = sessionsByDate[key] || [];
+            const isToday = key === TODAY_KEY;
+            const isFuture = key > TODAY_KEY;
+            const allDone = dateSessions.length > 0 && dateSessions.every(s => s.contracts.length > 0 && s.contracts.every(c => c.done));
+            const totalContracts = dateSessions.reduce((t, s) => t + s.contracts.length, 0);
+            const allPlayers = [...new Set(dateSessions.flatMap(s => s.players))];
+
+            const handleClick = () => {
+              if (isFuture) return;
+              if (dateSessions.length === 1) onSelectDate(dateSessions[0].id);
+              else if (dateSessions.length > 1) onShowPicker(key, dateSessions);
+              else onNewSession(key);
+            };
 
             return (
               <div key={key}
-                onClick={() => session ? onSelectDate(key) : onNewSession(key)}
+                onClick={handleClick}
                 style={{
-                  aspectRatio: '1', padding: '6px 8px', cursor: 'pointer',
+                  aspectRatio: '1', padding: '6px 8px',
+                  cursor: isFuture ? 'default' : 'pointer',
                   border: isToday ? '2px solid #c41e3a' : '1px solid var(--bg-3)',
-                  background: isToday ? 'rgba(196,30,58,0.05)' : session ? 'var(--bg-1)' : 'var(--bg-1)',
+                  background: isToday ? 'rgba(196,30,58,0.05)' : 'var(--bg-1)',
                   display: 'flex', flexDirection: 'column', justifyContent: 'space-between',
+                  opacity: isFuture ? 0.35 : 1,
                   transition: 'background 0.1s',
-                  outline: session && !isToday ? '1px solid var(--bg-3)' : 'none',
                 }}
-                onMouseEnter={e => { e.currentTarget.style.background = isToday ? 'rgba(196,30,58,0.1)' : 'var(--bg-2)'; }}
-                onMouseLeave={e => { e.currentTarget.style.background = isToday ? 'rgba(196,30,58,0.05)' : getComputedStyle(document.documentElement).getPropertyValue('--bg-1').trim(); }}
+                onMouseEnter={e => { if (!isFuture) e.currentTarget.style.background = isToday ? 'rgba(196,30,58,0.1)' : 'var(--bg-2)'; }}
+                onMouseLeave={e => { if (!isFuture) e.currentTarget.style.background = isToday ? 'rgba(196,30,58,0.05)' : 'var(--bg-1)'; }}
               >
                 <div style={{
                   fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 12,
                   color: isToday ? '#c41e3a' : 'var(--text)',
                 }}>{day}</div>
 
-                {session && (
+                {dateSessions.length > 0 && (
                   <div>
                     <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: allDone ? '#2D7A1F' : '#c41e3a', fontWeight: 700, marginBottom: 2 }}>
-                      {session.contracts.length}c{allDone ? ' ✓' : ''}
+                      {dateSessions.length > 1 ? `${dateSessions.length}×` : ''}{totalContracts}c{allDone ? ' ✓' : ''}
                     </div>
                     <div style={{ display: 'flex', gap: 2 }}>
-                      {session.players.slice(0, 5).map(p => (
-                        <span key={p} style={{ width: 6, height: 6, borderRadius: '50%', background: PLAYER_COLORS[p] || '#000', display: 'inline-block' }} />
+                      {allPlayers.slice(0, 5).map(p => (
+                        <span key={p} style={{ width: 6, height: 6, borderRadius: '50%', background: PLAYER_COLORS[p] || 'var(--text)', display: 'inline-block' }} />
                       ))}
                     </div>
                   </div>
                 )}
 
-                {!session && (
+                {dateSessions.length === 0 && !isFuture && (
                   <div style={{ fontSize: 9, color: 'var(--bg-3)', fontFamily: 'var(--font-mono)' }}>+</div>
                 )}
               </div>

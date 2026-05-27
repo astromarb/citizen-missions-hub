@@ -17,8 +17,10 @@ import OnboardingFlow from '@/components/Onboarding/OnboardingFlow.jsx';
 import MissionsView from '@/components/Missions/MissionsView.jsx';
 import LeaderboardView from '@/components/Leaderboard/LeaderboardView.jsx';
 import { ToastProvider, useToast } from '@/components/shared/Toast.jsx';
-import { DEFAULT_PLAYERS, PLAYER_COLORS } from '@/data/players.js';
+import { PLAYER_COLORS } from '@/data/players.js';
 import { fmtKey } from '@/utils/dateUtils.js';
+
+const TODAY_KEY = fmtKey(new Date());
 
 const TODAY = new Date();
 
@@ -134,8 +136,9 @@ function AppInner() {
   const [activeTab, setActiveTab] = useState('missions');
   const [view, setView] = useState('calendar');
   const [viewDate, setViewDate] = useState(new Date(TODAY.getFullYear(), TODAY.getMonth(), 1));
-  const [selectedDate, setSelectedDate] = useState(null);
+  const [selectedSessionId, setSelectedSessionId] = useState(null);
   const [modal, setModal] = useState(null);
+  const restoredRef = useRef(false);
 
   const userId = authSession?.user?.id || null;
 
@@ -145,6 +148,7 @@ function AppInner() {
     createSession, createContract, toggleDone, deleteContract,
     setWaypointStatus, castRemovalVote, withdrawRemovalVote, addPlayerToSession,
     startSession, pauseSession, resumeSession, endSession,
+    deleteSession, updateSession,
   } = useSessions(!!authSession, userId);
   const { commodities, systemsMap } = useRefData(!!authSession);
   const { profile, loading: profileLoading, checkCallsign, updateProfile, reload: reloadProfile } = useProfile(userId);
@@ -193,20 +197,62 @@ function AppInner() {
   const playerColors = { ...PLAYER_COLORS };
   profiles.forEach(p => { if (p.color) playerColors[p.callsign] = p.color; });
 
+  // Restore session from URL on first load
+  useEffect(() => {
+    if (sessionsLoading || restoredRef.current) return;
+    restoredRef.current = true;
+    const sid = new URLSearchParams(window.location.search).get('session');
+    if (sid && sessions[sid]) {
+      const sess = sessions[sid];
+      setSelectedSessionId(sid);
+      setView('session');
+      setActiveTab('calendar');
+      setViewDate(new Date(sess.date + 'T12:00:00').setDate(1) && new Date(new Date(sess.date + 'T12:00:00').getFullYear(), new Date(sess.date + 'T12:00:00').getMonth(), 1));
+    }
+  }, [sessions, sessionsLoading]);
+
   const navMonth = (dir) => setViewDate(new Date(viewDate.getFullYear(), viewDate.getMonth() + dir, 1));
-  const openSession = (key) => { SFX.open(); setSelectedDate(key); setView('session'); };
+
+  const openSession = (id) => {
+    SFX.open();
+    setSelectedSessionId(id);
+    setView('session');
+    window.history.replaceState(null, '', `?session=${id}`);
+  };
+
+  const closeSession = () => {
+    SFX.back();
+    setView('calendar');
+    setSelectedSessionId(null);
+    window.history.replaceState(null, '', window.location.pathname);
+  };
 
   const saveSession = async ({ date: dateKey, players }) => {
     const sess = await createSession(dateKey, players);
-    if (sess) { setModal(null); setSelectedDate(dateKey); setView('session'); }
+    if (sess) { setModal(null); openSession(sess.id); }
   };
 
   const addContract = async (contract) => {
-    const sessionId = sessions[selectedDate]?.id;
-    if (sessionId) await createContract(sessionId, contract);
+    if (selectedSessionId) await createContract(selectedSessionId, contract);
     setModal(null);
     showToast('Contract added', 'success');
     SFX.plus();
+  };
+
+  const handleDeleteSession = async (sessionId) => {
+    await deleteSession(sessionId);
+    closeSession();
+    showToast('Session deleted', 'info');
+    SFX.halt();
+  };
+
+  const handleOpenSession = (id) => {
+    const sess = sessions[id];
+    if (!sess) return;
+    const d = new Date(sess.date + 'T12:00:00');
+    setViewDate(new Date(d.getFullYear(), d.getMonth(), 1));
+    setActiveTab('calendar');
+    openSession(id);
   };
 
   const handleToggleDone = (sessionId, contractId) => {
@@ -267,6 +313,13 @@ function AppInner() {
     SFX.halt();
     showToast('Removed from crew', 'info');
   };
+
+  // Derive per-date session lists for calendar
+  const sessionsByDate = {};
+  Object.values(sessions).forEach(s => {
+    if (!sessionsByDate[s.date]) sessionsByDate[s.date] = [];
+    sessionsByDate[s.date].push(s);
+  });
 
   const totalSessions  = Object.keys(sessions).length;
   const totalContracts = Object.values(sessions).reduce((t, s) => t + s.contracts.length, 0);
@@ -474,17 +527,26 @@ function AppInner() {
                   onClick={() => { SFX.back(); navMonth(1); }}
                 >→</button>
               </div>
-              <CalendarView sessions={sessions} viewDate={viewDate} onSelectDate={openSession} onNewSession={key => { SFX.boop(); setModal({ type: 'new-session', dateKey: key }); }} />
+              <CalendarView
+                sessionsByDate={sessionsByDate}
+                viewDate={viewDate}
+                onSelectDate={(id) => openSession(id)}
+                onShowPicker={(key, sessList) => setModal({ type: 'session-picker', dateKey: key, sessions: sessList })}
+                onNewSession={key => {
+                  if (key > TODAY_KEY) { showToast('Cannot create sessions for future dates', 'info'); SFX.halt(); return; }
+                  SFX.boop(); setModal({ type: 'new-session', dateKey: key });
+                }}
+              />
               <div style={{ padding: '8px 20px 16px', fontSize: 11, color: 'var(--muted)', fontFamily: 'var(--font-mono)', letterSpacing: '0.04em' }}>
                 Click any day to open an existing session or start a new one.
               </div>
             </div>
           )}
 
-          {activeTab === 'calendar' && view === 'session' && selectedDate && sessions[selectedDate] && (
+          {activeTab === 'calendar' && view === 'session' && selectedSessionId && sessions[selectedSessionId] && (
             <SessionView
-              session={sessions[selectedDate]}
-              onBack={() => { SFX.back(); setView('calendar'); }}
+              session={sessions[selectedSessionId]}
+              onBack={closeSession}
               onAddContract={() => { SFX.open(); setModal({ type: 'add-contract' }); }}
               onToggleDone={handleToggleDone}
               onDeleteContract={handleDeleteContract}
@@ -496,6 +558,8 @@ function AppInner() {
               onPauseSession={handlePauseSession}
               onResumeSession={handleResumeSession}
               onEndSession={handleEndSession}
+              onDeleteSession={handleDeleteSession}
+              onUpdateSession={updateSession}
               playerColors={playerColors}
               myProfileId={myProfileId}
               myCallsign={myCallsign}
@@ -503,7 +567,7 @@ function AppInner() {
             />
           )}
 
-          {activeTab === 'missions'    && <MissionsView sessions={sessions} myProfileId={myProfileId} profile={profile} avatarUrl={avatarUrl} />}
+          {activeTab === 'missions'    && <MissionsView sessions={sessions} myProfileId={myProfileId} profile={profile} avatarUrl={avatarUrl} onOpenSession={handleOpenSession} />}
           {activeTab === 'stats'       && <StatsView sessions={sessions} />}
           {activeTab === 'leaderboard' && <LeaderboardView sessions={sessions} myProfileId={myProfileId} />}
           {activeTab === 'friends'  && (
@@ -528,6 +592,50 @@ function AppInner() {
       </div>
 
       {/* ── Modals ── */}
+      {modal?.type === 'session-picker' && (
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 999, padding: 20 }}
+          onClick={e => { if (e.target === e.currentTarget) { SFX.back(); setModal(null); } }}>
+          <div style={{ background: 'var(--bg-1)', border: '2px solid var(--border)', padding: '28px 24px', width: 380 }}>
+            <div style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 18, textTransform: 'uppercase', letterSpacing: '-0.01em', marginBottom: 6 }}>
+              {new Date(modal.dateKey + 'T12:00:00').toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}
+            </div>
+            <div style={{ height: 3, background: '#c41e3a', marginBottom: 18 }} />
+            <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: 12 }}>
+              {modal.sessions.length} sessions on this date
+            </div>
+            {modal.sessions.map(s => (
+              <button key={s.id}
+                onClick={() => { setModal(null); openSession(s.id); }}
+                style={{
+                  display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%',
+                  padding: '12px 14px', marginBottom: 8, cursor: 'pointer', textAlign: 'left',
+                  border: '2px solid var(--border)', background: 'var(--bg-2)',
+                  fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 12,
+                }}
+                onMouseEnter={e => { e.currentTarget.style.background = '#c41e3a'; e.currentTarget.style.color = '#fff'; }}
+                onMouseLeave={e => { e.currentTarget.style.background = 'var(--bg-2)'; e.currentTarget.style.color = 'var(--text)'; }}
+              >
+                <span style={{ textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+                  {s.members?.map(m => m.callsign).join(', ') || s.players?.join(', ') || 'Solo'}
+                </span>
+                <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, opacity: 0.7 }}>
+                  {s.contracts.length}c
+                </span>
+              </button>
+            ))}
+            <button
+              onClick={() => setModal({ type: 'new-session', dateKey: modal.dateKey })}
+              style={{
+                display: 'block', width: '100%', padding: '10px', marginTop: 4, cursor: 'pointer',
+                border: '2px dashed var(--border)', background: 'transparent',
+                fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 12,
+                textTransform: 'uppercase', letterSpacing: '0.06em', color: 'var(--muted)',
+              }}
+            >+ New Session on this Date</button>
+          </div>
+        </div>
+      )}
+
       {modal?.type === 'new-session' && (
         <NewSessionModal
           dateKey={modal.dateKey}
