@@ -9,7 +9,7 @@ export function useProfile(userId) {
     if (!userId) { setLoading(false); return; }
     const { data, error } = await supabase
       .from('profiles')
-      .select('id, callsign, color, avatar_url, home_region, onboarding_complete')
+      .select('id, callsign, color, avatar_url, home_region, onboarding_complete, auec_balance, auec_balance_verified_at')
       .eq('id', userId)
       .single();
     if (!error && data) setProfile(data);
@@ -34,7 +34,7 @@ export function useProfile(userId) {
       .from('profiles')
       .update(updates)
       .eq('id', userId)
-      .select('id, callsign, color, avatar_url, home_region, onboarding_complete')
+      .select('id, callsign, color, avatar_url, home_region, onboarding_complete, auec_balance, auec_balance_verified_at')
       .single();
     if (!error && data) setProfile(data);
     return { error };

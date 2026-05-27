@@ -1,5 +1,4 @@
-import { useState, useMemo, useRef } from 'react';
-import { supabase } from '../../lib/supabase.js';
+import { useState, useMemo } from 'react';
 import LocationAutocomplete from '../Autocomplete/LocationAutocomplete.jsx';
 import CommodityAutocomplete from '../Autocomplete/CommodityAutocomplete.jsx';
 
@@ -38,38 +37,6 @@ export default function AddContractModal({ onSave, onClose, commodities, systems
   const [dropoffs, setDropoffs] = useState([emptyWp()]);
   const [cargo,    setCargo]    = useState([{ commodity: '', scu: '', fromLocation: '', toLocation: '' }]);
   const [payout,   setPayout]   = useState('');
-  const [scanning,  setScanning]  = useState(false);
-  const [scanError, setScanError] = useState(null);
-  const fileInputRef = useRef(null);
-
-  const handleScan = async (file) => {
-    if (!file) return;
-    setScanning(true);
-    setScanError(null);
-    try {
-      const base64 = await new Promise((resolve, reject) => {
-        const reader = new FileReader();
-        reader.onload = e => resolve(e.target.result.split(',')[1]);
-        reader.onerror = reject;
-        reader.readAsDataURL(file);
-      });
-      const { data, error } = await supabase.functions.invoke('extract-payout', {
-        body: { imageBase64: base64, mimeType: file.type },
-      });
-      if (error) throw error;
-      if (data?.amount > 0) {
-        setPayout(String(data.amount));
-        setScanError(null);
-      } else {
-        setScanError('No payout found — enter manually');
-      }
-    } catch {
-      setScanError('Scan failed — enter manually');
-    } finally {
-      setScanning(false);
-      if (fileInputRef.current) fileInputRef.current.value = '';
-    }
-  };
 
   const { system, type } = useMemo(
     () => deriveRoute(pickups, dropoffs, systemsMap || {}),
@@ -186,45 +153,17 @@ export default function AddContractModal({ onSave, onClose, commodities, systems
           <div>
             {/* Payout */}
             <div style={{ marginBottom: 16 }}>
-              <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', marginBottom: 6 }}>
-                <span style={lbl}>Mission Payout (aUEC)</span>
-                <button
-                  onClick={() => fileInputRef.current?.click()}
-                  disabled={scanning}
-                  style={{
-                    padding: '3px 10px', cursor: scanning ? 'default' : 'pointer',
-                    fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 10,
-                    textTransform: 'uppercase', letterSpacing: '0.06em',
-                    border: '2px solid var(--border)',
-                    background: scanning ? 'var(--bg-2)' : 'var(--bg-1)',
-                    color: scanning ? 'var(--muted)' : 'var(--text)',
-                    display: 'flex', alignItems: 'center', gap: 5,
-                  }}
-                >
-                  <span>{scanning ? '⏳' : '📷'}</span>
-                  <span>{scanning ? 'Scanning…' : 'Scan Screenshot'}</span>
-                </button>
-                <input
-                  ref={fileInputRef}
-                  type="file"
-                  accept="image/jpeg,image/png,image/webp"
-                  style={{ display: 'none' }}
-                  onChange={e => handleScan(e.target.files?.[0])}
-                />
-              </div>
+              <span style={lbl}>Mission Payout (aUEC)</span>
               <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                 <input
                   type="number" min="0" step="1000"
-                  style={{ flex: 1, padding: '8px 10px', background: 'var(--bg-1)', border: `2px solid ${scanError ? '#c41e3a' : 'var(--border)'}`, color: 'var(--text)', fontSize: 13, fontFamily: 'var(--font-mono)', outline: 'none' }}
+                  style={{ flex: 1, padding: '8px 10px', background: 'var(--bg-1)', border: '2px solid var(--border)', color: 'var(--text)', fontSize: 13, fontFamily: 'var(--font-mono)', outline: 'none' }}
                   placeholder="e.g. 450000"
                   value={payout}
-                  onChange={e => { setPayout(e.target.value); setScanError(null); }}
+                  onChange={e => setPayout(e.target.value)}
                 />
                 <span style={{ fontSize: 11, color: 'var(--muted)', fontFamily: 'var(--font-mono)', flexShrink: 0 }}>aUEC</span>
               </div>
-              {scanError && (
-                <div style={{ marginTop: 5, fontFamily: 'var(--font-mono)', fontSize: 10, color: '#c41e3a', letterSpacing: '0.04em' }}>{scanError}</div>
-              )}
             </div>
 
             {cargo.map((c, i) => (

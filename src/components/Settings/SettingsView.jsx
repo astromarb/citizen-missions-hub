@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 
 const SWATCH_COLORS = [
   '#378ADD', '#1D9E75', '#7F77DD', '#D85A30',
@@ -39,7 +39,63 @@ export default function SettingsView({ profile, updateProfile, checkCallsign }) 
 
   const [saving, setSaving] = useState(false);
 
+  // aUEC balance verification
+  const [auecScanning,  setAuecScanning]  = useState(false);
+  const [auecExtracted, setAuecExtracted] = useState(null);
+  const [auecScanError, setAuecScanError] = useState(null);
+  const [auecManual,    setAuecManual]    = useState('');
+  const [auecSaved,     setAuecSaved]     = useState(false);
+  const auecFileRef = useRef(null);
+
   const flash = (setter) => { setter(true); setTimeout(() => setter(false), 2000); };
+
+  const handleAuecScan = async (file) => {
+    if (!file) return;
+    setAuecScanning(true);
+    setAuecScanError(null);
+    setAuecExtracted(null);
+    try {
+      const { createWorker } = await import('tesseract.js');
+      const worker = await createWorker('eng', 1, { logger: () => {} });
+      const { data: { text } } = await worker.recognize(file);
+      await worker.terminate();
+
+      // Primary: find a number immediately followed by "aUEC"
+      const auecMatch = text.match(/(\d[\d,]*)\s*a[Uu][Ee][Cc]/);
+      if (auecMatch) {
+        const amount = parseInt(auecMatch[1].replace(/,/g, ''), 10);
+        if (amount > 0) { setAuecExtracted(amount); return; }
+      }
+      // Fallback: largest 5+ digit number in the text
+      const nums = [...text.matchAll(/\d[\d,]{4,}/g)]
+        .map(m => parseInt(m[0].replace(/,/g, ''), 10))
+        .filter(n => !isNaN(n) && n > 0);
+      if (nums.length > 0) {
+        setAuecExtracted(Math.max(...nums));
+      } else {
+        setAuecScanError('No balance detected — try a clearer screenshot or enter manually below');
+      }
+    } catch {
+      setAuecScanError('Scan failed — please try again');
+    } finally {
+      setAuecScanning(false);
+      if (auecFileRef.current) auecFileRef.current.value = '';
+    }
+  };
+
+  const saveAuecBalance = async (amount) => {
+    if (!amount || amount <= 0) return;
+    setSaving(true);
+    await updateProfile({
+      auec_balance: amount,
+      auec_balance_verified_at: new Date().toISOString(),
+    });
+    setAuecExtracted(null);
+    setAuecManual('');
+    setAuecScanError(null);
+    setSaving(false);
+    flash(setAuecSaved);
+  };
 
   const handleHexInput = (v) => {
     setHexInput(v);
@@ -150,7 +206,7 @@ export default function SettingsView({ profile, updateProfile, checkCallsign }) 
       </div>
 
       {/* ── Callsign ── */}
-      <div style={{ border: '2px solid #000', background: '#fff', padding: '20px' }}>
+      <div style={{ border: '2px solid #000', background: '#fff', padding: '20px', marginBottom: 16 }}>
         {sectionTitle('Callsign')}
         <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--muted)', marginBottom: 10 }}>
           Current: <strong style={{ color: '#000' }}>{profile?.callsign}</strong>
@@ -174,6 +230,121 @@ export default function SettingsView({ profile, updateProfile, checkCallsign }) 
           <SavedBadge visible={callsignSaved} />
         </div>
       </div>
+      {/* ── aUEC Balance Verification ── */}
+      <div style={{ border: '2px solid #000', background: '#fff', padding: '20px' }}>
+        {sectionTitle('aUEC Balance Verification')}
+        <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--muted)', marginBottom: 16, lineHeight: 1.7 }}>
+          Upload a screenshot of your Star Citizen mobiGlas wallet to record your current aUEC balance.
+          Scanning runs entirely in your browser — no image data leaves your device.
+        </div>
+
+        {/* Current verified balance */}
+        {profile?.auec_balance > 0 && profile?.auec_balance_verified_at && (
+          <div style={{ padding: '12px 14px', background: 'rgba(45,134,89,0.06)', border: '2px solid #2d8659', marginBottom: 16 }}>
+            <div style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 20, color: '#2d8659', letterSpacing: '-0.01em' }}>
+              {Number(profile.auec_balance).toLocaleString()} aUEC
+            </div>
+            <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: 'var(--muted)', marginTop: 4, textTransform: 'uppercase', letterSpacing: '0.08em' }}>
+              Last verified {new Date(profile.auec_balance_verified_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+            </div>
+          </div>
+        )}
+
+        {/* Scan result awaiting confirmation */}
+        {auecExtracted !== null && (
+          <div style={{ padding: '14px', background: 'rgba(196,30,58,0.04)', border: '2px solid #c41e3a', marginBottom: 14 }}>
+            <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, letterSpacing: '0.12em', textTransform: 'uppercase', color: 'var(--muted)', marginBottom: 6 }}>Detected balance</div>
+            <div style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 22, color: '#c41e3a', letterSpacing: '-0.02em', marginBottom: 14 }}>
+              {auecExtracted.toLocaleString()} aUEC
+            </div>
+            <div style={{ display: 'flex', gap: 8 }}>
+              <button
+                onClick={() => saveAuecBalance(auecExtracted)}
+                disabled={saving}
+                style={{
+                  padding: '9px 20px', fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 12,
+                  textTransform: 'uppercase', letterSpacing: '0.04em', cursor: saving ? 'default' : 'pointer',
+                  border: '2px solid #2d8659', background: '#2d8659', color: '#fff',
+                }}
+              >Confirm & Save</button>
+              <button
+                onClick={() => { setAuecExtracted(null); setAuecScanError(null); }}
+                style={{
+                  padding: '9px 20px', fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 12,
+                  textTransform: 'uppercase', letterSpacing: '0.04em', cursor: 'pointer',
+                  border: '2px solid var(--border)', background: 'var(--bg-1)', color: 'var(--text)',
+                }}
+              >Wrong — Retry</button>
+            </div>
+          </div>
+        )}
+
+        {/* Error + manual fallback */}
+        {auecScanError && auecExtracted === null && (
+          <div style={{ marginBottom: 14 }}>
+            <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: '#c41e3a', marginBottom: 10, letterSpacing: '0.02em' }}>
+              {auecScanError}
+            </div>
+            <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+              <input
+                type="number" min="0"
+                value={auecManual}
+                onChange={e => setAuecManual(e.target.value)}
+                placeholder="Enter balance manually"
+                style={{ flex: 1, padding: '8px 10px', border: '2px solid #000', fontFamily: 'var(--font-mono)', fontSize: 13, outline: 'none' }}
+              />
+              <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--muted)', flexShrink: 0 }}>aUEC</span>
+              <button
+                onClick={() => saveAuecBalance(parseInt(auecManual, 10))}
+                disabled={!auecManual || saving}
+                style={{
+                  padding: '9px 20px', fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 12,
+                  textTransform: 'uppercase', letterSpacing: '0.04em',
+                  cursor: !auecManual ? 'default' : 'pointer',
+                  border: `2px solid ${auecManual ? '#c41e3a' : '#ccc'}`,
+                  background: auecManual ? '#c41e3a' : '#f5f5f5',
+                  color: auecManual ? '#fff' : '#999',
+                  flexShrink: 0,
+                }}
+              >Save</button>
+            </div>
+          </div>
+        )}
+
+        {/* Upload button (hidden when result is pending) */}
+        {auecExtracted === null && (
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+            <button
+              onClick={() => auecFileRef.current?.click()}
+              disabled={auecScanning}
+              style={{
+                padding: '9px 20px', fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 12,
+                textTransform: 'uppercase', letterSpacing: '0.04em', cursor: auecScanning ? 'default' : 'pointer',
+                border: `2px solid ${auecScanning ? '#ccc' : '#000'}`,
+                background: auecScanning ? '#f5f5f5' : '#000',
+                color: auecScanning ? '#999' : '#fff',
+                display: 'flex', alignItems: 'center', gap: 8,
+              }}
+            >
+              <span style={{ fontSize: 14 }}>{auecScanning ? '⏳' : '📷'}</span>
+              <span>{auecScanning ? 'Scanning…' : profile?.auec_balance ? 'Update Screenshot' : 'Upload Screenshot'}</span>
+            </button>
+            <input
+              ref={auecFileRef}
+              type="file"
+              accept="image/jpeg,image/png,image/webp"
+              style={{ display: 'none' }}
+              onChange={e => handleAuecScan(e.target.files?.[0])}
+            />
+            <SavedBadge visible={auecSaved} />
+          </div>
+        )}
+
+        <div style={{ marginTop: 14, fontFamily: 'var(--font-mono)', fontSize: 9, color: 'var(--muted)', lineHeight: 1.6, letterSpacing: '0.02em' }}>
+          Tip: screenshot your mobiGlas Wallet tab or the transactions screen for best results. Crop tightly around the balance number if the scan fails.
+        </div>
+      </div>
+
     </div>
   );
 }
