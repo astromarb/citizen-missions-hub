@@ -51,10 +51,10 @@ export function useSessions(enabled = true, userId) {
     const { data, error } = await supabase
       .from('sessions')
       .select(`
-        id, date, started_at, paused_at, total_paused_ms, ended_at,
+        *,
         session_players ( profiles ( id, callsign, color, avatar_url, home_region ) ),
         contracts (
-          id, type, system, done, payout, created_at, creator_id,
+          *,
           creator:profiles!creator_id ( callsign, color ),
           contract_removal_votes ( voter_id ),
           contract_waypoints (

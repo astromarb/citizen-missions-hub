@@ -20,4 +20,5 @@ export const SFX = {
   boop:  () => _play('entry-boop'),
   open:  () => _play('login-open'),
   plus:  () => _play('login-plus'),
+  halt:  () => _play('halt-screetch'),
 };

@@ -40,11 +40,8 @@ function NewSessionModal({ dateKey, onSave, onClose, profiles, friends }) {
     setPlayers(prev => prev.includes(callsign) ? prev.filter(x => x !== callsign) : [...prev, callsign]);
   };
 
-  const displayList = friends && friends.length > 0
-    ? friends.map(f => ({ id: f.id, callsign: f.callsign, color: f.color || '#8b949e', avatar_url: f.avatar_url }))
-    : profiles.length > 0
-      ? profiles
-      : DEFAULT_PLAYERS.map(callsign => ({ id: callsign, callsign, color: PLAYER_COLORS[callsign] || '#8b949e', avatar_url: null }));
+  const friendList = (friends || []).map(f => ({ id: f.id, callsign: f.callsign, color: f.color || '#8b949e' }));
+  const hasFriends = friendList.length > 0;
 
   return (
     <div style={{
@@ -65,23 +62,31 @@ function NewSessionModal({ dateKey, onSave, onClose, profiles, friends }) {
         <div style={{
           fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 10,
           letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: 12, color: '#000',
-        }}>Who's flying today?</div>
-        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginBottom: 28 }}>
-          {displayList.map(p => {
-            const active = players.includes(p.callsign);
-            const color = p.color || '#8b949e';
-            return (
-              <button key={p.id} onClick={() => toggle(p.callsign)} style={{
-                padding: '7px 16px', cursor: 'pointer',
-                fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 12,
-                textTransform: 'uppercase', letterSpacing: '0.06em',
-                border: `2px solid ${active ? color : '#000'}`,
-                background: active ? `${color}20` : '#fff',
-                color: active ? color : '#000',
-              }}>{p.callsign}</button>
-            );
-          })}
-        </div>
+        }}>Select crew from friends</div>
+
+        {!hasFriends ? (
+          <div style={{ padding: '18px 14px', background: 'var(--bg-2)', border: '2px dashed #ccc', marginBottom: 28, textAlign: 'center' }}>
+            <div style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 13, color: '#555', marginBottom: 4 }}>No friends yet</div>
+            <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: '#888' }}>Add crew from the Friends tab first.</div>
+          </div>
+        ) : (
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginBottom: 28 }}>
+            {friendList.map(p => {
+              const active = players.includes(p.callsign);
+              const color = p.color;
+              return (
+                <button key={p.id} onClick={() => toggle(p.callsign)} style={{
+                  padding: '7px 16px', cursor: 'pointer',
+                  fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 12,
+                  textTransform: 'uppercase', letterSpacing: '0.06em',
+                  border: `2px solid ${active ? color : '#000'}`,
+                  background: active ? `${color}20` : '#fff',
+                  color: active ? color : '#000',
+                }}>{p.callsign}</button>
+              );
+            })}
+          </div>
+        )}
 
         <div style={{ display: 'flex', justifyContent: 'space-between', gap: 8 }}>
           <button
@@ -126,7 +131,7 @@ function AppInner() {
   const [profiles, setProfiles] = useState([]);
 
   // ── Nav ──
-  const [activeTab, setActiveTab] = useState('calendar');
+  const [activeTab, setActiveTab] = useState('missions');
   const [view, setView] = useState('calendar');
   const [viewDate, setViewDate] = useState(new Date(TODAY.getFullYear(), TODAY.getMonth(), 1));
   const [selectedDate, setSelectedDate] = useState(null);
@@ -217,9 +222,9 @@ function AppInner() {
 
   const handleSetWaypointStatus = (waypointId, status) => {
     setWaypointStatus(waypointId, status);
-    SFX.boop();
-    if (status === 'done') showToast('Waypoint marked complete', 'success');
-    else if (status === 'failed') showToast('Waypoint marked failed', 'error');
+    if (status === 'failed') { SFX.halt(); showToast('Waypoint marked failed', 'error'); }
+    else if (status === 'done') { SFX.boop(); showToast('Waypoint marked complete', 'success'); }
+    else SFX.boop();
   };
 
   const handleCastVote = (contractId, sessionId) => {
@@ -253,13 +258,13 @@ function AppInner() {
 
   const handleFriendRespond = async (fid, accept) => {
     await respond(fid, accept);
-    SFX.boop();
-    showToast(accept ? 'Friend request accepted' : 'Request declined', accept ? 'success' : 'info');
+    if (accept) { SFX.boop(); showToast('Friend request accepted', 'success'); }
+    else { SFX.halt(); showToast('Request declined', 'info'); }
   };
 
   const handleRemoveFriend = async (fid) => {
     await removeFriend(fid);
-    SFX.back();
+    SFX.halt();
     showToast('Removed from crew', 'info');
   };
 
@@ -309,8 +314,8 @@ function AppInner() {
   };
 
   const TABS = [
-    ['calendar', 'Calendar'],
     ['missions', 'Missions'],
+    ['calendar', 'Calendar'],
     ['roster',   'Roster'],
     ['stats',    'Stats'],
     ['friends',  'Friends'],
@@ -498,7 +503,7 @@ function AppInner() {
             />
           )}
 
-          {activeTab === 'missions'  && <MissionsView sessions={sessions} myProfileId={myProfileId} />}
+          {activeTab === 'missions'  && <MissionsView sessions={sessions} myProfileId={myProfileId} profile={profile} avatarUrl={avatarUrl} />}
           {activeTab === 'roster'    && <RosterView sessions={sessions} profiles={profiles} />}
           {activeTab === 'stats'     && <StatsView sessions={sessions} />}
           {activeTab === 'friends'  && (
