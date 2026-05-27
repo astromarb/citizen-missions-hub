@@ -1,40 +1,61 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { supabase } from '@/lib/supabase.js';
 
 const xf = (s) => ({
   id: s.id,
   date: s.date,
   players: (s.session_players || []).map(sp => sp.profiles?.callsign).filter(Boolean),
+  members: (s.session_players || []).map(sp => sp.profiles).filter(Boolean),
   contracts: (s.contracts || []).map(c => ({
     id: c.id,
     type: c.type,
     system: c.system,
     done: c.done,
+    creatorId: c.creator_id || null,
+    creatorCallsign: c.creator?.callsign || null,
+    creatorColor: c.creator?.color || null,
+    removalVotes: (c.contract_removal_votes || []).map(v => v.voter_id),
     pickups: (c.contract_waypoints || [])
       .filter(w => w.kind === 'pickup')
       .sort((a, b) => a.sort_order - b.sort_order)
-      .map(w => ({ name: w.location_name, body: w.body })),
+      .map(w => ({
+        id: w.id,
+        name: w.location_name,
+        body: w.body,
+        completions: (w.waypoint_completions || []).map(wc => ({ profileId: wc.profile_id, status: wc.status })),
+      })),
     dropoffs: (c.contract_waypoints || [])
       .filter(w => w.kind === 'dropoff')
       .sort((a, b) => a.sort_order - b.sort_order)
-      .map(w => ({ name: w.location_name, body: w.body })),
+      .map(w => ({
+        id: w.id,
+        name: w.location_name,
+        body: w.body,
+        completions: (w.waypoint_completions || []).map(wc => ({ profileId: wc.profile_id, status: wc.status })),
+      })),
     cargo: (c.cargo_items || []).map(ci => ({ id: ci.id, commodity: ci.commodity, scu: ci.scu })),
   })),
 });
 
-export function useSessions(enabled = true) {
+export function useSessions(enabled = true, userId) {
   const [sessions, setSessions] = useState({});
   const [loading, setLoading] = useState(true);
+  const channelRef = useRef(null);
 
   const load = useCallback(async () => {
     const { data, error } = await supabase
       .from('sessions')
       .select(`
         id, date,
-        session_players ( profiles ( id, callsign, color, avatar_url ) ),
+        session_players ( profiles ( id, callsign, color, avatar_url, home_region ) ),
         contracts (
-          id, type, system, done, created_at,
-          contract_waypoints ( kind, location_name, body, sort_order ),
+          id, type, system, done, created_at, creator_id,
+          creator:profiles!creator_id ( callsign, color ),
+          contract_removal_votes ( voter_id ),
+          contract_waypoints (
+            id, kind, location_name, body, sort_order,
+            waypoint_completions ( profile_id, status )
+          ),
           cargo_items ( id, commodity, scu )
         )
       `)
@@ -48,7 +69,20 @@ export function useSessions(enabled = true) {
     setLoading(false);
   }, []);
 
-  useEffect(() => { if (enabled) load(); }, [load, enabled]);
+  useEffect(() => {
+    if (!enabled) return;
+    load();
+
+    channelRef.current = supabase
+      .channel('social-realtime')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'waypoint_completions' }, load)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'contract_removal_votes' }, load)
+      .subscribe();
+
+    return () => {
+      if (channelRef.current) supabase.removeChannel(channelRef.current);
+    };
+  }, [load, enabled]);
 
   // ── createSession ──────────────────────────────────────────
   const createSession = useCallback(async (dateKey, players) => {
@@ -69,16 +103,18 @@ export function useSessions(enabled = true) {
       }
     }
 
-    const newSession = { id: sess.id, date: dateKey, players, contracts: [] };
+    const newSession = { id: sess.id, date: dateKey, players, members: [], contracts: [] };
     setSessions(prev => ({ ...prev, [dateKey]: newSession }));
     return newSession;
   }, []);
 
   // ── createContract ─────────────────────────────────────────
   const createContract = useCallback(async (sessionId, contract) => {
+    const { data: { user } } = await supabase.auth.getUser();
+
     const { data: c, error } = await supabase
       .from('contracts')
-      .insert({ session_id: sessionId, type: contract.type, system: contract.system, done: false })
+      .insert({ session_id: sessionId, type: contract.type, system: contract.system, done: false, creator_id: user?.id || null })
       .select('id')
       .single();
     if (error) { console.error('createContract:', error); return; }
@@ -105,22 +141,10 @@ export function useSessions(enabled = true) {
       if (ins) insertedCargo = ins;
     }
 
-    const newContract = {
-      id: c.id, type: contract.type, system: contract.system, done: false,
-      pickups: contract.pickups.filter(p => p.name),
-      dropoffs: contract.dropoffs.filter(p => p.name),
-      cargo: insertedCargo,
-    };
-
-    setSessions(prev => {
-      const key = Object.keys(prev).find(k => prev[k].id === sessionId);
-      if (!key) return prev;
-      return { ...prev, [key]: { ...prev[key], contracts: [...prev[key].contracts, newContract] } };
-    });
-  }, []);
+    await load();
+  }, [load]);
 
   // ── toggleDone ─────────────────────────────────────────────
-  // Not memoized — always captures fresh `sessions` from current render
   const toggleDone = async (sessionId, contractId) => {
     let currentDone = false;
     for (const sess of Object.values(sessions)) {
@@ -157,5 +181,63 @@ export function useSessions(enabled = true) {
     if (error) { console.error('deleteContract:', error); load(); }
   };
 
-  return { sessions, loading, createSession, createContract, toggleDone, deleteContract };
+  // ── setWaypointStatus ──────────────────────────────────────
+  const setWaypointStatus = useCallback(async (waypointId, status) => {
+    if (!userId) return;
+    if (status === null) {
+      await supabase.from('waypoint_completions')
+        .delete()
+        .eq('waypoint_id', waypointId)
+        .eq('profile_id', userId);
+    } else {
+      await supabase.from('waypoint_completions')
+        .upsert({ waypoint_id: waypointId, profile_id: userId, status, updated_at: new Date().toISOString() }, { onConflict: 'waypoint_id,profile_id' });
+    }
+    await load();
+  }, [userId, load]);
+
+  // ── castRemovalVote ────────────────────────────────────────
+  const castRemovalVote = useCallback(async (contractId, sessionId) => {
+    if (!userId) return;
+    await supabase.from('contract_removal_votes')
+      .insert({ contract_id: contractId, voter_id: userId });
+
+    const sess = Object.values(sessions).find(s => s.id === sessionId);
+    const memberCount = sess?.members?.length || sess?.players?.length || 1;
+    const threshold = Math.ceil(memberCount / 2 + 0.01);
+
+    const { data: votes } = await supabase
+      .from('contract_removal_votes')
+      .select('voter_id')
+      .eq('contract_id', contractId);
+
+    if (votes && votes.length >= threshold) {
+      await supabase.from('contracts').delete().eq('id', contractId);
+    }
+
+    await load();
+  }, [userId, sessions, load]);
+
+  // ── withdrawRemovalVote ────────────────────────────────────
+  const withdrawRemovalVote = useCallback(async (contractId) => {
+    if (!userId) return;
+    await supabase.from('contract_removal_votes')
+      .delete()
+      .eq('contract_id', contractId)
+      .eq('voter_id', userId);
+    await load();
+  }, [userId, load]);
+
+  // ── addPlayerToSession ─────────────────────────────────────
+  const addPlayerToSession = useCallback(async (sessionId, profileId) => {
+    await supabase.from('session_players')
+      .insert({ session_id: sessionId, profile_id: profileId });
+    await load();
+  }, [load]);
+
+  return {
+    sessions, loading,
+    createSession, createContract, toggleDone, deleteContract,
+    setWaypointStatus, castRemovalVote, withdrawRemovalVote, addPlayerToSession,
+  };
 }

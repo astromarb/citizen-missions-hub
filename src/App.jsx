@@ -2,6 +2,8 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import { supabase } from '@/lib/supabase.js';
 import { useSessions } from '@/hooks/useSessions.js';
 import { useRefData } from '@/hooks/useRefData.js';
+import { useProfile } from '@/hooks/useProfile.js';
+import { useFriends } from '@/hooks/useFriends.js';
 import CalendarView from '@/components/Calendar/CalendarView.jsx';
 import SessionView from '@/components/Session/SessionView.jsx';
 import AddContractModal from '@/components/Contract/AddContractModal.jsx';
@@ -9,6 +11,9 @@ import LoginScreen from '@/components/Auth/LoginScreen.jsx';
 import AuthLog from '@/components/Auth/AuthLog.jsx';
 import RosterView from '@/components/Roster/RosterView.jsx';
 import StatsView from '@/components/Stats/StatsView.jsx';
+import FriendsView from '@/components/Friends/FriendsView.jsx';
+import SettingsView from '@/components/Settings/SettingsView.jsx';
+import OnboardingFlow from '@/components/Onboarding/OnboardingFlow.jsx';
 import { DEFAULT_PLAYERS, PLAYER_COLORS } from '@/data/players.js';
 import { fmtKey } from '@/utils/dateUtils.js';
 
@@ -23,17 +28,19 @@ const getUserName = (user) =>
 
 // ─── NEW SESSION MODAL ────────────────────────────────────────────────────────
 
-function NewSessionModal({ dateKey, onSave, onClose, profiles }) {
+function NewSessionModal({ dateKey, onSave, onClose, profiles, friends }) {
   const [players, setPlayers] = useState([]);
   const d = new Date(dateKey + 'T12:00:00');
   const label = d.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' });
   const toggle = (callsign) =>
     setPlayers(prev => prev.includes(callsign) ? prev.filter(x => x !== callsign) : [...prev, callsign]);
 
-  // Use DB profiles if available, otherwise fall back to static list
-  const displayList = profiles.length > 0
-    ? profiles
-    : DEFAULT_PLAYERS.map(callsign => ({ id: callsign, callsign, color: PLAYER_COLORS[callsign] || '#8b949e', avatar_url: null }));
+  // Prefer friends list when available, fall back to all profiles then static list
+  const displayList = friends && friends.length > 0
+    ? friends.map(f => ({ id: f.id, callsign: f.callsign, color: f.color || '#8b949e', avatar_url: f.avatar_url }))
+    : profiles.length > 0
+      ? profiles
+      : DEFAULT_PLAYERS.map(callsign => ({ id: callsign, callsign, color: PLAYER_COLORS[callsign] || '#8b949e', avatar_url: null }));
 
   const lbl = {
     display: 'block', fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 10,
@@ -111,9 +118,17 @@ export default function App() {
   const [selectedDate, setSelectedDate] = useState(null);
   const [modal, setModal] = useState(null);
 
+  const userId = authSession?.user?.id || null;
+
   // ── Data hooks ──
-  const { sessions, loading: sessionsLoading, createSession, createContract, toggleDone, deleteContract } = useSessions(!!authSession);
+  const {
+    sessions, loading: sessionsLoading,
+    createSession, createContract, toggleDone, deleteContract,
+    setWaypointStatus, castRemovalVote, withdrawRemovalVote, addPlayerToSession,
+  } = useSessions(!!authSession, userId);
   const { commodities, systemsMap } = useRefData(!!authSession);
+  const { profile, loading: profileLoading, checkCallsign, updateProfile, reload: reloadProfile } = useProfile(userId);
+  const { friends, pending, sent, searchUsers, sendRequest, respond, remove: removeFriend } = useFriends(userId, !!authSession);
 
   // ── Auth log ──
   const addLog = useCallback((event, name) => {
@@ -189,21 +204,43 @@ export default function App() {
 
   if (!authSession) return <LoginScreen />;
 
-  if (sessionsLoading) {
+  if (sessionsLoading || profileLoading) {
     return (
       <div style={{ minHeight: '100vh', background: 'var(--bg-0)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-        <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--muted)', letterSpacing: '0.14em', textTransform: 'uppercase' }}>Loading sessions…</div>
+        <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--muted)', letterSpacing: '0.14em', textTransform: 'uppercase' }}>Loading…</div>
       </div>
+    );
+  }
+
+  // ── Onboarding gate ──
+  if (profile && !profile.onboarding_complete) {
+    return (
+      <OnboardingFlow
+        profile={profile}
+        updateProfile={updateProfile}
+        checkCallsign={checkCallsign}
+        onComplete={reloadProfile}
+      />
     );
   }
 
   const userName  = getUserName(authSession.user);
   const avatarUrl = authSession.user?.user_metadata?.avatar_url;
+  const myProfileId = profile?.id || null;
+  const myCallsign  = profile?.callsign || null;
 
   const switchTab = (tab) => {
     setActiveTab(tab);
-    if (tab !== 'calendar') setView('calendar'); // reset session view when leaving calendar tab
+    if (tab !== 'calendar') setView('calendar');
   };
+
+  const TABS = [
+    ['calendar', 'Calendar'],
+    ['roster',   'Roster'],
+    ['stats',    'Stats'],
+    ['friends',  'Friends'],
+    ['settings', 'Settings'],
+  ];
 
   return (
     <div style={{ minHeight: '100vh', background: 'var(--bg-0)', color: 'var(--text)' }}>
@@ -234,7 +271,7 @@ export default function App() {
             <img src={avatarUrl} alt={userName} style={{ width: 28, height: 28, borderRadius: '50%', border: '2px solid rgba(255,255,255,0.2)', flexShrink: 0 }} />
           )}
           <span style={{ fontFamily: 'var(--font-mono)', fontSize: 12, color: 'rgba(255,255,255,0.7)', maxWidth: 130, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-            {userName}
+            {myCallsign || userName}
           </span>
           <button
             onClick={() => supabase.auth.signOut()}
@@ -247,7 +284,7 @@ export default function App() {
 
       {/* ── Tab nav ── */}
       <div style={{ background: '#fff', borderBottom: '2px solid #000', display: 'flex' }}>
-        {[['calendar', 'Calendar'], ['roster', 'Roster'], ['stats', 'Stats']].map(([tab, label]) => (
+        {TABS.map(([tab, label]) => (
           <button key={tab}
             onClick={() => switchTab(tab)}
             style={{
@@ -298,17 +335,42 @@ export default function App() {
             onAddContract={() => setModal({ type: 'add-contract' })}
             onToggleDone={toggleDone}
             onDeleteContract={deleteContract}
+            onSetWaypointStatus={setWaypointStatus}
+            onCastRemovalVote={castRemovalVote}
+            onWithdrawVote={withdrawRemovalVote}
+            onAddPlayer={addPlayerToSession}
             playerColors={playerColors}
+            myProfileId={myProfileId}
+            myCallsign={myCallsign}
+            friends={friends}
           />
         )}
 
         {activeTab === 'roster' && <RosterView sessions={sessions} profiles={profiles} />}
         {activeTab === 'stats'  && <StatsView sessions={sessions} />}
+        {activeTab === 'friends' && (
+          <FriendsView
+            friends={friends}
+            pending={pending}
+            sent={sent}
+            searchUsers={searchUsers}
+            sendRequest={sendRequest}
+            respond={respond}
+            remove={removeFriend}
+          />
+        )}
+        {activeTab === 'settings' && profile && (
+          <SettingsView
+            profile={profile}
+            updateProfile={updateProfile}
+            checkCallsign={checkCallsign}
+          />
+        )}
       </div>
 
       {/* ── Modals ── */}
       {modal?.type === 'new-session' && (
-        <NewSessionModal dateKey={modal.dateKey} onSave={saveSession} onClose={() => setModal(null)} profiles={profiles} />
+        <NewSessionModal dateKey={modal.dateKey} onSave={saveSession} onClose={() => setModal(null)} profiles={profiles} friends={friends} />
       )}
       {modal?.type === 'add-contract' && (
         <AddContractModal onSave={addContract} onClose={() => setModal(null)} commodities={commodities} systemsMap={systemsMap} />
