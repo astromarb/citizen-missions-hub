@@ -4,7 +4,7 @@ import CommodityAutocomplete from '../Autocomplete/CommodityAutocomplete.jsx';
 
 const lbl = {
   display: 'block', fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 10,
-  letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: 6, color: '#000',
+  letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: 6, color: 'var(--text)',
 };
 
 const emptyWp = () => ({ name: '', body: '' });
@@ -75,14 +75,14 @@ export default function AddContractModal({ onSave, onClose, commodities, systems
   const secondaryBtn = {
     padding: '10px 24px', fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 12,
     textTransform: 'uppercase', letterSpacing: '0.04em',
-    border: '2px solid #000', background: '#fff', color: '#000', cursor: 'pointer',
+    border: '2px solid var(--border)', background: 'var(--bg-1)', color: 'var(--text)', cursor: 'pointer',
   };
 
   return (
     <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 999, padding: 20 }}
       onClick={e => e.target === e.currentTarget && onClose()}>
 
-      <div style={{ background: '#fff', border: '2px solid #000', padding: 28, width: 500, maxHeight: '90vh', overflowY: 'auto' }}>
+      <div style={{ background: 'var(--bg-1)', border: '2px solid var(--border)', padding: 28, width: 500, maxHeight: '90vh', overflowY: 'auto' }}>
 
         {/* Header */}
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 6 }}>
@@ -135,7 +135,7 @@ export default function AddContractModal({ onSave, onClose, commodities, systems
                     )}
                   </div>
                 ))}
-                <button style={{ background: 'none', border: 'none', color: '#000', cursor: 'pointer', fontSize: 12, fontFamily: 'var(--font-display)', fontWeight: 700, textDecoration: 'underline', padding: '4px 0' }}
+                <button style={{ background: 'none', border: 'none', color: 'var(--text)', cursor: 'pointer', fontSize: 12, fontFamily: 'var(--font-display)', fontWeight: 700, textDecoration: 'underline', padding: '4px 0' }}
                   onClick={() => setArr([...arr, emptyWp()])}>
                   + Add {label.split(' ')[0].toLowerCase()}
                 </button>
@@ -153,7 +153,7 @@ export default function AddContractModal({ onSave, onClose, commodities, systems
               <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                 <input
                   type="number" min="0" step="1000"
-                  style={{ flex: 1, padding: '8px 10px', background: '#fff', border: '2px solid #000', color: '#000', fontSize: 13, fontFamily: 'var(--font-mono)', outline: 'none' }}
+                  style={{ flex: 1, padding: '8px 10px', background: 'var(--bg-1)', border: '2px solid var(--border)', color: 'var(--text)', fontSize: 13, fontFamily: 'var(--font-mono)', outline: 'none' }}
                   placeholder="e.g. 450000"
                   value={payout}
                   onChange={e => setPayout(e.target.value)}
@@ -166,7 +166,7 @@ export default function AddContractModal({ onSave, onClose, commodities, systems
               <div key={i} style={{ display: 'flex', gap: 8, alignItems: 'center', marginBottom: 8 }}>
                 <CommodityAutocomplete value={c.commodity} onChange={v => setCargoCom(i, v)} commodities={commodities} />
                 <input type="number" min="1"
-                  style={{ width: 80, padding: '8px 10px', background: '#fff', border: '2px solid #000', color: '#000', fontSize: 13, textAlign: 'right', fontFamily: 'var(--font-mono)', outline: 'none' }}
+                  style={{ width: 80, padding: '8px 10px', background: 'var(--bg-1)', border: '2px solid var(--border)', color: 'var(--text)', fontSize: 13, textAlign: 'right', fontFamily: 'var(--font-mono)', outline: 'none' }}
                   placeholder="SCU" value={c.scu}
                   onChange={e => setCargoSCU(i, e.target.value)}
                 />
@@ -177,7 +177,7 @@ export default function AddContractModal({ onSave, onClose, commodities, systems
                 )}
               </div>
             ))}
-            <button style={{ background: 'none', border: 'none', color: '#000', cursor: 'pointer', fontSize: 12, fontFamily: 'var(--font-display)', fontWeight: 700, textDecoration: 'underline', padding: '4px 0' }}
+            <button style={{ background: 'none', border: 'none', color: 'var(--text)', cursor: 'pointer', fontSize: 12, fontFamily: 'var(--font-display)', fontWeight: 700, textDecoration: 'underline', padding: '4px 0' }}
               onClick={() => setCargo([...cargo, { commodity: '', scu: '' }])}>
               + Add commodity
             </button>
@@ -211,7 +211,7 @@ export default function AddContractModal({ onSave, onClose, commodities, systems
           <button style={secondaryBtn}
             onClick={step === 1 ? onClose : () => setStep(1)}
             onMouseEnter={e => { e.currentTarget.style.background = '#000'; e.currentTarget.style.color = '#fff'; }}
-            onMouseLeave={e => { e.currentTarget.style.background = '#fff'; e.currentTarget.style.color = '#000'; }}
+            onMouseLeave={e => { e.currentTarget.style.background = getComputedStyle(document.documentElement).getPropertyValue('--bg-1').trim(); e.currentTarget.style.color = getComputedStyle(document.documentElement).getPropertyValue('--text').trim(); }}
           >
             {step === 1 ? 'Cancel' : '← Back'}
           </button>

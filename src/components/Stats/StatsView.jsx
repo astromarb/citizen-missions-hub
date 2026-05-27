@@ -35,7 +35,7 @@ export default function StatsView({ sessions }) {
     return (
       <div style={{ padding: '20px' }}>
         <div style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 20, letterSpacing: '-0.02em', marginBottom: 20 }}>Stats</div>
-        <div style={{ textAlign: 'center', padding: '60px 20px', border: '2px dashed #000', background: '#fff' }}>
+        <div style={{ textAlign: 'center', padding: '60px 20px', border: '2px dashed var(--border)', background: 'var(--bg-1)' }}>
           <div style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 18, marginBottom: 8 }}>No Data Yet</div>
           <div style={{ color: 'var(--muted)', fontSize: 13 }}>Log some contracts to see stats here.</div>
         </div>
@@ -48,15 +48,15 @@ export default function StatsView({ sessions }) {
       <div style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 20, letterSpacing: '-0.02em', marginBottom: 20 }}>Stats</div>
 
       {/* ── Overview strip ── */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', border: '2px solid #000', marginBottom: 20 }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', border: '2px solid var(--border)', marginBottom: 20 }}>
         {[
           ['Sessions', allSessions.length],
           ['Contracts', allContracts.length],
           ['Completed', doneCount],
           ['Total SCU', totalSCU.toLocaleString()],
         ].map(([label, val], i) => (
-          <div key={label} style={{ padding: '16px 12px', textAlign: 'center', borderRight: i < 3 ? '2px solid #000' : 'none', background: i === 3 ? 'rgba(196,30,58,0.05)' : '#fff' }}>
-            <div style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 26, color: i === 3 ? '#c41e3a' : '#000', letterSpacing: '-0.02em', lineHeight: 1 }}>{val}</div>
+          <div key={label} style={{ padding: '16px 12px', textAlign: 'center', borderRight: i < 3 ? '2px solid var(--border)' : 'none', background: i === 3 ? 'rgba(196,30,58,0.05)' : 'var(--bg-1)' }}>
+            <div style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 26, color: i === 3 ? '#c41e3a' : 'var(--text)', letterSpacing: '-0.02em', lineHeight: 1 }}>{val}</div>
             <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '0.1em', marginTop: 4 }}>{label}</div>
           </div>
         ))}
@@ -64,12 +64,12 @@ export default function StatsView({ sessions }) {
 
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
         {/* ── Commodity breakdown ── */}
-        <div style={{ border: '2px solid #000', padding: '16px', background: '#fff' }}>
+        <div style={{ border: '2px solid var(--border)', padding: '16px', background: 'var(--bg-1)' }}>
           {section('Top Commodities by SCU')}
           {topComm.map(([name, scu]) => (
             <div key={name} style={{ marginBottom: 8 }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 3 }}>
-                <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: '#000', fontWeight: 600 }}>{name}</span>
+                <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--text)', fontWeight: 600 }}>{name}</span>
                 <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: '#c41e3a', fontWeight: 700 }}>{scu.toLocaleString()}</span>
               </div>
               <div style={{ height: 4, background: 'var(--bg-3)', position: 'relative' }}>
@@ -81,7 +81,7 @@ export default function StatsView({ sessions }) {
 
         <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
           {/* ── Contract types ── */}
-          <div style={{ border: '2px solid #000', padding: '16px', background: '#fff' }}>
+          <div style={{ border: '2px solid var(--border)', padding: '16px', background: 'var(--bg-1)' }}>
             {section('Contract Types')}
             {[['Stellar', stellar, '#185FA5'], ['Interstellar', inter, '#0F6E56']].map(([label, count, color]) => (
               <div key={label} style={{ marginBottom: 10 }}>
@@ -100,16 +100,16 @@ export default function StatsView({ sessions }) {
 
           {/* ── Pilot leaderboard ── */}
           {topPlayers.length > 0 && (
-            <div style={{ border: '2px solid #000', padding: '16px', background: '#fff', flex: 1 }}>
+            <div style={{ border: '2px solid var(--border)', padding: '16px', background: 'var(--bg-1)', flex: 1 }}>
               {section('Pilot SCU Ranking')}
               {topPlayers.map(([callsign, scu], i) => (
                 <div key={callsign} style={{
                   display: 'flex', justifyContent: 'space-between', alignItems: 'center',
                   padding: '10px 12px', marginBottom: 6,
-                  background: i === 0 ? 'rgba(196,30,58,0.05)' : '#f5f5f5',
-                  border: i === 0 ? '1px solid #c41e3a' : '1px solid #ddd',
+                  background: i === 0 ? 'rgba(196,30,58,0.05)' : 'var(--bg-2)',
+                  border: i === 0 ? '1px solid #c41e3a' : '1px solid var(--bg-3)',
                 }}>
-                  <span style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 13, color: '#000', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+                  <span style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 13, color: 'var(--text)', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
                     {i + 1}. {callsign}
                   </span>
                   <span style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 13, color: '#c41e3a' }}>

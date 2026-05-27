@@ -15,13 +15,13 @@ export default function CalendarView({ sessions, viewDate, onSelectDate, onNewSe
       <div style={{ border: '2px solid var(--border)', background: 'var(--bg-1)' }}>
 
         {/* Day-of-week headers */}
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', borderBottom: '2px solid #000', background: 'var(--bg-2)' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', borderBottom: '2px solid var(--border)', background: 'var(--bg-2)' }}>
           {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map((d, i) => (
             <div key={d} style={{
               padding: '10px 4px', textAlign: 'center',
               fontFamily: 'var(--font-display)', fontSize: 9, fontWeight: 800,
               letterSpacing: '0.12em', textTransform: 'uppercase', color: 'var(--text)',
-              borderRight: i < 6 ? '1px solid #000' : 'none',
+              borderRight: i < 6 ? '1px solid var(--border)' : 'none',
             }}>{d}</div>
           ))}
         </div>
@@ -46,7 +46,7 @@ export default function CalendarView({ sessions, viewDate, onSelectDate, onNewSe
                   background: isToday ? 'rgba(196,30,58,0.05)' : session ? 'var(--bg-1)' : 'var(--bg-1)',
                   display: 'flex', flexDirection: 'column', justifyContent: 'space-between',
                   transition: 'background 0.1s',
-                  outline: session && !isToday ? '1px solid #ccc' : 'none',
+                  outline: session && !isToday ? '1px solid var(--bg-3)' : 'none',
                 }}
                 onMouseEnter={e => { e.currentTarget.style.background = isToday ? 'rgba(196,30,58,0.1)' : 'var(--bg-2)'; }}
                 onMouseLeave={e => { e.currentTarget.style.background = isToday ? 'rgba(196,30,58,0.05)' : getComputedStyle(document.documentElement).getPropertyValue('--bg-1').trim(); }}

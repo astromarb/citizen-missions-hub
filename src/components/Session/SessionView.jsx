@@ -108,7 +108,7 @@ function PlayerSeat({ member }) {
       ) : (
         <div style={{
           width: 50, height: 50, borderRadius: '50%',
-          background: color, border: `2px solid #000`,
+          background: color, border: `2px solid var(--border)`,
           display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
         }}>
           <span style={{ color: '#fff', fontWeight: 700, fontSize: 20, fontFamily: 'var(--font-display)' }}>{initial}</span>
@@ -116,11 +116,11 @@ function PlayerSeat({ member }) {
       )}
       <div style={{
         fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 11,
-        color: '#000', textTransform: 'uppercase', letterSpacing: '0.08em', textAlign: 'center',
+        color: 'var(--text)', textTransform: 'uppercase', letterSpacing: '0.08em', textAlign: 'center',
       }}>{member?.callsign}</div>
       {member?.home_region && (
         <div style={{
-          fontFamily: 'var(--font-mono)', fontSize: 9, color: '#888',
+          fontFamily: 'var(--font-mono)', fontSize: 9, color: 'var(--muted)',
           textTransform: 'uppercase', letterSpacing: '0.06em', textAlign: 'center', marginTop: -4,
         }}>{member.home_region}</div>
       )}
@@ -138,7 +138,7 @@ function WaypointRow({ waypoint, myProfileId, members, onSetStatus }) {
   return (
     <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8, flexWrap: 'wrap' }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 6, flex: 1, minWidth: 0 }}>
-        <span style={{ color: '#888', fontSize: 12, flexShrink: 0 }}>↑</span>
+        <span style={{ color: 'var(--muted)', fontSize: 12, flexShrink: 0 }}>↑</span>
         <span style={{
           fontFamily: 'var(--font-sans)', fontSize: 13,
           color: '#c41e3a', fontWeight: 500, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
@@ -186,9 +186,9 @@ function WaypointRow({ waypoint, myProfileId, members, onSetStatus }) {
               title="Mark delivered / done"
               style={{
                 width: 28, height: 28, cursor: 'pointer',
-                border: `2px solid #000`,
-                background: myCompletion?.status === 'done' ? '#2d8659' : '#fff',
-                color: myCompletion?.status === 'done' ? '#fff' : '#666',
+                border: `2px solid var(--border)`,
+                background: myCompletion?.status === 'done' ? '#2d8659' : 'var(--bg-1)',
+                color: myCompletion?.status === 'done' ? '#fff' : 'var(--muted)',
                 fontWeight: 700, fontSize: 13,
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
               }}
@@ -259,21 +259,21 @@ export default function SessionView({
         <div style={{ display: 'flex', alignItems: 'center', gap: 20, flexWrap: 'wrap' }}>
           <button onClick={onBack}
             style={{
-              border: '2px solid #000', background: '#fff', color: '#000',
+              border: '2px solid var(--border)', background: 'var(--bg-1)', color: 'var(--text)',
               padding: '6px 14px', cursor: 'pointer',
               fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 12,
               textTransform: 'uppercase', letterSpacing: '0.04em',
             }}
             onMouseEnter={e => { e.currentTarget.style.background = '#000'; e.currentTarget.style.color = '#fff'; }}
-            onMouseLeave={e => { e.currentTarget.style.background = '#fff'; e.currentTarget.style.color = '#000'; }}
+            onMouseLeave={e => { e.currentTarget.style.background = getComputedStyle(document.documentElement).getPropertyValue('--bg-1').trim(); e.currentTarget.style.color = getComputedStyle(document.documentElement).getPropertyValue('--text').trim(); }}
           >← Calendar</button>
 
           <div>
             <div style={{
               fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 18,
-              color: '#000', letterSpacing: '-0.01em',
+              color: 'var(--text)', letterSpacing: '-0.01em',
             }}>{label}</div>
-            <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: '#444', marginTop: 2 }}>
+            <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--muted)', marginTop: 2 }}>
               {session.contracts.length} contract{session.contracts.length !== 1 ? 's' : ''} · {totalSCU.toLocaleString()} SCU
             </div>
           </div>
@@ -312,19 +312,19 @@ export default function SessionView({
 
         {/* ── Mission Briefing card ── */}
         <div style={{
-          background: '#fff',
-          border: '2px solid #000',
+          background: 'var(--bg-1)',
+          border: '2px solid var(--border)',
           padding: '24px 28px',
           textAlign: 'center',
         }}>
           <div style={{
             fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 12,
-            letterSpacing: '0.18em', textTransform: 'uppercase', color: '#555',
+            letterSpacing: '0.18em', textTransform: 'uppercase', color: 'var(--muted)',
             marginBottom: 6,
           }}>Mission Briefing</div>
 
           <div style={{
-            fontFamily: 'var(--font-sans)', fontSize: 12, color: '#666', marginBottom: 20, lineHeight: 1.6,
+            fontFamily: 'var(--font-sans)', fontSize: 12, color: 'var(--muted)', marginBottom: 20, lineHeight: 1.6,
           }}>
             {label} · {memberCount} pilot{memberCount !== 1 ? 's' : ''} · {session.contracts.length} run{session.contracts.length !== 1 ? 's' : ''}
           </div>
@@ -344,29 +344,29 @@ export default function SessionView({
                   onClick={() => setShowInvite(v => !v)}
                   style={{
                     width: 50, height: 50, borderRadius: '50%',
-                    border: '2px dashed #000', background: 'transparent',
+                    border: '2px dashed var(--border)', background: 'transparent',
                     cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    fontSize: 22, color: '#000', fontWeight: 700,
+                    fontSize: 22, color: 'var(--text)', fontWeight: 700,
                   }}
                 >+</button>
                 <div style={{
                   fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 11,
-                  textTransform: 'uppercase', letterSpacing: '0.08em', color: '#555',
+                  textTransform: 'uppercase', letterSpacing: '0.08em', color: 'var(--muted)',
                 }}>Invite</div>
 
                 {showInvite && (
                   <div style={{
                     position: 'absolute', top: 62, left: '50%', transform: 'translateX(-50%)',
-                    background: '#fff', border: '2px solid #000', minWidth: 190, zIndex: 50,
+                    background: 'var(--bg-1)', border: '2px solid var(--border)', minWidth: 190, zIndex: 50,
                     boxShadow: '4px 4px 0 rgba(0,0,0,0.3)',
                   }}>
                     <div style={{
-                      padding: '8px 12px', borderBottom: '1px solid #e5e5e5',
+                      padding: '8px 12px', borderBottom: '1px solid var(--bg-3)',
                       fontFamily: 'var(--font-mono)', fontSize: 9, textTransform: 'uppercase',
-                      color: '#888', letterSpacing: '0.08em',
+                      color: 'var(--muted)', letterSpacing: '0.08em',
                     }}>Add to Session</div>
                     {invitableFriends.length === 0 ? (
-                      <div style={{ padding: '12px', fontFamily: 'var(--font-mono)', fontSize: 11, color: '#888' }}>
+                      <div style={{ padding: '12px', fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--muted)' }}>
                         No friends to add
                       </div>
                     ) : (
@@ -375,22 +375,22 @@ export default function SessionView({
                           onClick={() => { onAddPlayer?.(session.id, f.id); setShowInvite(false); }}
                           style={{
                             display: 'flex', alignItems: 'center', gap: 8, width: '100%',
-                            padding: '9px 12px', border: 'none', background: '#fff',
+                            padding: '9px 12px', border: 'none', background: 'var(--bg-1)',
                             cursor: 'pointer', textAlign: 'left',
                           }}
-                          onMouseEnter={e => { e.currentTarget.style.background = '#f5f5f5'; }}
-                          onMouseLeave={e => { e.currentTarget.style.background = '#fff'; }}
+                          onMouseEnter={e => { e.currentTarget.style.background = getComputedStyle(document.documentElement).getPropertyValue('--bg-2').trim(); }}
+                          onMouseLeave={e => { e.currentTarget.style.background = getComputedStyle(document.documentElement).getPropertyValue('--bg-1').trim(); }}
                         >
-                          <div style={{ width: 24, height: 24, borderRadius: '50%', background: f.color || '#8b949e', flexShrink: 0, border: '2px solid #000' }} />
+                          <div style={{ width: 24, height: 24, borderRadius: '50%', background: f.color || '#8b949e', flexShrink: 0, border: '2px solid var(--border)' }} />
                           <span style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 12, textTransform: 'uppercase' }}>{f.callsign}</span>
                         </button>
                       ))
                     )}
                     <button onClick={() => setShowInvite(false)}
                       style={{
-                        width: '100%', padding: '7px', border: 'none', borderTop: '1px solid #e5e5e5',
-                        background: '#f5f5f5', cursor: 'pointer',
-                        fontFamily: 'var(--font-mono)', fontSize: 10, color: '#888',
+                        width: '100%', padding: '7px', border: 'none', borderTop: '1px solid var(--bg-3)',
+                        background: 'var(--bg-2)', cursor: 'pointer',
+                        fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--muted)',
                       }}>Close</button>
                   </div>
                 )}
@@ -399,8 +399,8 @@ export default function SessionView({
           )}
 
           <div style={{
-            borderTop: '1px solid #ddd', paddingTop: 12, marginTop: 4,
-            fontFamily: 'var(--font-sans)', fontSize: 12, fontStyle: 'italic', color: '#888',
+            borderTop: '1px solid var(--bg-3)', paddingTop: 12, marginTop: 4,
+            fontFamily: 'var(--font-sans)', fontSize: 12, fontStyle: 'italic', color: 'var(--muted)',
           }}>
             Any crew member can add contracts. You may only remove your own — others require a &gt;50% crew vote.
           </div>
@@ -409,11 +409,11 @@ export default function SessionView({
         {/* ── Contract list ── */}
         {session.contracts.length === 0 && (
           <div style={{
-            background: '#fff', border: '2px dashed #000',
+            background: 'var(--bg-1)', border: '2px dashed var(--border)',
             padding: '50px 20px', textAlign: 'center',
           }}>
             <div style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 18, marginBottom: 8, textTransform: 'uppercase' }}>No Contracts Yet</div>
-            <div style={{ color: '#888', fontSize: 13, fontFamily: 'var(--font-sans)' }}>Hit "+ Add Contract" to log your first run.</div>
+            <div style={{ color: 'var(--muted)', fontSize: 13, fontFamily: 'var(--font-sans)' }}>Hit "+ Add Contract" to log your first run.</div>
           </div>
         )}
 
@@ -424,8 +424,8 @@ export default function SessionView({
 
           return (
             <div key={contract.id} style={{
-              background: '#fff',
-              border: '2px solid #000',
+              background: 'var(--bg-1)',
+              border: '2px solid var(--border)',
               padding: '18px 20px',
               opacity: contract.done ? 0.6 : 1,
             }}>
@@ -435,7 +435,7 @@ export default function SessionView({
                   <TypeBadge type={contract.type} />
                   <span style={{
                     fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 12,
-                    color: '#000', letterSpacing: '0.06em', textTransform: 'uppercase',
+                    color: 'var(--text)', letterSpacing: '0.06em', textTransform: 'uppercase',
                   }}>
                     {contract.system}
                   </span>
@@ -449,11 +449,11 @@ export default function SessionView({
                     </span>
                   )}
                   {contract.creatorCallsign && (
-                    <span style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: '#888' }}>
+                    <span style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--muted)' }}>
                       Posted by:{' '}
                       <span style={{
                         fontFamily: 'var(--font-display)', fontWeight: 700,
-                        color: contract.creatorColor || '#000', fontSize: 11,
+                        color: contract.creatorColor || 'var(--text)', fontSize: 11,
                       }}>
                         {contract.creatorCallsign}
                       </span>
@@ -479,7 +479,7 @@ export default function SessionView({
                 </button>
               </div>
 
-              <div style={{ height: 1, background: '#e5e5e5', marginBottom: 14 }} />
+              <div style={{ height: 1, background: 'var(--bg-3)', marginBottom: 14 }} />
 
               {/* ── Pickups ── */}
               {contract.pickups.length > 0 && (
@@ -533,7 +533,7 @@ export default function SessionView({
 
               {/* ── Footer ── */}
               <div style={{
-                borderTop: '1px solid #ddd',
+                borderTop: '1px solid var(--bg-3)',
                 paddingTop: 12,
                 display: 'flex',
                 alignItems: 'flex-start',
@@ -573,7 +573,7 @@ export default function SessionView({
                     </button>
                     <div style={{
                       fontFamily: 'var(--font-mono)', fontSize: 9,
-                      color: '#aaa', fontStyle: 'italic',
+                      color: 'var(--muted)', fontStyle: 'italic',
                     }}>
                       Requires majority vote to remove.
                     </div>

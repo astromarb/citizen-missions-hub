@@ -52,7 +52,7 @@ function SessionDebrief({ session, myProfileId }) {
   const dateLabel = d.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' });
 
   return (
-    <div style={{ border: '2px solid #000', background: '#fff', marginBottom: 20 }}>
+    <div style={{ border: '2px solid var(--border)', background: 'var(--bg-1)', marginBottom: 20 }}>
 
       {/* Session header */}
       <div style={{ background: '#1a1a1a', padding: '14px 20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 10 }}>
@@ -76,14 +76,14 @@ function SessionDebrief({ session, myProfileId }) {
 
       {/* Crew performance */}
       {session.members?.length > 0 && (
-        <div style={{ padding: '16px 20px', borderBottom: '1px solid #e5e5e5' }}>
-          <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, letterSpacing: '0.12em', textTransform: 'uppercase', color: '#888', marginBottom: 12 }}>Crew Performance</div>
+        <div style={{ padding: '16px 20px', borderBottom: '1px solid var(--bg-3)' }}>
+          <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, letterSpacing: '0.12em', textTransform: 'uppercase', color: 'var(--muted)', marginBottom: 12 }}>Crew Performance</div>
           <div style={{ overflowX: 'auto' }}>
             <table style={{ width: '100%', borderCollapse: 'collapse', fontFamily: 'var(--font-display)', fontSize: 12 }}>
               <thead>
-                <tr style={{ borderBottom: '2px solid #000' }}>
+                <tr style={{ borderBottom: '2px solid var(--border)' }}>
                   {['Pilot', 'Pickups', 'Dropoffs', 'Payout Share'].map(h => (
-                    <th key={h} style={{ padding: '6px 10px', textAlign: 'left', fontWeight: 700, fontSize: 10, letterSpacing: '0.08em', textTransform: 'uppercase', color: '#555' }}>{h}</th>
+                    <th key={h} style={{ padding: '6px 10px', textAlign: 'left', fontWeight: 700, fontSize: 10, letterSpacing: '0.08em', textTransform: 'uppercase', color: 'var(--muted)' }}>{h}</th>
                   ))}
                 </tr>
               </thead>
@@ -92,22 +92,22 @@ function SessionDebrief({ session, myProfileId }) {
                   const stats = pilotStats[m.id] || {};
                   const isMe = m.id === myProfileId;
                   return (
-                    <tr key={m.id} style={{ borderBottom: '1px solid #f0f0f0', background: isMe ? 'rgba(196,30,58,0.03)' : 'transparent' }}>
+                    <tr key={m.id} style={{ borderBottom: '1px solid var(--bg-2)', background: isMe ? 'rgba(196,30,58,0.03)' : 'transparent' }}>
                       <td style={{ padding: '10px 10px' }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                          <div style={{ width: 20, height: 20, borderRadius: '50%', background: m.color || '#8b949e', flexShrink: 0, border: '2px solid #000' }} />
-                          <span style={{ fontWeight: isMe ? 800 : 700, color: isMe ? '#c41e3a' : '#000', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+                          <div style={{ width: 20, height: 20, borderRadius: '50%', background: m.color || '#8b949e', flexShrink: 0, border: '2px solid var(--border)' }} />
+                          <span style={{ fontWeight: isMe ? 800 : 700, color: isMe ? '#c41e3a' : 'var(--text)', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
                             {m.callsign}{isMe ? ' (you)' : ''}
                           </span>
                         </div>
                       </td>
                       <td style={{ padding: '10px', fontFamily: 'var(--font-mono)', fontSize: 12 }}>
-                        <span style={{ color: stats.pickupDone === stats.pickupTotal && stats.pickupTotal > 0 ? '#2d8659' : '#000', fontWeight: 700 }}>
+                        <span style={{ color: stats.pickupDone === stats.pickupTotal && stats.pickupTotal > 0 ? '#2d8659' : 'var(--text)', fontWeight: 700 }}>
                           {stats.pickupDone} / {stats.pickupTotal}
                         </span>
                       </td>
                       <td style={{ padding: '10px', fontFamily: 'var(--font-mono)', fontSize: 12 }}>
-                        <span style={{ color: stats.dropoffDone === stats.dropoffTotal && stats.dropoffTotal > 0 ? '#2d8659' : '#000', fontWeight: 700 }}>
+                        <span style={{ color: stats.dropoffDone === stats.dropoffTotal && stats.dropoffTotal > 0 ? '#2d8659' : 'var(--text)', fontWeight: 700 }}>
                           {stats.dropoffDone} / {stats.dropoffTotal}
                         </span>
                       </td>
@@ -126,7 +126,7 @@ function SessionDebrief({ session, myProfileId }) {
       {/* Contract breakdown */}
       {allContracts.length > 0 && (
         <div style={{ padding: '16px 20px' }}>
-          <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, letterSpacing: '0.12em', textTransform: 'uppercase', color: '#888', marginBottom: 12 }}>Contract Breakdown</div>
+          <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, letterSpacing: '0.12em', textTransform: 'uppercase', color: 'var(--muted)', marginBottom: 12 }}>Contract Breakdown</div>
           {allContracts.map(c => {
             const cSCU = c.cargo.reduce((t, ci) => t + Number(ci.scu || 0), 0);
             const isStellar = c.type === 'Hauling - Stellar';
@@ -134,20 +134,20 @@ function SessionDebrief({ session, myProfileId }) {
               <div key={c.id} style={{
                 display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap',
                 padding: '10px 12px', marginBottom: 6,
-                background: c.done ? 'rgba(45,134,89,0.05)' : '#f9f9f9',
-                border: `1px solid ${c.done ? '#2d8659' : '#ddd'}`,
+                background: c.done ? 'rgba(45,134,89,0.05)' : 'var(--bg-2)',
+                border: `1px solid ${c.done ? '#2d8659' : 'var(--bg-3)'}`,
               }}>
                 <span style={{
                   background: isStellar ? '#0066cc' : '#c41e3a',
-                  color: '#fff', border: '2px solid #000',
+                  color: '#fff', border: '2px solid var(--border)',
                   padding: '3px 8px',
                   fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 10,
                   letterSpacing: '0.06em', textTransform: 'uppercase', whiteSpace: 'nowrap',
                 }}>{c.type}</span>
-                <span style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 12, textTransform: 'uppercase', letterSpacing: '0.04em', flex: 1, color: '#000' }}>
+                <span style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 12, textTransform: 'uppercase', letterSpacing: '0.04em', flex: 1, color: 'var(--text)' }}>
                   {c.system}
                 </span>
-                <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: '#555', fontWeight: 600 }}>{cSCU.toLocaleString()} SCU</span>
+                <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--muted)', fontWeight: 600 }}>{cSCU.toLocaleString()} SCU</span>
                 {c.payout > 0 && (
                   <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: '#2d8659', fontWeight: 700 }}>{c.payout.toLocaleString()} aUEC</span>
                 )}
@@ -159,7 +159,7 @@ function SessionDebrief({ session, myProfileId }) {
       )}
 
       {allContracts.length === 0 && (
-        <div style={{ padding: '24px 20px', textAlign: 'center', color: '#bbb', fontFamily: 'var(--font-mono)', fontSize: 12 }}>No contracts logged.</div>
+        <div style={{ padding: '24px 20px', textAlign: 'center', color: 'var(--muted)', fontFamily: 'var(--font-mono)', fontSize: 12 }}>No contracts logged.</div>
       )}
     </div>
   );
@@ -182,7 +182,7 @@ export default function MissionsView({ sessions, myProfileId, profile, avatarUrl
   if (!myProfileId) {
     return (
       <div style={{ padding: 20 }}>
-        <div style={{ textAlign: 'center', padding: '60px 20px', border: '2px dashed #000', background: '#fff' }}>
+        <div style={{ textAlign: 'center', padding: '60px 20px', border: '2px dashed var(--border)', background: 'var(--bg-1)' }}>
           <div style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 16 }}>Profile not loaded</div>
         </div>
       </div>
@@ -199,7 +199,7 @@ export default function MissionsView({ sessions, myProfileId, profile, avatarUrl
       {/* ── Profile sidebar ── */}
       <div style={{ width: 220, flexShrink: 0, position: 'sticky', top: 20 }}>
         {/* Avatar card */}
-        <div style={{ border: '2px solid #000', background: '#fff', marginBottom: 16 }}>
+        <div style={{ border: '2px solid var(--border)', background: 'var(--bg-1)', marginBottom: 16 }}>
           <div style={{ background: '#1a1a1a', padding: '20px 16px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 12 }}>
             {avatarUrl ? (
               <img src={avatarUrl} alt={callsign}
@@ -230,15 +230,15 @@ export default function MissionsView({ sessions, myProfileId, profile, avatarUrl
 
           {/* Lifetime stats */}
           <div style={{ padding: '14px 16px' }}>
-            <div style={{ fontFamily: 'var(--font-mono)', fontSize: 8, letterSpacing: '0.14em', textTransform: 'uppercase', color: '#888', marginBottom: 10 }}>Career Stats</div>
+            <div style={{ fontFamily: 'var(--font-mono)', fontSize: 8, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'var(--muted)', marginBottom: 10 }}>Career Stats</div>
             {[
               ['Sessions', mySessions.length.toLocaleString()],
               ['SCU Hauled', lifetimeSCU.toLocaleString()],
               ['aUEC Earned', lifetimePayout > 0 ? lifetimePayout.toLocaleString() : '—'],
             ].map(([label, val]) => (
-              <div key={label} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', padding: '7px 0', borderBottom: '1px solid #f0f0f0' }}>
-                <span style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: '#666', letterSpacing: '0.04em' }}>{label}</span>
-                <span style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 13, color: '#000', letterSpacing: '-0.01em' }}>{val}</span>
+              <div key={label} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', padding: '7px 0', borderBottom: '1px solid var(--bg-2)' }}>
+                <span style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--muted)', letterSpacing: '0.04em' }}>{label}</span>
+                <span style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 13, color: 'var(--text)', letterSpacing: '-0.01em' }}>{val}</span>
               </div>
             ))}
           </div>
@@ -255,7 +255,7 @@ export default function MissionsView({ sessions, myProfileId, profile, avatarUrl
         </div>
 
         {mySessions.length === 0 ? (
-          <div style={{ textAlign: 'center', padding: '60px 20px', border: '2px dashed #000', background: '#fff' }}>
+          <div style={{ textAlign: 'center', padding: '60px 20px', border: '2px dashed var(--border)', background: 'var(--bg-1)' }}>
             <div style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 18, marginBottom: 8 }}>No Missions Yet</div>
             <div style={{ color: 'var(--muted)', fontSize: 13, fontFamily: 'var(--font-sans)' }}>
               Join a session from the Calendar tab to see your mission history here.

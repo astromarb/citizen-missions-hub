@@ -446,13 +446,13 @@ function AppInner() {
               fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 12,
               textTransform: 'uppercase', letterSpacing: '0.08em',
               background: 'transparent',
-              color: activeTab === tab ? '#c41e3a' : '#666',
+              color: activeTab === tab ? '#c41e3a' : 'var(--muted)',
               borderBottom: activeTab === tab ? '3px solid #c41e3a' : '3px solid transparent',
               marginBottom: -2,
               transition: 'color 0.15s',
             }}
-            onMouseEnter={e => { if (activeTab !== tab) e.currentTarget.style.color = '#000'; }}
-            onMouseLeave={e => { if (activeTab !== tab) e.currentTarget.style.color = '#666'; }}
+            onMouseEnter={e => { if (activeTab !== tab) e.currentTarget.style.color = 'var(--text)'; }}
+            onMouseLeave={e => { if (activeTab !== tab) e.currentTarget.style.color = 'var(--muted)'; }}
           >{label}</button>
         ))}
       </div>

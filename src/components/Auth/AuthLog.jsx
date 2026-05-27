@@ -24,13 +24,13 @@ export default function AuthLog({ entries }) {
         style={{
           display: 'flex', alignItems: 'center', gap: 8, userSelect: 'none',
           padding: '5px 12px', cursor: 'pointer',
-          background: open ? '#000' : '#fff',
-          border: '2px solid #000',
-          borderBottom: open ? '2px solid #000' : '2px solid #000',
+          background: open ? '#000' : 'var(--bg-1)',
+          border: '2px solid var(--border)',
+          borderBottom: open ? '2px solid var(--border)' : '2px solid var(--border)',
         }}
       >
         <span style={{ color: '#e50000', fontSize: 9 }}>●</span>
-        <span style={{ color: open ? '#fff' : '#000', letterSpacing: '0.1em', textTransform: 'uppercase', fontWeight: 700 }}>Auth Log</span>
+        <span style={{ color: open ? '#fff' : 'var(--text)', letterSpacing: '0.1em', textTransform: 'uppercase', fontWeight: 700 }}>Auth Log</span>
         {entries.length > 0 && (
           <span style={{
             background: open ? '#fff' : '#000', border: '1px solid',
@@ -41,14 +41,14 @@ export default function AuthLog({ entries }) {
             {entries.length}
           </span>
         )}
-        <span style={{ fontSize: 9, color: open ? '#fff' : '#666', opacity: 0.7 }}>{open ? '▾' : '▴'}</span>
+        <span style={{ fontSize: 9, color: open ? '#fff' : 'var(--muted)', opacity: 0.7 }}>{open ? '▾' : '▴'}</span>
       </div>
 
       {/* Log panel */}
       {open && (
         <div style={{
           width: 340, maxHeight: 240, overflowY: 'auto',
-          background: '#fff', border: '2px solid #000',
+          background: 'var(--bg-1)', border: '2px solid var(--border)',
           borderTop: 'none',
         }}>
           {entries.length === 0 ? (
@@ -72,7 +72,7 @@ export default function AuthLog({ entries }) {
                   <span style={{ color: s.color, flexShrink: 0, minWidth: 110, letterSpacing: '0.04em', fontWeight: 700 }}>
                     {s.label}
                   </span>
-                  <span style={{ color: '#000', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                  <span style={{ color: 'var(--text)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                     {e.name}
                   </span>
                 </div>
