@@ -2,6 +2,7 @@ system,body,name,sort_order,location_type,is_active,is_trade_terminal,is_freight
 Nyx,Deep Space,Pyro Gateway (Nyx),1,jump-point,true,true,false,verified,At Pyro-Nyx jump inside Nyx; full trade services
 Nyx,Delamar,Levski (Delamar),1,city,true,true,true,verified,Main Nyx hub; returned Alpha 4.4; People's Alliance free-town in Glaciem Ring
 Nyx,Delamar,Delamar,2,asteroid,true,false,false,verified,Large asteroid in Glaciem Ring; hosts Levski
+Nyx,Glaciem Ring,Spider,3,station,true,true,false,community-sourced,Major outlaw station built into asteroid in Nyx Glaciem Ring; criminal hub
 Nyx,Keeger Belt,People's Service Station Alpha,1,rest-stop,true,true,false,verified,People's Alliance; added Alpha 4.7
 Nyx,Keeger Belt,People's Service Station Delta,2,rest-stop,true,true,false,verified,People's Alliance; added Alpha 4.7
 Nyx,Keeger Belt,People's Service Station Lambda,3,rest-stop,true,true,false,verified,People's Alliance; added Alpha 4.7
@@ -11,6 +12,10 @@ Pyro,Adir,Prophet's Peak,2,outpost,true,false,false,verified,On southern cliffsi
 Pyro,Deep Space,Stanton Gateway (Pyro-side),1,jump-point,true,true,false,verified,
 Pyro,Deep Space,Nyx Gateway (Pyro-side),2,jump-point,true,true,false,verified,
 Pyro,Deep Space,RAB-Alpha,3,outpost,true,true,false,verified,Former Pyrotechnic Amalgamated base; outlaw
+Pyro,Deep Space,PYAM-EXHANG-0-1,4,station,true,true,false,community-sourced,Pyrotechnic Amalgamated system-level exchange/trade station
+Pyro,Deep Space,Fortune's Cross,5,station,true,true,false,community-sourced,Outlaw trade station in Pyro deep space
+Pyro,Deep Space,Archon Base,6,outpost,true,false,false,community-sourced,
+Pyro,Deep Space,Pyen'pui.a,7,station,true,false,false,community-sourced,Alien-named station; system/body unconfirmed — may belong in Nyx or Xi'an space
 Pyro,Fairo,Fairo,1,moon,true,false,false,verified,Pyro V moon; equatorial ocean
 Pyro,Fairo,FEO Canyon Depot,2,outpost,true,true,false,verified,Confirmed commodity trade
 Pyro,Fuego,Fuego,1,moon,true,false,false,verified,Pyro V moon; iron-sulfide surface
@@ -46,6 +51,8 @@ Pyro,Pyro III,Windfall,12,outpost,true,true,false,verified,Headhunters; confirme
 Pyro,Pyro III,The Yard,13,outpost,true,true,false,verified,Headhunters; trespassing hostile
 Pyro,Pyro III,Prospect Depot,14,outpost,true,true,false,verified,Independent depot; commodity terminal confirmed
 Pyro,Pyro III,Shadowfall,15,outpost,true,false,false,verified,XenoThreat; no confirmed commodity terminal
+Pyro,Pyro III,PYAM-SUPVISR-3-4,16,station,true,false,false,community-sourced,Pyrotechnic Amalgamated supervisor station at Pyro III L4
+Pyro,Pyro III,PYAM-SUPVISR-3-5,17,station,true,false,false,community-sourced,Pyrotechnic Amalgamated supervisor station at Pyro III L5
 Pyro,Pyro IV,Pyro IV,1,planet,true,false,false,verified,Rocky toxic protoplanet; no major hub
 Pyro,Pyro IV,Chawla's Beach,2,outpost,true,false,false,verified,
 Pyro,Pyro IV,Sacren's Plot,3,outpost,true,false,false,verified,Canyon outpost ~15 km east of Chawla's Beach
@@ -87,6 +94,9 @@ Stanton,ArcCorp,ARC-L2 Lively Pathway Station,4,rest-stop,true,true,true,verifie
 Stanton,ArcCorp,ARC-L3 Modern Express Station,5,rest-stop,true,true,true,verified,
 Stanton,ArcCorp,ARC-L4 Faint Glen Station,6,rest-stop,true,true,true,verified,
 Stanton,ArcCorp,ARC-L5 Yellow Core Station,7,rest-stop,true,true,true,verified,
+Stanton,ArcCorp,Comm Array ST3-18,10,comm-array,true,false,false,verified,
+Stanton,ArcCorp,Comm Array ST3-35,11,comm-array,true,false,false,verified,
+Stanton,ArcCorp,Comm Array ST3-90,12,comm-array,true,false,false,verified,
 Stanton,Arial,Arial,1,moon,true,false,false,verified,
 Stanton,Arial,HDMS-Bezdek,2,mining-outpost,true,true,true,verified,
 Stanton,Arial,HDMS-Lathan,3,mining-outpost,true,true,true,verified,
@@ -109,6 +119,10 @@ Stanton,Crusader,Seraphim Station,2,station,true,true,true,verified,Replaced Por
 Stanton,Crusader,CRU-L1 Ambitious Dream Station,3,rest-stop,true,true,true,verified,Has refinery
 Stanton,Crusader,CRU-L4 Shallow Fields Station,4,rest-stop,true,true,true,verified,
 Stanton,Crusader,CRU-L5 Beautiful Glen Station,5,rest-stop,true,true,true,verified,
+Stanton,Crusader,Comm Array ST2-28,10,comm-array,true,false,false,verified,
+Stanton,Crusader,Comm Array ST2-47,11,comm-array,true,false,false,verified,
+Stanton,Crusader,Comm Array ST2-55,12,comm-array,true,false,false,verified,
+Stanton,Crusader,Comm Array ST2-76,13,comm-array,true,false,false,verified,
 Stanton,Crusader,Port Olisar,99,station,false,false,false,verified,Removed in Alpha 3.20.0; replaced by Seraphim Station
 Stanton,Daymar,Daymar,1,moon,true,false,false,verified,
 Stanton,Daymar,Shubin Mining Facility SCD-1,2,mining-outpost,true,true,true,verified,Major commodity hub on Daymar
@@ -123,6 +137,34 @@ Stanton,Daymar,Lamina OLP,10,outpost,false,false,false,verified,Hathor Group PAF
 Stanton,Deep Space,Magnus Gateway,1,jump-point,true,false,false,verified,
 Stanton,Deep Space,Pyro Gateway (Stanton),2,jump-point,true,false,false,verified,
 Stanton,Deep Space,Covalex Hub Gundo,3,facility,true,false,false,community-sourced,
+Stanton,Deep Space,Terra Gateway (Stanton),4,jump-point,true,false,false,verified,Jump point to Terra system; exists canonically in Stanton deep space
+Stanton,Deep Space,The Ark,5,station,true,false,false,verified,Multi-species diplomatic station; home of the Universal Language Archive
+Stanton,Deep Space,INS Aniene,10,station,true,false,false,community-sourced,UEE Navy vessel; Stanton patrol
+Stanton,Deep Space,INS Dunleavy,11,station,true,false,false,community-sourced,UEE Navy vessel; Stanton patrol
+Stanton,Deep Space,INS Flavus,12,station,true,false,false,community-sourced,UEE Navy vessel; Stanton patrol
+Stanton,Deep Space,INS Hephaestus,13,station,true,false,false,community-sourced,UEE Navy vessel; Stanton patrol
+Stanton,Deep Space,INS Malcolm,14,station,true,false,false,community-sourced,UEE Navy vessel; Stanton patrol
+Stanton,Deep Space,INS Reilly,15,station,true,false,false,community-sourced,UEE Navy vessel; Stanton patrol
+Stanton,Deep Space,IAS Hammett,16,station,true,false,false,community-sourced,
+Stanton,Deep Space,IMS Bolliver,17,station,true,false,false,community-sourced,
+Stanton,Deep Space,OB Heller,20,station,true,false,false,community-sourced,
+Stanton,Deep Space,OB Kobold,21,station,true,false,false,community-sourced,
+Stanton,Deep Space,OB Station Gryphon,22,station,true,false,false,community-sourced,
+Stanton,Deep Space,OB Station Pegasus,23,station,true,false,false,community-sourced,
+Stanton,Deep Space,OP Station Demien,24,station,true,false,false,community-sourced,
+Stanton,Deep Space,Archangel Station,30,station,true,false,false,community-sourced,
+Stanton,Deep Space,Buloi Sataball Arena,31,station,true,false,false,community-sourced,Sataball sports arena; spectator/entertainment station
+Stanton,Deep Space,Echo Eleven,32,station,true,false,false,community-sourced,
+Stanton,Deep Space,Encole Station,33,station,true,false,false,community-sourced,
+Stanton,Deep Space,JusticeStar Satellite,34,station,true,false,false,community-sourced,UEE correctional/judicial satellite
+Stanton,Deep Space,Kedsu Reef,35,station,true,false,false,community-sourced,
+Stanton,Deep Space,TDD Kesner,36,station,true,true,false,community-sourced,Trade & Development Division station
+Stanton,Deep Space,Xenia,37,station,true,false,false,community-sourced,
+Stanton,Deep Space,Yogi Station,38,station,true,false,false,community-sourced,
+Stanton,Deep Space,Bacchus Flotilla,40,station,true,false,false,community-sourced,Mobile flotilla station
+Stanton,Deep Space,Lyris Flotilla,41,station,true,false,false,community-sourced,Mobile flotilla station
+Stanton,Deep Space,Trise Flotilla,42,station,true,false,false,community-sourced,Mobile flotilla station
+Stanton,Deep Space,Yulin Flotilla,43,station,true,false,false,community-sourced,Mobile flotilla station
 Stanton,Euterpe,Euterpe,1,moon,true,false,false,verified,Smallest MicroTech moon; frozen oceans
 Stanton,Euterpe,Bud's Growery,2,settlement,true,true,false,verified,
 Stanton,Euterpe,Devlin Scrap & Salvage,3,salvage,true,true,false,verified,
@@ -150,6 +192,11 @@ Stanton,Hurston,Finn's Folly,24,settlement,true,false,false,verified,Built aroun
 Stanton,Hurston,Weeping Cove,25,settlement,true,false,false,verified,
 Stanton,Hurston,Cutter's Rig,26,settlement,true,false,false,verified,Offshore platform on a lake
 Stanton,Hurston,Rappel,27,settlement,true,false,false,verified,
+Stanton,Hurston,Comm Array ST1-02,30,comm-array,true,false,false,verified,UEE comm relay; Hurston orbital region
+Stanton,Hurston,Comm Array ST1-13,31,comm-array,true,false,false,verified,
+Stanton,Hurston,Comm Array ST1-48,32,comm-array,true,false,false,verified,
+Stanton,Hurston,Comm Array ST1-61,33,comm-array,true,false,false,verified,
+Stanton,Hurston,Comm Array ST1-92,34,comm-array,true,false,false,verified,
 Stanton,Ita,Ita,1,moon,true,false,false,verified,
 Stanton,Ita,HDMS-Ryder,2,mining-outpost,true,true,true,verified,
 Stanton,Ita,HDMS-Woodruff,3,mining-outpost,true,true,true,verified,
@@ -180,6 +227,10 @@ Stanton,MicroTech,MicroTech Logistics Depot S4LD13,16,facility,true,true,false,v
 Stanton,MicroTech,Outpost 54,17,outpost,true,true,false,verified,
 Stanton,MicroTech,The Necropolis,18,outpost,true,false,false,verified,MicroTech surface
 Stanton,MicroTech,Dunboro,19,settlement,true,false,false,verified,Built around derelict Reclaimer wreck
+Stanton,MicroTech,Comm Array ST4-22,25,comm-array,true,false,false,verified,
+Stanton,MicroTech,Comm Array ST4-31,26,comm-array,true,false,false,verified,
+Stanton,MicroTech,Comm Array ST4-59,27,comm-array,true,false,false,verified,
+Stanton,MicroTech,Comm Array ST4-64,28,comm-array,true,false,false,verified,
 Stanton,Wala,Wala,1,moon,true,false,false,verified,
 Stanton,Wala,ICC ScanHub Stanton,2,outpost,false,false,false,verified,Removed in Alpha 3.0 (Dec 2017)
 Stanton,Wala,ArcCorp Mining Area 045,3,mining-outpost,true,true,true,verified,
@@ -194,7 +245,9 @@ Stanton,Yela,Grim HEX,2,station,true,true,false,verified,Outlaw station inside a
 Stanton,Yela,ArcCorp Mining Area 157,3,mining-outpost,true,true,true,verified,"On Yela; has commodity trade, habitation, storage"
 Stanton,Yela,Wikelo Emporium Selo Station,4,station,true,true,false,verified,Banu merchant asteroid station near Yela
 Stanton,Yela,Benson Mining Outpost,5,mining-outpost,true,false,false,verified,
+Stanton,Yela,Wikelo Emporium Dasi Station,5,station,true,true,false,community-sourced,Banu asteroid trade station; exact position in Yela belt TBC
 Stanton,Yela,Deakins Research Outpost,6,research,true,false,false,verified,
+Stanton,Yela,Wikelo Emporium Kinga Station,6,station,true,true,false,community-sourced,Banu asteroid trade station; exact position in Yela belt TBC
 Stanton,Yela,Security Post Opal,7,security-post,true,false,false,verified,
 Stanton,Yela,Security Post Wan,8,security-post,true,false,false,verified,
 Stanton,Yela,Benny Henge,9,landmark,true,false,false,verified,Easter egg; Big Benny machines in Stonehenge formation
