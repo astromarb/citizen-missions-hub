@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useIsMobile } from '../../hooks/useIsMobile.js';
 
 function formatDuration(ms) {
   if (!ms || ms <= 0) return '—';
@@ -178,6 +179,7 @@ function SessionDebrief({ session, myProfileId, onOpenSession }) {
 }
 
 export default function MissionsView({ sessions, myProfileId, profile, avatarUrl, onOpenSession }) {
+  const isMobile = useIsMobile();
   const mySessions = Object.values(sessions)
     .filter(s => s.members?.some(m => m.id === myProfileId))
     .sort((a, b) => new Date(b.date) - new Date(a.date));
@@ -206,55 +208,78 @@ export default function MissionsView({ sessions, myProfileId, profile, avatarUrl
   const color = profile?.color || '#8b949e';
   const homeRegion = profile?.home_region || null;
 
-  return (
-    <div style={{ padding: 20, display: 'flex', gap: 24, alignItems: 'flex-start' }}>
+  const statsRows = [
+    ['Sessions', mySessions.length.toLocaleString()],
+    ['Contracts', myContracts.toLocaleString()],
+    ['SCU Hauled', lifetimeSCU.toLocaleString()],
+    ['aUEC Earned', lifetimePayout > 0 ? lifetimePayout.toLocaleString() : '—'],
+  ];
 
-      {/* ── Profile sidebar ── */}
-      <div style={{ width: 220, flexShrink: 0, position: 'sticky', top: 20 }}>
-        {/* Avatar card */}
-        <div style={{ border: '2px solid var(--border)', background: 'var(--bg-1)', marginBottom: 16 }}>
-          <div style={{ background: '#1a1a1a', padding: '20px 16px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 12 }}>
-            {avatarUrl ? (
-              <img src={avatarUrl} alt={callsign}
-                style={{ width: 72, height: 72, borderRadius: '50%', border: `3px solid ${color}`, objectFit: 'cover' }} />
-            ) : (
-              <div style={{
-                width: 72, height: 72, borderRadius: '50%',
-                background: color, border: `3px solid ${color}`,
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-              }}>
-                <span style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 28, color: '#fff' }}>
-                  {callsign[0]?.toUpperCase()}
-                </span>
-              </div>
-            )}
-            <div style={{ textAlign: 'center' }}>
-              <div style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 16, color: '#fff', textTransform: 'uppercase', letterSpacing: '0.04em', lineHeight: 1 }}>
-                {callsign}
-              </div>
-              {homeRegion && (
-                <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: 'rgba(255,255,255,0.4)', letterSpacing: '0.1em', textTransform: 'uppercase', marginTop: 4 }}>
-                  {homeRegion}
+  return (
+    <div style={{ padding: isMobile ? 12 : 20, display: 'flex', flexDirection: isMobile ? 'column' : 'row', gap: isMobile ? 16 : 24, alignItems: 'flex-start' }}>
+
+      {/* ── Profile card ── */}
+      <div style={{ width: isMobile ? '100%' : 220, flexShrink: 0, position: isMobile ? 'static' : 'sticky', top: 20 }}>
+        <div style={{ border: '2px solid var(--border)', background: 'var(--bg-1)', marginBottom: isMobile ? 0 : 16 }}>
+
+          {isMobile ? (
+            /* Mobile: horizontal header — avatar left, name+region right */
+            <div style={{ background: '#1a1a1a', padding: '14px 16px', display: 'flex', alignItems: 'center', gap: 14 }}>
+              {avatarUrl ? (
+                <img src={avatarUrl} alt={callsign}
+                  style={{ width: 52, height: 52, borderRadius: '50%', border: `3px solid ${color}`, objectFit: 'cover', flexShrink: 0 }} />
+              ) : (
+                <div style={{ width: 52, height: 52, borderRadius: '50%', background: color, border: `3px solid ${color}`, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                  <span style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 20, color: '#fff' }}>{callsign[0]?.toUpperCase()}</span>
                 </div>
               )}
-            </div>
-            <div style={{ width: '100%', height: 3, background: color }} />
-          </div>
-
-          {/* Lifetime stats */}
-          <div style={{ padding: '14px 16px' }}>
-            <div style={{ fontFamily: 'var(--font-mono)', fontSize: 8, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'var(--muted)', marginBottom: 10 }}>Career Stats</div>
-            {[
-              ['Sessions', mySessions.length.toLocaleString()],
-              ['Contracts', myContracts.toLocaleString()],
-              ['SCU Hauled', lifetimeSCU.toLocaleString()],
-              ['aUEC Earned', lifetimePayout > 0 ? lifetimePayout.toLocaleString() : '—'],
-            ].map(([label, val]) => (
-              <div key={label} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', padding: '7px 0', borderBottom: '1px solid var(--bg-2)' }}>
-                <span style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--muted)', letterSpacing: '0.04em' }}>{label}</span>
-                <span style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 13, color: 'var(--text)', letterSpacing: '-0.01em' }}>{val}</span>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 15, color: '#fff', textTransform: 'uppercase', letterSpacing: '0.04em', lineHeight: 1.1 }}>{callsign}</div>
+                {homeRegion && <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: 'rgba(255,255,255,0.4)', letterSpacing: '0.1em', textTransform: 'uppercase', marginTop: 4 }}>{homeRegion}</div>}
               </div>
-            ))}
+              <div style={{ width: 4, alignSelf: 'stretch', background: color, flexShrink: 0 }} />
+            </div>
+          ) : (
+            /* Desktop: vertical header */
+            <div style={{ background: '#1a1a1a', padding: '20px 16px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 12 }}>
+              {avatarUrl ? (
+                <img src={avatarUrl} alt={callsign}
+                  style={{ width: 72, height: 72, borderRadius: '50%', border: `3px solid ${color}`, objectFit: 'cover' }} />
+              ) : (
+                <div style={{ width: 72, height: 72, borderRadius: '50%', background: color, border: `3px solid ${color}`, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  <span style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 28, color: '#fff' }}>{callsign[0]?.toUpperCase()}</span>
+                </div>
+              )}
+              <div style={{ textAlign: 'center' }}>
+                <div style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 16, color: '#fff', textTransform: 'uppercase', letterSpacing: '0.04em', lineHeight: 1 }}>{callsign}</div>
+                {homeRegion && <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: 'rgba(255,255,255,0.4)', letterSpacing: '0.1em', textTransform: 'uppercase', marginTop: 4 }}>{homeRegion}</div>}
+              </div>
+              <div style={{ width: '100%', height: 3, background: color }} />
+            </div>
+          )}
+
+          {/* Career stats */}
+          <div style={{ padding: isMobile ? '10px 14px' : '14px 16px' }}>
+            <div style={{ fontFamily: 'var(--font-mono)', fontSize: 8, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'var(--muted)', marginBottom: 8 }}>Career Stats</div>
+            {isMobile ? (
+              /* Mobile: 2×2 grid */
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px 16px' }}>
+                {statsRows.map(([label, val]) => (
+                  <div key={label}>
+                    <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: 'var(--muted)', letterSpacing: '0.04em' }}>{label}</div>
+                    <div style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 14, color: 'var(--text)', letterSpacing: '-0.01em' }}>{val}</div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              /* Desktop: vertical list */
+              statsRows.map(([label, val]) => (
+                <div key={label} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', padding: '7px 0', borderBottom: '1px solid var(--bg-2)' }}>
+                  <span style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--muted)', letterSpacing: '0.04em' }}>{label}</span>
+                  <span style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 13, color: 'var(--text)', letterSpacing: '-0.01em' }}>{val}</span>
+                </div>
+              ))
+            )}
           </div>
         </div>
       </div>

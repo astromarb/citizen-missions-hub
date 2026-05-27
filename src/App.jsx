@@ -4,6 +4,7 @@ import { useSessions } from '@/hooks/useSessions.js';
 import { useRefData } from '@/hooks/useRefData.js';
 import { useProfile } from '@/hooks/useProfile.js';
 import { useFriends } from '@/hooks/useFriends.js';
+import { useIsMobile } from '@/hooks/useIsMobile.js';
 import { SFX } from '@/hooks/useSound.js';
 import CalendarView from '@/components/Calendar/CalendarView.jsx';
 import SessionView from '@/components/Session/SessionView.jsx';
@@ -123,6 +124,7 @@ function NewSessionModal({ dateKey, onSave, onClose, profiles, friends }) {
 
 function AppInner() {
   const showToast = useToast();
+  const isMobile = useIsMobile();
 
   // ── Auth ──
   const [authSession, setAuthSession] = useState(null);
@@ -442,25 +444,31 @@ function AppInner() {
       </div>
 
       {/* ── Tab nav ── */}
-      <div style={{
+      <div className="no-scrollbar" style={{
         background: 'var(--bg-1)',
         borderBottom: '2px solid #000',
         display: 'flex',
-        padding: '0 24px',
+        padding: isMobile ? '0 8px' : '0 24px',
         flexShrink: 0,
+        overflowX: 'auto',
+        WebkitOverflowScrolling: 'touch',
       }}>
         {TABS.map(([tab, label]) => (
           <button key={tab}
             onClick={() => switchTab(tab)}
             style={{
-              padding: '10px 24px', border: 'none', cursor: 'pointer',
-              fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 12,
-              textTransform: 'uppercase', letterSpacing: '0.08em',
+              padding: isMobile ? '10px 14px' : '10px 24px',
+              border: 'none', cursor: 'pointer',
+              fontFamily: 'var(--font-display)', fontWeight: 700,
+              fontSize: isMobile ? 11 : 12,
+              textTransform: 'uppercase', letterSpacing: '0.06em',
               background: 'transparent',
               color: activeTab === tab ? '#c41e3a' : 'var(--muted)',
               borderBottom: activeTab === tab ? '3px solid #c41e3a' : '3px solid transparent',
               marginBottom: -2,
               transition: 'color 0.15s',
+              whiteSpace: 'nowrap',
+              flexShrink: 0,
             }}
             onMouseEnter={e => { if (activeTab !== tab) e.currentTarget.style.color = 'var(--text)'; }}
             onMouseLeave={e => { if (activeTab !== tab) e.currentTarget.style.color = 'var(--muted)'; }}
@@ -470,18 +478,22 @@ function AppInner() {
 
       {/* ── Content ── */}
       <div style={{ flex: 1, overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
-        <div style={{ maxWidth: 900, width: '100%', margin: '0 auto', flex: 1, display: 'flex', flexDirection: 'column' }}>
+        <div style={{ maxWidth: isMobile ? '100%' : 900, width: '100%', margin: '0 auto', flex: 1, display: 'flex', flexDirection: 'column' }}>
 
           {/* Calendar tab */}
           {activeTab === 'calendar' && view === 'calendar' && (
-            <div style={{ display: 'flex', flex: 1, minHeight: 0 }}>
+            <div style={{ display: 'flex', flexDirection: isMobile ? 'column' : 'row', flex: 1, minHeight: 0 }}>
 
-              {/* ── Left sidebar ── */}
+              {/* ── Sidebar / top action bar ── */}
               <div style={{
-                width: 168, flexShrink: 0,
-                padding: '20px 14px 20px 20px',
-                display: 'flex', flexDirection: 'column', gap: 8,
-                borderRight: '2px solid var(--border)',
+                width: isMobile ? '100%' : 168,
+                flexShrink: 0,
+                padding: isMobile ? '12px 16px' : '20px 14px 20px 20px',
+                display: 'flex',
+                flexDirection: isMobile ? 'row' : 'column',
+                gap: 8,
+                borderRight: isMobile ? 'none' : '2px solid var(--border)',
+                borderBottom: isMobile ? '2px solid var(--border)' : 'none',
               }}>
                 <button
                   onClick={() => {
@@ -490,10 +502,12 @@ function AppInner() {
                     setModal({ type: 'new-session', dateKey: TODAY_KEY });
                   }}
                   style={{
-                    width: '100%', padding: '10px 12px', cursor: 'pointer',
+                    flex: isMobile ? 1 : undefined,
+                    width: isMobile ? undefined : '100%',
+                    padding: '10px 12px', cursor: 'pointer',
                     border: '2px solid #c41e3a', background: '#c41e3a', color: '#fff',
                     fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 11,
-                    textTransform: 'uppercase', letterSpacing: '0.06em', textAlign: 'left',
+                    textTransform: 'uppercase', letterSpacing: '0.06em', textAlign: 'center',
                   }}
                   onMouseEnter={e => { e.currentTarget.style.background = '#a01830'; e.currentTarget.style.borderColor = '#a01830'; }}
                   onMouseLeave={e => { e.currentTarget.style.background = '#c41e3a'; e.currentTarget.style.borderColor = '#c41e3a'; }}
@@ -502,12 +516,14 @@ function AppInner() {
                 <button
                   onClick={() => { SFX.boop(); setManageMode(m => !m); }}
                   style={{
-                    width: '100%', padding: '10px 12px', cursor: 'pointer',
+                    flex: isMobile ? 1 : undefined,
+                    width: isMobile ? undefined : '100%',
+                    padding: '10px 12px', cursor: 'pointer',
                     border: `2px solid ${manageMode ? 'var(--text)' : 'var(--border)'}`,
                     background: manageMode ? 'var(--text)' : 'var(--bg-1)',
                     color: manageMode ? 'var(--bg-0)' : 'var(--muted)',
                     fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 11,
-                    textTransform: 'uppercase', letterSpacing: '0.06em', textAlign: 'left',
+                    textTransform: 'uppercase', letterSpacing: '0.06em', textAlign: 'center',
                   }}
                   onMouseEnter={e => { if (!manageMode) { e.currentTarget.style.color = 'var(--text)'; e.currentTarget.style.borderColor = 'var(--text)'; } }}
                   onMouseLeave={e => { if (!manageMode) { e.currentTarget.style.color = 'var(--muted)'; e.currentTarget.style.borderColor = 'var(--border)'; } }}

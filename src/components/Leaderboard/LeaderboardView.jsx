@@ -1,4 +1,7 @@
+import { useIsMobile } from '../../hooks/useIsMobile.js';
+
 export default function LeaderboardView({ sessions, myProfileId }) {
+  const isMobile = useIsMobile();
   const allSessions = Object.values(sessions);
 
   // Aggregate per-player stats across all sessions
@@ -103,7 +106,7 @@ export default function LeaderboardView({ sessions, myProfileId }) {
         </div>
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+      <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: 16 }}>
         <Board title="SCU Hauled"       rows={bySCU}       valueKey="scu"      format={fmtSCU}  />
         <Board title="aUEC Earned"      rows={byPayout}    valueKey="payout"   format={fmtAUEC} />
         <Board title="Sessions Flown"   rows={bySessions}  valueKey="sessions" format={fmt}     />

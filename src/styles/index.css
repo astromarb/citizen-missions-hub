@@ -38,6 +38,13 @@ button { font-family: inherit; }
 ::-webkit-scrollbar-thumb { background: var(--bg-3); }
 ::-webkit-scrollbar-thumb:hover { background: #999; }
 
+/* Hide scrollbar on elements that use overflow-x for layout, not decoration */
+.no-scrollbar::-webkit-scrollbar { display: none; }
+.no-scrollbar { scrollbar-width: none; -ms-overflow-style: none; }
+
+/* Prevent body-level horizontal overflow on mobile */
+body { overflow-x: hidden; }
+
 @keyframes slideInToast {
   from { transform: translateX(420px); opacity: 0; }
   to   { transform: translateX(0);     opacity: 1; }
