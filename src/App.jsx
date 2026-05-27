@@ -15,6 +15,7 @@ import FriendsView from '@/components/Friends/FriendsView.jsx';
 import SettingsView from '@/components/Settings/SettingsView.jsx';
 import OnboardingFlow from '@/components/Onboarding/OnboardingFlow.jsx';
 import MissionsView from '@/components/Missions/MissionsView.jsx';
+import LeaderboardView from '@/components/Leaderboard/LeaderboardView.jsx';
 import { ToastProvider, useToast } from '@/components/shared/Toast.jsx';
 import { DEFAULT_PLAYERS, PLAYER_COLORS } from '@/data/players.js';
 import { fmtKey } from '@/utils/dateUtils.js';
@@ -128,13 +129,6 @@ function AppInner() {
 
   // ── Profiles ──
   const [profiles, setProfiles] = useState([]);
-
-  // ── Dark mode ──
-  const [darkMode, setDarkMode] = useState(() => localStorage.getItem('theme') === 'dark');
-  useEffect(() => {
-    document.documentElement.setAttribute('data-theme', darkMode ? 'dark' : 'light');
-    localStorage.setItem('theme', darkMode ? 'dark' : 'light');
-  }, [darkMode]);
 
   // ── Nav ──
   const [activeTab, setActiveTab] = useState('missions');
@@ -320,11 +314,12 @@ function AppInner() {
   };
 
   const TABS = [
-    ['missions', 'Missions'],
-    ['calendar', 'Calendar'],
-    ['stats',    'Stats'],
-    ['friends',  'Friends'],
-    ['settings', 'Settings'],
+    ['missions',     'Missions'],
+    ['calendar',     'Calendar'],
+    ['stats',        'Stats'],
+    ['leaderboard',  'Leaderboard'],
+    ['friends',      'Friends'],
+    ['settings',     'Settings'],
   ];
 
   return (
@@ -375,20 +370,6 @@ function AppInner() {
             </div>
           ))}
         </div>
-
-        {/* Dark/Light toggle */}
-        <button
-          onClick={() => setDarkMode(d => !d)}
-          style={{
-            padding: '5px 12px', cursor: 'pointer',
-            border: '1px solid rgba(255,255,255,0.25)',
-            background: 'transparent', color: 'rgba(255,255,255,0.5)',
-            fontFamily: 'var(--font-mono)', fontWeight: 700, fontSize: 11,
-            letterSpacing: '0.06em', textTransform: 'uppercase',
-          }}
-          onMouseEnter={e => { e.currentTarget.style.color = '#c41e3a'; e.currentTarget.style.borderColor = '#c41e3a'; }}
-          onMouseLeave={e => { e.currentTarget.style.color = 'rgba(255,255,255,0.5)'; e.currentTarget.style.borderColor = 'rgba(255,255,255,0.25)'; }}
-        >{darkMode ? 'Light' : 'Dark'}</button>
 
         {/* User info */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
@@ -522,8 +503,9 @@ function AppInner() {
             />
           )}
 
-          {activeTab === 'missions'  && <MissionsView sessions={sessions} myProfileId={myProfileId} profile={profile} avatarUrl={avatarUrl} />}
-          {activeTab === 'stats'     && <StatsView sessions={sessions} />}
+          {activeTab === 'missions'    && <MissionsView sessions={sessions} myProfileId={myProfileId} profile={profile} avatarUrl={avatarUrl} />}
+          {activeTab === 'stats'       && <StatsView sessions={sessions} />}
+          {activeTab === 'leaderboard' && <LeaderboardView sessions={sessions} myProfileId={myProfileId} />}
           {activeTab === 'friends'  && (
             <FriendsView
               friends={friends}
