@@ -16,6 +16,7 @@ import SettingsView from '@/components/Settings/SettingsView.jsx';
 import OnboardingFlow from '@/components/Onboarding/OnboardingFlow.jsx';
 import MissionsView from '@/components/Missions/MissionsView.jsx';
 import LeaderboardView from '@/components/Leaderboard/LeaderboardView.jsx';
+import FriendProfileView from '@/components/Friends/FriendProfileView.jsx';
 import { ToastProvider, useToast } from '@/components/shared/Toast.jsx';
 import { PLAYER_COLORS } from '@/data/players.js';
 import { fmtKey } from '@/utils/dateUtils.js';
@@ -138,6 +139,7 @@ function AppInner() {
   const [viewDate, setViewDate] = useState(new Date(TODAY.getFullYear(), TODAY.getMonth(), 1));
   const [selectedSessionId, setSelectedSessionId] = useState(null);
   const [modal, setModal] = useState(null);
+  const [viewingFriend, setViewingFriend] = useState(null);
   const restoredRef = useRef(false);
 
   const userId = authSession?.user?.id || null;
@@ -321,10 +323,7 @@ function AppInner() {
     sessionsByDate[s.date].push(s);
   });
 
-  const totalSessions  = Object.keys(sessions).length;
-  const totalContracts = Object.values(sessions).reduce((t, s) => t + s.contracts.length, 0);
-  const totalSCU       = Object.values(sessions).reduce((t, s) => t + s.contracts.reduce((ct, c) => ct + c.cargo.reduce((cg, x) => cg + Number(x.scu || 0), 0), 0), 0);
-  const monthName      = viewDate.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+  const monthName = viewDate.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
 
   if (authLoading) {
     return (
@@ -364,6 +363,7 @@ function AppInner() {
     SFX.boop();
     setActiveTab(tab);
     if (tab !== 'calendar') setView('calendar');
+    if (tab !== 'friends') setViewingFriend(null);
   };
 
   const TABS = [
@@ -401,29 +401,6 @@ function AppInner() {
           }}>MISSIONS HUB</div>
         </div>
 
-        {/* Stats strip */}
-        <div style={{ display: 'flex', alignItems: 'stretch' }}>
-          {[['Sessions', totalSessions], ['Contracts', totalContracts], ['Total SCU', totalSCU.toLocaleString()]].map(([l, v], i) => (
-            <div key={l} style={{
-              padding: '10px 22px', textAlign: 'center', display: 'flex',
-              flexDirection: 'column', justifyContent: 'center',
-              borderLeft: '1px solid rgba(255,255,255,0.1)',
-              borderRight: i === 2 ? '1px solid rgba(255,255,255,0.1)' : 'none',
-            }}>
-              <div style={{
-                fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 20,
-                color: i === 2 ? '#c41e3a' : '#fff',
-                letterSpacing: '-0.02em', lineHeight: 1,
-              }}>{v}</div>
-              <div style={{
-                fontFamily: 'var(--font-mono)', fontSize: 8,
-                color: 'rgba(255,255,255,0.35)',
-                letterSpacing: '0.1em', textTransform: 'uppercase', marginTop: 3,
-              }}>{l}</div>
-            </div>
-          ))}
-        </div>
-
         {/* User info */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
           {avatarUrl && (
@@ -443,8 +420,7 @@ function AppInner() {
           )}
           <span style={{
             fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 13,
-            color: '#fff', maxWidth: 130,
-            overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+            color: '#fff',
             textTransform: 'uppercase', letterSpacing: '0.04em',
           }}>
             {myCallsign || userName}
@@ -570,7 +546,7 @@ function AppInner() {
           {activeTab === 'missions'    && <MissionsView sessions={sessions} myProfileId={myProfileId} profile={profile} avatarUrl={avatarUrl} onOpenSession={handleOpenSession} />}
           {activeTab === 'stats'       && <StatsView sessions={sessions} />}
           {activeTab === 'leaderboard' && <LeaderboardView sessions={sessions} myProfileId={myProfileId} />}
-          {activeTab === 'friends'  && (
+          {activeTab === 'friends' && !viewingFriend && (
             <FriendsView
               friends={friends}
               pending={pending}
@@ -579,6 +555,16 @@ function AppInner() {
               sendRequest={handleFriendRequest}
               respond={handleFriendRespond}
               remove={handleRemoveFriend}
+              onViewProfile={f => { SFX.open(); setViewingFriend(f); }}
+            />
+          )}
+          {activeTab === 'friends' && viewingFriend && (
+            <FriendProfileView
+              friend={viewingFriend}
+              sessions={sessions}
+              myProfileId={myProfileId}
+              onBack={() => { SFX.back(); setViewingFriend(null); }}
+              onOpenSession={handleOpenSession}
             />
           )}
           {activeTab === 'settings' && profile && (

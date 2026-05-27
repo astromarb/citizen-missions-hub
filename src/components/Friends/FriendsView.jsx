@@ -20,7 +20,7 @@ const sectionLabel = {
   marginBottom: 10, marginTop: 20,
 };
 
-export default function FriendsView({ friends, pending, sent, searchUsers, sendRequest, respond, remove }) {
+export default function FriendsView({ friends, pending, sent, searchUsers, sendRequest, respond, remove, onViewProfile }) {
   const [query, setQuery] = useState('');
   const [results, setResults] = useState([]);
   const [searching, setSearching] = useState(false);
@@ -153,8 +153,9 @@ export default function FriendsView({ friends, pending, sent, searchUsers, sendR
           <div style={{ border: '2px solid #000', background: '#fff', padding: '0 16px' }}>
             {friends.map(f => (
               <ProfileRow key={f.friendshipId} profile={f} actions={[
+                onViewProfile && actionBtn('View Profile', () => onViewProfile(f), 'default'),
                 actionBtn('Remove', () => remove(f.friendshipId), 'danger'),
-              ]} />
+              ].filter(Boolean)} />
             ))}
           </div>
         )}

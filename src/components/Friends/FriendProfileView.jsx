@@ -1,5 +1,3 @@
-import { useState } from 'react';
-
 function formatDuration(ms) {
   if (!ms || ms <= 0) return '—';
   const s = Math.floor(ms / 1000);
@@ -177,42 +175,49 @@ function SessionDebrief({ session, myProfileId, onOpenSession }) {
   );
 }
 
-export default function MissionsView({ sessions, myProfileId, profile, avatarUrl, onOpenSession }) {
-  const mySessions = Object.values(sessions)
-    .filter(s => s.members?.some(m => m.id === myProfileId))
+export default function FriendProfileView({ friend, sessions, myProfileId, onBack, onOpenSession }) {
+  const friendSessions = Object.values(sessions)
+    .filter(s => s.members?.some(m => m.id === friend.id))
     .sort((a, b) => new Date(b.date) - new Date(a.date));
 
-  // Lifetime stats for the profile card
-  const lifetimeSCU = mySessions.reduce((t, s) =>
+  const contractsCount = friendSessions.reduce((t, s) => t + s.contracts.length, 0);
+
+  const lifetimeSCU = friendSessions.reduce((t, s) =>
     t + s.contracts.reduce((ct, c) => ct + c.cargo.reduce((cg, ci) => cg + Number(ci.scu || 0), 0), 0), 0);
-  const lifetimePayout = mySessions.reduce((s, sess) => {
-    const total = sess.contracts.reduce((t, c) => t + (c.payout || 0), 0);
-    const mc = sess.members?.length || 1;
-    return s + Math.floor(total / mc);
+
+  const lifetimePayout = friendSessions.reduce((total, s) => {
+    const sessionTotal = s.contracts.reduce((t, c) => t + (c.payout || 0), 0);
+    const mc = s.members?.length || 1;
+    return total + Math.floor(sessionTotal / mc);
   }, 0);
-  const myContracts = mySessions.reduce((t, s) => t + s.contracts.length, 0);
 
-  if (!myProfileId) {
-    return (
-      <div style={{ padding: 20 }}>
-        <div style={{ textAlign: 'center', padding: '60px 20px', border: '2px dashed var(--border)', background: 'var(--bg-1)' }}>
-          <div style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 16 }}>Profile not loaded</div>
-        </div>
-      </div>
-    );
-  }
-
-  const callsign = profile?.callsign || 'Pilot';
-  const color = profile?.color || '#8b949e';
-  const homeRegion = profile?.home_region || null;
+  const callsign = friend.callsign || 'Pilot';
+  const color = friend.color || '#8b949e';
+  const homeRegion = friend.home_region || null;
+  const avatarUrl = friend.avatar_url || null;
 
   return (
     <div style={{ padding: 20, display: 'flex', gap: 24, alignItems: 'flex-start' }}>
 
-      {/* ── Profile sidebar ── */}
+      {/* ── Left sidebar ── */}
       <div style={{ width: 220, flexShrink: 0, position: 'sticky', top: 20 }}>
-        {/* Avatar card */}
-        <div style={{ border: '2px solid var(--border)', background: 'var(--bg-1)', marginBottom: 16 }}>
+
+        {/* Back button */}
+        <button
+          onClick={onBack}
+          style={{
+            width: '100%', marginBottom: 12, padding: '9px 14px', cursor: 'pointer',
+            border: '2px solid var(--border)', background: 'var(--bg-1)',
+            fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 12,
+            textTransform: 'uppercase', letterSpacing: '0.06em', color: 'var(--text)',
+            textAlign: 'left',
+          }}
+          onMouseEnter={e => { e.currentTarget.style.background = 'var(--bg-2)'; }}
+          onMouseLeave={e => { e.currentTarget.style.background = 'var(--bg-1)'; }}
+        >← Back to Crew</button>
+
+        {/* Profile card */}
+        <div style={{ border: '2px solid var(--border)', background: 'var(--bg-1)' }}>
           <div style={{ background: '#1a1a1a', padding: '20px 16px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 12 }}>
             {avatarUrl ? (
               <img src={avatarUrl} alt={callsign}
@@ -241,12 +246,12 @@ export default function MissionsView({ sessions, myProfileId, profile, avatarUrl
             <div style={{ width: '100%', height: 3, background: color }} />
           </div>
 
-          {/* Lifetime stats */}
+          {/* Career stats */}
           <div style={{ padding: '14px 16px' }}>
             <div style={{ fontFamily: 'var(--font-mono)', fontSize: 8, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'var(--muted)', marginBottom: 10 }}>Career Stats</div>
             {[
-              ['Sessions', mySessions.length.toLocaleString()],
-              ['Contracts', myContracts.toLocaleString()],
+              ['Sessions', friendSessions.length.toLocaleString()],
+              ['Contracts', contractsCount.toLocaleString()],
               ['SCU Hauled', lifetimeSCU.toLocaleString()],
               ['aUEC Earned', lifetimePayout > 0 ? lifetimePayout.toLocaleString() : '—'],
             ].map(([label, val]) => (
@@ -259,24 +264,28 @@ export default function MissionsView({ sessions, myProfileId, profile, avatarUrl
         </div>
       </div>
 
-      {/* ── Sessions panel ── */}
+      {/* ── Right panel ── */}
       <div style={{ flex: 1, minWidth: 0 }}>
-        <div style={{ display: 'flex', alignItems: 'baseline', gap: 12, marginBottom: 20 }}>
-          <div style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 20, letterSpacing: '-0.02em' }}>Mission Debrief</div>
+        <div style={{ display: 'flex', alignItems: 'baseline', gap: 12, marginBottom: 6 }}>
+          <div style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 20, letterSpacing: '-0.02em' }}>Mission History</div>
           <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--muted)', letterSpacing: '0.08em' }}>
-            {mySessions.length} session{mySessions.length !== 1 ? 's' : ''}
+            {friendSessions.length} session{friendSessions.length !== 1 ? 's' : ''}
           </div>
         </div>
+        <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--muted)', marginBottom: 20, letterSpacing: '0.04em' }}>
+          {callsign}'s sessions — read only
+        </div>
 
-        {mySessions.length === 0 ? (
+        {friendSessions.length === 0 ? (
           <div style={{ textAlign: 'center', padding: '60px 20px', border: '2px dashed var(--border)', background: 'var(--bg-1)' }}>
-            <div style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 18, marginBottom: 8 }}>No Missions Yet</div>
-            <div style={{ color: 'var(--muted)', fontSize: 13, fontFamily: 'var(--font-sans)' }}>
-              Join a session from the Calendar tab to see your mission history here.
+            <div style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 16, color: 'var(--muted)' }}>
+              No shared session data found.
             </div>
           </div>
         ) : (
-          mySessions.map(s => <SessionDebrief key={s.id} session={s} myProfileId={myProfileId} onOpenSession={onOpenSession} />)
+          friendSessions.map(s => (
+            <SessionDebrief key={s.id} session={s} myProfileId={myProfileId} onOpenSession={onOpenSession} />
+          ))
         )}
       </div>
     </div>
