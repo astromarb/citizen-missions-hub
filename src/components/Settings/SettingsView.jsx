@@ -39,6 +39,10 @@ export default function SettingsView({ profile, updateProfile, checkCallsign }) 
 
   const [saving, setSaving] = useState(false);
 
+  // RSI handle
+  const [rsiHandle,      setRsiHandle]      = useState(profile?.rsi_handle || '');
+  const [rsiHandleSaved, setRsiHandleSaved] = useState(false);
+
   // aUEC balance verification
   const [auecScanning,  setAuecScanning]  = useState(false);
   const [auecExtracted, setAuecExtracted] = useState(null);
@@ -79,40 +83,36 @@ export default function SettingsView({ profile, updateProfile, checkCallsign }) 
     img.src = url;
   });
 
-  // Parse a raw OCR string into an integer, rejecting anything below 10,000 aUEC.
-  // Real wallet balances are never single or double digits.
+  const saveRsiHandle = async () => {
+    if (!rsiHandle.trim()) return;
+    setSaving(true);
+    await updateProfile({ rsi_handle: rsiHandle.trim().toUpperCase() });
+    setSaving(false);
+    flash(setRsiHandleSaved);
+  };
+
   const parseAmount = (str) => {
     const n = parseInt(str.replace(/[,\s]/g, ''), 10);
     return (!isNaN(n) && n >= 10000) ? n : null;
   };
 
-  const extractBalance = (text) => {
-    // Pattern 1: comma-formatted or 5+ digit number before "aUEC"
-    // Requires at least one comma group OR 5 bare digits — blocks "2 aUEC", "3 aUEC"
-    for (const m of text.matchAll(/(\d{1,3}(?:,\d{3})+|\d{5,})\s*a[Uu][Ee][Cc]/g)) {
-      const n = parseAmount(m[1]);
-      if (n) return n;
-    }
-    // Pattern 2: SC credit symbol read by OCR as =, 三, |, # etc.
-    for (const m of text.matchAll(/[=三≡|#*]{1,3}\s*(\d{1,3}(?:,\d{3})+|\d{5,})/g)) {
-      const n = parseAmount(m[1]);
-      if (n) return n;
-    }
-    // Pattern 3: Wallet tab label prefixes
-    for (const m of text.matchAll(/(?:BALANCE|WALLET|CREDITS|FUNDS|UEC)[:\s]*(\d[\d,]+)/gi)) {
-      const n = parseAmount(m[1]);
-      if (n) return n;
-    }
-    // Fallback: largest comma-formatted number OR 6+ bare digit number in the text
-    // \d{1,3}(?:,\d{3})+ matches "2,130,558" but not "2" or "130"
-    const nums = [...text.matchAll(/\b\d{1,3}(?:,\d{3})+\b|\b\d{6,}\b/g)]
+  // Find the RSI handle in the OCR text, then read the number immediately above it.
+  // In SC's HUD the balance sits on the line above the handle, so in OCR output
+  // (top-to-bottom) the balance appears in the text *before* the handle.
+  const extractBalanceAnchored = (text, handle) => {
+    const needle = handle.toUpperCase().trim();
+    const upper  = text.toUpperCase();
+    const idx    = upper.indexOf(needle);
+    if (idx === -1) return { handleFound: false, amount: null };
+    const lookback = text.slice(Math.max(0, idx - 200), idx);
+    const nums = [...lookback.matchAll(/\b\d{1,3}(?:,\d{3})+\b|\b\d{5,}\b/g)]
       .map(m => parseAmount(m[0]))
       .filter(Boolean);
-    return nums.length > 0 ? Math.max(...nums) : null;
+    return { handleFound: true, amount: nums.length > 0 ? Math.max(...nums) : null };
   };
 
   const handleAuecScan = async (file) => {
-    if (!file) return;
+    if (!file || !rsiHandle.trim()) return;
     setAuecScanning(true);
     setAuecScanError(null);
     setAuecExtracted(null);
@@ -120,31 +120,25 @@ export default function SettingsView({ profile, updateProfile, checkCallsign }) 
       const processed = await preprocessForOCR(file);
       const { createWorker } = await import('tesseract.js');
 
-      // Pass 1 — full text mode, optimal for direct game screenshots
+      // Pass 1: auto layout — best for clean direct screenshots
       const w1 = await createWorker('eng', 1, { logger: () => {} });
-      const { data: { text: text1 } } = await w1.recognize(processed);
+      const { data: { text: t1 } } = await w1.recognize(processed);
       await w1.terminate();
+      const r1 = extractBalanceAnchored(t1, rsiHandle);
+      if (r1.amount) { setAuecExtracted(r1.amount); return; }
 
-      const amount1 = extractBalance(text1);
-      if (amount1) { setAuecExtracted(amount1); return; }
-
-      // Pass 2 — sparse text + digits-only whitelist.
-      // PSM 11 finds scattered text rather than assuming document layout.
-      // The whitelist strips all non-numeric noise so only digit groups survive.
-      // Best recovery path for phone photos / HUD bar shots.
+      // Pass 2: PSM 11 sparse text — finds scattered HUD elements, better for phone photos
       const w2 = await createWorker('eng', 1, { logger: () => {} });
-      await w2.setParameters({
-        tessedit_char_whitelist: '0123456789,',
-        tessedit_pageseg_mode: '11',
-      });
-      const { data: { text: text2 } } = await w2.recognize(processed);
+      await w2.setParameters({ tessedit_pageseg_mode: '11' });
+      const { data: { text: t2 } } = await w2.recognize(processed);
       await w2.terminate();
+      const r2 = extractBalanceAnchored(t2, rsiHandle);
+      if (r2.amount) { setAuecExtracted(r2.amount); return; }
 
-      const amount2 = extractBalance(text2);
-      if (amount2) {
-        setAuecExtracted(amount2);
+      if (r1.handleFound || r2.handleFound) {
+        setAuecScanError('Your RSI handle was found but the balance next to it wasn\'t readable. Try a clearer image or enter your balance manually below.');
       } else {
-        setAuecScanError('Balance not detected. Use a direct game screenshot (not a phone photo) for best results — or enter your balance manually below.');
+        setAuecScanError(`Handle "${rsiHandle.trim()}" wasn't found in the image — make sure it's visible in your screenshot, or enter your balance manually below.`);
       }
     } catch {
       setAuecScanError('Scan failed — please try again');
@@ -160,6 +154,7 @@ export default function SettingsView({ profile, updateProfile, checkCallsign }) 
     await updateProfile({
       auec_balance: amount,
       auec_balance_verified_at: new Date().toISOString(),
+      ...(rsiHandle.trim() ? { rsi_handle: rsiHandle.trim().toUpperCase() } : {}),
     });
     setAuecExtracted(null);
     setAuecManual('');
@@ -305,8 +300,31 @@ export default function SettingsView({ profile, updateProfile, checkCallsign }) 
       <div style={{ border: '2px solid #000', background: '#fff', padding: '20px' }}>
         {sectionTitle('aUEC Balance Verification')}
         <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--muted)', marginBottom: 16, lineHeight: 1.7 }}>
-          Upload a screenshot of your Star Citizen mobiGlas wallet to record your current aUEC balance.
-          Scanning runs entirely in your browser — no image data leaves your device.
+          Enter your RSI handle, then upload any screenshot where your HUD is visible.
+          The scanner locates your handle in the image and reads the balance number directly above it.
+          Runs entirely in your browser — no image data leaves your device.
+        </div>
+
+        {/* RSI handle input */}
+        <div style={{ marginBottom: 16 }}>
+          <div style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 10, letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: 6 }}>
+            RSI Handle
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <input
+              value={rsiHandle}
+              onChange={e => setRsiHandle(e.target.value)}
+              placeholder="e.g. DIRTYNARWHAL"
+              maxLength={32}
+              style={{
+                flex: 1, padding: '9px 12px', border: '2px solid #000',
+                fontFamily: 'var(--font-mono)', fontSize: 13, outline: 'none',
+                textTransform: 'uppercase', letterSpacing: '0.04em',
+              }}
+            />
+            {saveBtn(saveRsiHandle, !rsiHandle.trim())}
+            <SavedBadge visible={rsiHandleSaved} />
+          </div>
         </div>
 
         {/* Current verified balance */}
@@ -387,13 +405,14 @@ export default function SettingsView({ profile, updateProfile, checkCallsign }) 
           <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
             <button
               onClick={() => auecFileRef.current?.click()}
-              disabled={auecScanning}
+              disabled={auecScanning || !rsiHandle.trim()}
               style={{
                 padding: '9px 20px', fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 12,
-                textTransform: 'uppercase', letterSpacing: '0.04em', cursor: auecScanning ? 'default' : 'pointer',
-                border: `2px solid ${auecScanning ? '#ccc' : '#000'}`,
-                background: auecScanning ? '#f5f5f5' : '#000',
-                color: auecScanning ? '#999' : '#fff',
+                textTransform: 'uppercase', letterSpacing: '0.04em',
+                cursor: (auecScanning || !rsiHandle.trim()) ? 'default' : 'pointer',
+                border: `2px solid ${(auecScanning || !rsiHandle.trim()) ? '#ccc' : '#000'}`,
+                background: (auecScanning || !rsiHandle.trim()) ? '#f5f5f5' : '#000',
+                color: (auecScanning || !rsiHandle.trim()) ? '#999' : '#fff',
                 display: 'flex', alignItems: 'center', gap: 8,
               }}
             >
@@ -410,9 +429,14 @@ export default function SettingsView({ profile, updateProfile, checkCallsign }) 
             <SavedBadge visible={auecSaved} />
           </div>
         )}
+        {!rsiHandle.trim() && auecExtracted === null && (
+          <div style={{ marginTop: 8, fontFamily: 'var(--font-mono)', fontSize: 9, color: '#c41e3a', letterSpacing: '0.04em' }}>
+            Enter your RSI handle above to enable scanning.
+          </div>
+        )}
 
         <div style={{ marginTop: 14, fontFamily: 'var(--font-mono)', fontSize: 9, color: 'var(--muted)', lineHeight: 1.7, letterSpacing: '0.02em' }}>
-          <strong style={{ color: 'var(--text)' }}>Best results:</strong> open mobiGlas → tap <strong style={{ color: 'var(--text)' }}>WALLET</strong> in the bottom nav → screenshot that screen. The balance shown in the bottom HUD bar also works. If the scan fails, enter the number manually — it appears next to the ≡ symbol in the bottom-left of your screen.
+          <strong style={{ color: 'var(--text)' }}>How it works:</strong> any screenshot or photo where your HUD is visible works — the scanner finds your RSI handle in the image and reads the ≡ balance number directly above it. Direct game screenshots give the best results; phone photos of your monitor also work.
         </div>
       </div>
 
