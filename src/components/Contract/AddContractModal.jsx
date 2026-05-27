@@ -35,7 +35,7 @@ export default function AddContractModal({ onSave, onClose, commodities, systems
   const [step, setStep]       = useState(1);
   const [pickups,  setPickups]  = useState([emptyWp()]);
   const [dropoffs, setDropoffs] = useState([emptyWp()]);
-  const [cargo,    setCargo]    = useState([{ commodity: '', scu: '' }]);
+  const [cargo,    setCargo]    = useState([{ commodity: '', scu: '', fromLocation: '', toLocation: '' }]);
   const [payout,   setPayout]   = useState('');
 
   const { system, type } = useMemo(
@@ -54,14 +54,19 @@ export default function AddContractModal({ onSave, onClose, commodities, systems
     system:   system   || 'Unknown',
     pickups:  pickups.filter(p => p.name),
     dropoffs: dropoffs.filter(d => d.name),
-    cargo:    cargo.filter(c => c.commodity && c.scu),
+    cargo:    cargo.filter(c => c.commodity && c.scu).map(c => ({ ...c, fromLocation: c.fromLocation || null, toLocation: c.toLocation || null })),
     payout:   Number(payout) || 0,
   });
 
   const setPickup  = (i, v) => { const a = [...pickups];  a[i] = v; setPickups(a); };
   const setDropoff = (i, v) => { const a = [...dropoffs]; a[i] = v; setDropoffs(a); };
-  const setCargoCom = (i, v) => { const a = [...cargo]; a[i] = { ...a[i], commodity: v }; setCargo(a); };
-  const setCargoSCU = (i, v) => { const a = [...cargo]; a[i] = { ...a[i], scu: v };       setCargo(a); };
+  const setCargoCom  = (i, v) => { const a = [...cargo]; a[i] = { ...a[i], commodity: v };    setCargo(a); };
+  const setCargoSCU  = (i, v) => { const a = [...cargo]; a[i] = { ...a[i], scu: v };         setCargo(a); };
+  const setCargoFrom = (i, v) => { const a = [...cargo]; a[i] = { ...a[i], fromLocation: v }; setCargo(a); };
+  const setCargoTo   = (i, v) => { const a = [...cargo]; a[i] = { ...a[i], toLocation: v };   setCargo(a); };
+
+  const pickupNames  = pickups.filter(p => p.name).map(p => p.name);
+  const dropoffNames = dropoffs.filter(d => d.name).map(d => d.name);
   const totalSCU = cargo.reduce((t, c) => t + (Number(c.scu) || 0), 0);
 
   const primaryBtn = (disabled) => ({
@@ -163,22 +168,47 @@ export default function AddContractModal({ onSave, onClose, commodities, systems
             </div>
 
             {cargo.map((c, i) => (
-              <div key={i} style={{ display: 'flex', gap: 8, alignItems: 'center', marginBottom: 8 }}>
-                <CommodityAutocomplete value={c.commodity} onChange={v => setCargoCom(i, v)} commodities={commodities} />
-                <input type="number" min="1"
-                  style={{ width: 80, padding: '8px 10px', background: 'var(--bg-1)', border: '2px solid var(--border)', color: 'var(--text)', fontSize: 13, textAlign: 'right', fontFamily: 'var(--font-mono)', outline: 'none' }}
-                  placeholder="SCU" value={c.scu}
-                  onChange={e => setCargoSCU(i, e.target.value)}
-                />
-                <span style={{ fontSize: 11, color: 'var(--muted)', fontFamily: 'var(--font-mono)', flexShrink: 0 }}>SCU</span>
-                {cargo.length > 1 && (
-                  <button style={{ background: 'none', border: 'none', color: '#c41e3a', cursor: 'pointer', fontSize: 20, fontWeight: 700 }}
-                    onClick={() => setCargo(cargo.filter((_, j) => j !== i))}>×</button>
+              <div key={i} style={{ marginBottom: 10, padding: '10px 12px', border: '1px solid var(--bg-3)', background: 'var(--bg-2)' }}>
+                <div style={{ display: 'flex', gap: 8, alignItems: 'center', marginBottom: (pickupNames.length > 0 || dropoffNames.length > 0) ? 6 : 0 }}>
+                  <CommodityAutocomplete value={c.commodity} onChange={v => setCargoCom(i, v)} commodities={commodities} />
+                  <input type="number" min="1"
+                    style={{ width: 80, padding: '8px 10px', background: 'var(--bg-1)', border: '2px solid var(--border)', color: 'var(--text)', fontSize: 13, textAlign: 'right', fontFamily: 'var(--font-mono)', outline: 'none' }}
+                    placeholder="SCU" value={c.scu}
+                    onChange={e => setCargoSCU(i, e.target.value)}
+                  />
+                  <span style={{ fontSize: 11, color: 'var(--muted)', fontFamily: 'var(--font-mono)', flexShrink: 0 }}>SCU</span>
+                  {cargo.length > 1 && (
+                    <button style={{ background: 'none', border: 'none', color: '#c41e3a', cursor: 'pointer', fontSize: 20, fontWeight: 700, marginLeft: 'auto' }}
+                      onClick={() => setCargo(cargo.filter((_, j) => j !== i))}>×</button>
+                  )}
+                </div>
+                {(pickupNames.length > 0 || dropoffNames.length > 0) && (
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                    <span style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '0.08em', flexShrink: 0 }}>FROM</span>
+                    <select
+                      value={c.fromLocation || ''}
+                      onChange={e => setCargoFrom(i, e.target.value)}
+                      style={{ flex: 1, padding: '4px 6px', border: '1.5px solid var(--border)', background: 'var(--bg-1)', color: c.fromLocation ? 'var(--text)' : 'var(--muted)', fontFamily: 'var(--font-mono)', fontSize: 11, outline: 'none' }}
+                    >
+                      <option value="">— any pickup —</option>
+                      {pickupNames.map(n => <option key={n} value={n}>{n}</option>)}
+                    </select>
+                    <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--muted)', flexShrink: 0 }}>→</span>
+                    <span style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '0.08em', flexShrink: 0 }}>TO</span>
+                    <select
+                      value={c.toLocation || ''}
+                      onChange={e => setCargoTo(i, e.target.value)}
+                      style={{ flex: 1, padding: '4px 6px', border: '1.5px solid var(--border)', background: 'var(--bg-1)', color: c.toLocation ? 'var(--text)' : 'var(--muted)', fontFamily: 'var(--font-mono)', fontSize: 11, outline: 'none' }}
+                    >
+                      <option value="">— any dropoff —</option>
+                      {dropoffNames.map(n => <option key={n} value={n}>{n}</option>)}
+                    </select>
+                  </div>
                 )}
               </div>
             ))}
             <button style={{ background: 'none', border: 'none', color: 'var(--text)', cursor: 'pointer', fontSize: 12, fontFamily: 'var(--font-display)', fontWeight: 700, textDecoration: 'underline', padding: '4px 0' }}
-              onClick={() => setCargo([...cargo, { commodity: '', scu: '' }])}>
+              onClick={() => setCargo([...cargo, { commodity: '', scu: '', fromLocation: '', toLocation: '' }])}>
               + Add commodity
             </button>
 

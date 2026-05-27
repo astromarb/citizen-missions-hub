@@ -224,6 +224,7 @@ export default function SessionView({
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [editingDate, setEditingDate] = useState(false);
   const [newDate, setNewDate] = useState(session.date);
+  const [dateError, setDateError] = useState(null);
   const label = keyToLabel(session.date);
   const totalSCU = session.contracts.reduce((t, c) => t + c.cargo.reduce((s, x) => s + Number(x.scu || 0), 0), 0);
 
@@ -304,17 +305,25 @@ export default function SessionView({
 
           {/* Edit date inline */}
           {editingDate ? (
-            <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
-              <input type="date" value={newDate} onChange={e => setNewDate(e.target.value)}
-                style={{ padding: '6px 10px', border: '2px solid #000', background: '#fff', fontFamily: 'var(--font-mono)', fontSize: 12, outline: 'none' }} />
-              <button onClick={async () => { await onUpdateSession?.(session.id, { date: newDate }); setEditingDate(false); }}
-                style={{ padding: '6px 12px', background: '#2d8659', border: '2px solid #000', color: '#fff', cursor: 'pointer', fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 11 }}>
-                Save
-              </button>
-              <button onClick={() => { setEditingDate(false); setNewDate(session.date); }}
-                style={{ padding: '6px 12px', background: 'transparent', border: '2px solid rgba(255,255,255,0.3)', color: 'rgba(255,255,255,0.6)', cursor: 'pointer', fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 11 }}>
-                Cancel
-              </button>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 4, alignItems: 'flex-end' }}>
+              <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
+                <input type="date" value={newDate} onChange={e => { setNewDate(e.target.value); setDateError(null); }}
+                  style={{ padding: '6px 10px', border: `2px solid ${dateError ? '#c41e3a' : '#000'}`, background: '#fff', fontFamily: 'var(--font-mono)', fontSize: 12, outline: 'none' }} />
+                <button onClick={async () => {
+                  setDateError(null);
+                  const ok = await onUpdateSession?.(session.id, { date: newDate });
+                  if (ok === false) setDateError('Could not save — try a different date.');
+                  else setEditingDate(false);
+                }}
+                  style={{ padding: '6px 12px', background: '#2d8659', border: '2px solid #000', color: '#fff', cursor: 'pointer', fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 11 }}>
+                  Save
+                </button>
+                <button onClick={() => { setEditingDate(false); setNewDate(session.date); setDateError(null); }}
+                  style={{ padding: '6px 12px', background: 'transparent', border: '2px solid rgba(255,255,255,0.3)', color: 'rgba(255,255,255,0.6)', cursor: 'pointer', fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 11 }}>
+                  Cancel
+                </button>
+              </div>
+              {dateError && <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: '#ff6b6b' }}>{dateError}</div>}
             </div>
           ) : (
             <button onClick={() => setEditingDate(true)}
@@ -564,16 +573,27 @@ export default function SessionView({
               {contract.cargo.length > 0 && (
                 <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 14 }}>
                   {contract.cargo.map((c, i) => (
-                    <span key={i} style={{
-                      fontFamily: 'var(--font-display)', fontSize: 11, fontWeight: 700,
+                    <div key={i} style={{
                       padding: '6px 12px',
                       background: 'transparent',
                       border: '2px solid #c41e3a',
-                      color: '#c41e3a',
-                      letterSpacing: '0.04em',
+                      display: 'flex', flexDirection: 'column', gap: 2,
                     }}>
-                      {c.commodity} · {c.scu} SCU
-                    </span>
+                      <span style={{
+                        fontFamily: 'var(--font-display)', fontSize: 11, fontWeight: 700,
+                        color: '#c41e3a', letterSpacing: '0.04em',
+                      }}>
+                        {c.commodity} · {c.scu} SCU
+                      </span>
+                      {(c.fromLocation || c.toLocation) && (
+                        <span style={{
+                          fontFamily: 'var(--font-mono)', fontSize: 9,
+                          color: 'var(--muted)', letterSpacing: '0.04em',
+                        }}>
+                          {c.fromLocation || '?'} → {c.toLocation || '?'}
+                        </span>
+                      )}
+                    </div>
                   ))}
                 </div>
               )}

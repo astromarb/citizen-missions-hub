@@ -38,7 +38,7 @@ const xf = (s) => ({
         body: w.body,
         completions: (w.waypoint_completions || []).map(wc => ({ profileId: wc.profile_id, status: wc.status })),
       })),
-    cargo: (c.cargo_items || []).map(ci => ({ id: ci.id, commodity: ci.commodity, scu: ci.scu })),
+    cargo: (c.cargo_items || []).map(ci => ({ id: ci.id, commodity: ci.commodity, scu: ci.scu, fromLocation: ci.from_location || null, toLocation: ci.to_location || null })),
   })),
 });
 
@@ -146,8 +146,8 @@ export function useSessions(enabled = true, userId) {
     let insertedCargo = cargoRows.map(ci => ({ commodity: ci.commodity, scu: Number(ci.scu) }));
     if (cargoRows.length) {
       const { data: ins } = await supabase.from('cargo_items')
-        .insert(cargoRows.map(ci => ({ contract_id: c.id, commodity: ci.commodity, scu: Number(ci.scu) })))
-        .select('id, commodity, scu');
+        .insert(cargoRows.map(ci => ({ contract_id: c.id, commodity: ci.commodity, scu: Number(ci.scu), from_location: ci.fromLocation || null, to_location: ci.toLocation || null })))
+        .select('id, commodity, scu, from_location, to_location');
       if (ins) insertedCargo = ins;
     }
 
