@@ -1,6 +1,6 @@
 import { PLAYER_COLORS } from '../../data/players.js';
-export default function PlayerBadge({ player }) {
-  const color = PLAYER_COLORS[player] || '#666';
+export default function PlayerBadge({ player, color: colorProp }) {
+  const color = colorProp || PLAYER_COLORS[player] || '#666';
   return (
     <span style={{
       fontSize: 11, padding: '2px 10px',

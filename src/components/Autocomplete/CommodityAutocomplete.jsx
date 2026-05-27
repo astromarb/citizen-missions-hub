@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
-import { COMMODITIES } from '../../data/commodities.js';
+import { COMMODITIES as STATIC_COMMODITIES } from '../../data/commodities.js';
 
 const inp = {
   width: '100%', boxSizing: 'border-box', padding: '8px 10px',
@@ -7,13 +7,15 @@ const inp = {
   borderRadius: 0, fontSize: 13, fontFamily: 'var(--font-mono)', outline: 'none',
 };
 
-export default function CommodityAutocomplete({ value, onChange }) {
+export default function CommodityAutocomplete({ value, onChange, commodities: externalList }) {
+  const list = externalList?.length ? externalList : STATIC_COMMODITIES;
   const [q, setQ] = useState(value || '');
   const [open, setOpen] = useState(false);
   const ref = useRef();
 
   useEffect(() => { setQ(value || ''); }, [value]);
-  const hits = COMMODITIES.filter(c => c.toLowerCase().includes(q.toLowerCase())).slice(0, 8);
+
+  const hits = list.filter(c => c.toLowerCase().includes(q.toLowerCase())).slice(0, 8);
 
   useEffect(() => {
     const fn = e => { if (!ref.current?.contains(e.target)) setOpen(false); };
@@ -24,7 +26,7 @@ export default function CommodityAutocomplete({ value, onChange }) {
   return (
     <div style={{ position: 'relative', flex: 1 }} ref={ref}>
       <input style={inp} value={q}
-        onChange={e => { setQ(e.target.value); onChange(''); setOpen(true); }}
+        onChange={e => { const v = e.target.value; setQ(v); onChange(v); setOpen(true); }}
         onFocus={() => setOpen(true)}
         placeholder="Search commodity…"
       />

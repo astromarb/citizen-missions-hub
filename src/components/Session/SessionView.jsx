@@ -2,7 +2,10 @@ import PlayerBadge from '../shared/PlayerBadge.jsx';
 import TypeBadge from '../shared/TypeBadge.jsx';
 import { keyToLabel } from '../../utils/dateUtils.js';
 
-export default function SessionView({ session, onBack, onAddContract, onToggleDone, onDeleteContract }) {
+// Handles both { name, body } objects and plain strings (legacy)
+const wpName = (w) => (typeof w === 'object' ? w.name : w) || '';
+
+export default function SessionView({ session, onBack, onAddContract, onToggleDone, onDeleteContract, playerColors }) {
   const label = keyToLabel(session.date);
   const totalSCU = session.contracts.reduce((t, c) => t + c.cargo.reduce((s, x) => s + Number(x.scu || 0), 0), 0);
 
@@ -24,7 +27,7 @@ export default function SessionView({ session, onBack, onAddContract, onToggleDo
         </div>
 
         <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
-          {session.players.map(p => <PlayerBadge key={p} player={p} />)}
+          {session.players.map(p => <PlayerBadge key={p} player={p} color={playerColors?.[p]} />)}
         </div>
 
         <button onClick={onAddContract}
@@ -76,10 +79,10 @@ export default function SessionView({ session, onBack, onAddContract, onToggleDo
                 {/* Route */}
                 <div style={{ fontFamily: 'var(--font-mono)', fontSize: 12, color: '#000', marginBottom: 8 }}>
                   <span style={{ color: 'var(--muted)' }}>↑ </span>
-                  {contract.pickups.join(', ')}
+                  {contract.pickups.map(wpName).join(', ')}
                   <span style={{ color: 'var(--muted)', margin: '0 8px' }}>→</span>
                   <span style={{ color: 'var(--muted)' }}>↓ </span>
-                  {contract.dropoffs.join(', ')}
+                  {contract.dropoffs.map(wpName).join(', ')}
                 </div>
 
                 {/* Cargo pills */}

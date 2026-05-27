@@ -13,29 +13,31 @@ const lbl = {
   letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: 6, color: '#000',
 };
 
-export default function AddContractModal({ onSave, onClose }) {
+const emptyWp = () => ({ name: '', body: '' });
+
+export default function AddContractModal({ onSave, onClose, commodities, systemsMap }) {
   const [step, setStep] = useState(1);
   const [type, setType] = useState('');
   const [pSys, setPSys] = useState('Stanton');
   const [dSys, setDSys] = useState('Pyro');
-  const [pickups,  setPickups]  = useState(['']);
-  const [dropoffs, setDropoffs] = useState(['']);
+  const [pickups,  setPickups]  = useState([emptyWp()]);
+  const [dropoffs, setDropoffs] = useState([emptyWp()]);
   const [cargo,    setCargo]    = useState([{ commodity: '', scu: '' }]);
 
   const isInter = type === 'Hauling - Interstellar';
   const canAdvance = () => {
     if (step === 1) return !!type;
-    if (step === 2) return pickups.some(p => p.trim()) && dropoffs.some(d => d.trim());
+    if (step === 2) return pickups.some(p => p.name?.trim()) && dropoffs.some(d => d.name?.trim());
     if (step === 3) return cargo.some(c => c.commodity && Number(c.scu) > 0);
     return false;
   };
+
   const save = () => onSave({
-    id: 'c' + Date.now(), type,
+    type,
     system: isInter ? `${pSys} → ${dSys}` : pSys,
-    pickups: pickups.filter(Boolean),
-    dropoffs: dropoffs.filter(Boolean),
-    cargo: cargo.filter(c => c.commodity && c.scu),
-    done: false,
+    pickups:  pickups.filter(p => p.name),
+    dropoffs: dropoffs.filter(d => d.name),
+    cargo:    cargo.filter(c => c.commodity && c.scu),
   });
 
   const setPickup   = (i, v) => { const a = [...pickups];  a[i] = v; setPickups(a); };
@@ -64,6 +66,9 @@ export default function AddContractModal({ onSave, onClose }) {
     background: active ? '#000' : '#fff',
     color: active ? '#fff' : '#666',
   });
+
+  // Available systems (from external map or static fallback)
+  const sysList = systemsMap && Object.keys(systemsMap).length ? Object.keys(systemsMap) : Object.keys(SYSTEMS);
 
   return (
     <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 999, padding: 20 }}
@@ -104,11 +109,11 @@ export default function AddContractModal({ onSave, onClose }) {
           <div>
             {isInter && (
               <div style={{ display: 'flex', gap: 16, alignItems: 'flex-start', marginBottom: 20, padding: '12px', background: 'var(--bg-2)', border: '2px solid #000' }}>
-                {[['Origin', pSys, setPSys], ['Destination', dSys, setDSys]].map(([lbl2, val, setter]) => (
-                  <div key={lbl2}>
-                    <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: 8, color: 'var(--muted)' }}>{lbl2} System</div>
+                {[['Origin', pSys, setPSys], ['Destination', dSys, setDSys]].map(([label, val, setter]) => (
+                  <div key={label}>
+                    <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: 8, color: 'var(--muted)' }}>{label} System</div>
                     <div style={{ display: 'flex', gap: 4 }}>
-                      {Object.keys(SYSTEMS).map(s => <button key={s} style={sysBtn(val === s)} onClick={() => setter(s)}>{s}</button>)}
+                      {sysList.map(s => <button key={s} style={sysBtn(val === s)} onClick={() => setter(s)}>{s}</button>)}
                     </div>
                   </div>
                 ))}
@@ -121,7 +126,13 @@ export default function AddContractModal({ onSave, onClose }) {
                 {arr.map((v, i) => (
                   <div key={i} style={{ display: 'flex', gap: 8, alignItems: 'center', marginBottom: 6 }}>
                     <div style={{ flex: 1 }}>
-                      <LocationAutocomplete value={v} onChange={x => setter(i, x)} filterSystem={sys} placeholder={`${label} location…`} />
+                      <LocationAutocomplete
+                        value={v}
+                        onChange={x => setter(i, x)}
+                        filterSystem={sys}
+                        placeholder={`${label} location…`}
+                        systemsMap={systemsMap}
+                      />
                     </div>
                     {arr.length > 1 && (
                       <button style={{ background: 'none', border: 'none', color: '#e50000', cursor: 'pointer', fontSize: 20, fontWeight: 700 }} onClick={() => setArr(arr.filter((_, j) => j !== i))}>×</button>
@@ -129,7 +140,7 @@ export default function AddContractModal({ onSave, onClose }) {
                   </div>
                 ))}
                 <button style={{ background: 'none', border: 'none', color: '#000', cursor: 'pointer', fontSize: 12, fontFamily: 'var(--font-display)', fontWeight: 700, textDecoration: 'underline', padding: '4px 0' }}
-                  onClick={() => setArr([...arr, ''])}>
+                  onClick={() => setArr([...arr, emptyWp()])}>
                   + Add {label.toLowerCase()}
                 </button>
               </div>
@@ -142,7 +153,7 @@ export default function AddContractModal({ onSave, onClose }) {
           <div>
             {cargo.map((c, i) => (
               <div key={i} style={{ display: 'flex', gap: 8, alignItems: 'center', marginBottom: 8 }}>
-                <CommodityAutocomplete value={c.commodity} onChange={v => setCargoCom(i, v)} />
+                <CommodityAutocomplete value={c.commodity} onChange={v => setCargoCom(i, v)} commodities={commodities} />
                 <input type="number" min="1"
                   style={{ width: 80, padding: '8px 10px', background: '#fff', border: '2px solid #000', color: '#000', fontSize: 13, textAlign: 'right', fontFamily: 'var(--font-mono)', outline: 'none' }}
                   placeholder="SCU" value={c.scu}
@@ -167,7 +178,7 @@ export default function AddContractModal({ onSave, onClose }) {
                 <span style={{ color: 'var(--muted)', fontWeight: 400 }}> · {isInter ? `${pSys} → ${dSys}` : pSys}</span>
               </div>
               <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--muted)', marginBottom: 8 }}>
-                {pickups.filter(Boolean).join(', ')} → {dropoffs.filter(Boolean).join(', ')}
+                {pickups.filter(p => p.name).map(p => p.name).join(', ')} → {dropoffs.filter(d => d.name).map(d => d.name).join(', ')}
               </div>
               <div style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 18, color: '#e50000', letterSpacing: '-0.02em' }}>
                 {totalSCU.toLocaleString()} SCU
