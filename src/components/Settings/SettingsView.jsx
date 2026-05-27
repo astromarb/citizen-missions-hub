@@ -49,31 +49,77 @@ export default function SettingsView({ profile, updateProfile, checkCallsign }) 
 
   const flash = (setter) => { setter(true); setTimeout(() => setter(false), 2000); };
 
+  // Preprocess image for OCR: grayscale → contrast boost → invert.
+  // SC's UI is light text on dark background; inverting gives Tesseract
+  // the dark-text-on-white input it reads most accurately.
+  const preprocessForOCR = (file) => new Promise((resolve, reject) => {
+    const img = new Image();
+    const url = URL.createObjectURL(file);
+    img.onload = () => {
+      const canvas = document.createElement('canvas');
+      canvas.width = img.width;
+      canvas.height = img.height;
+      const ctx = canvas.getContext('2d');
+      ctx.drawImage(img, 0, 0);
+      const id = ctx.getImageData(0, 0, canvas.width, canvas.height);
+      const d = id.data;
+      for (let i = 0; i < d.length; i += 4) {
+        const g = 0.299 * d[i] + 0.587 * d[i + 1] + 0.114 * d[i + 2];
+        const c = Math.min(255, Math.max(0, 2.2 * (g - 128) + 128));
+        const inv = 255 - c;
+        d[i] = d[i + 1] = d[i + 2] = inv;
+      }
+      ctx.putImageData(id, 0, 0);
+      URL.revokeObjectURL(url);
+      canvas.toBlob(resolve, 'image/png');
+    };
+    img.onerror = reject;
+    img.src = url;
+  });
+
+  const extractBalance = (text) => {
+    // Pattern 1: explicit "aUEC" suffix — Wallet tab
+    const auecMatch = text.match(/(\d[\d,]+)\s*a[Uu][Ee][Cc]/);
+    if (auecMatch) {
+      const n = parseInt(auecMatch[1].replace(/,/g, ''), 10);
+      if (n > 0) return n;
+    }
+    // Pattern 2: SC credit symbol (≡) read by OCR as =, 三, |, # etc.
+    const symMatch = text.match(/[=三≡|#*]{1,3}\s*(\d[\d,\s]+)/);
+    if (symMatch) {
+      const n = parseInt(symMatch[1].replace(/[,\s]/g, ''), 10);
+      if (n > 0) return n;
+    }
+    // Pattern 3: labelled balance text — Wallet tab header labels
+    const labelMatch = text.match(/(?:BALANCE|WALLET|CREDITS|FUNDS|UEC)[:\s]*(\d[\d,]+)/i);
+    if (labelMatch) {
+      const n = parseInt(labelMatch[1].replace(/,/g, ''), 10);
+      if (n > 0) return n;
+    }
+    // Fallback: largest 5+ digit number found anywhere
+    const nums = [...text.matchAll(/\d[\d,]{4,}/g)]
+      .map(m => parseInt(m[0].replace(/,/g, ''), 10))
+      .filter(n => !isNaN(n) && n > 0);
+    return nums.length > 0 ? Math.max(...nums) : null;
+  };
+
   const handleAuecScan = async (file) => {
     if (!file) return;
     setAuecScanning(true);
     setAuecScanError(null);
     setAuecExtracted(null);
     try {
+      const processed = await preprocessForOCR(file);
       const { createWorker } = await import('tesseract.js');
       const worker = await createWorker('eng', 1, { logger: () => {} });
-      const { data: { text } } = await worker.recognize(file);
+      const { data: { text } } = await worker.recognize(processed);
       await worker.terminate();
 
-      // Primary: find a number immediately followed by "aUEC"
-      const auecMatch = text.match(/(\d[\d,]*)\s*a[Uu][Ee][Cc]/);
-      if (auecMatch) {
-        const amount = parseInt(auecMatch[1].replace(/,/g, ''), 10);
-        if (amount > 0) { setAuecExtracted(amount); return; }
-      }
-      // Fallback: largest 5+ digit number in the text
-      const nums = [...text.matchAll(/\d[\d,]{4,}/g)]
-        .map(m => parseInt(m[0].replace(/,/g, ''), 10))
-        .filter(n => !isNaN(n) && n > 0);
-      if (nums.length > 0) {
-        setAuecExtracted(Math.max(...nums));
+      const amount = extractBalance(text);
+      if (amount) {
+        setAuecExtracted(amount);
       } else {
-        setAuecScanError('No balance detected — try a clearer screenshot or enter manually below');
+        setAuecScanError('No balance detected — open the Wallet tab in mobiGlas and screenshot that screen for best results, or enter manually below');
       }
     } catch {
       setAuecScanError('Scan failed — please try again');
@@ -340,8 +386,8 @@ export default function SettingsView({ profile, updateProfile, checkCallsign }) 
           </div>
         )}
 
-        <div style={{ marginTop: 14, fontFamily: 'var(--font-mono)', fontSize: 9, color: 'var(--muted)', lineHeight: 1.6, letterSpacing: '0.02em' }}>
-          Tip: screenshot your mobiGlas Wallet tab or the transactions screen for best results. Crop tightly around the balance number if the scan fails.
+        <div style={{ marginTop: 14, fontFamily: 'var(--font-mono)', fontSize: 9, color: 'var(--muted)', lineHeight: 1.7, letterSpacing: '0.02em' }}>
+          <strong style={{ color: 'var(--text)' }}>Best results:</strong> open mobiGlas → tap <strong style={{ color: 'var(--text)' }}>WALLET</strong> in the bottom nav → screenshot that screen. The balance shown in the bottom HUD bar also works. If the scan fails, enter the number manually — it appears next to the ≡ symbol in the bottom-left of your screen.
         </div>
       </div>
 

@@ -213,6 +213,7 @@ export default function MissionsView({ sessions, myProfileId, profile, avatarUrl
     ['Contracts', myContracts.toLocaleString()],
     ['SCU Hauled', lifetimeSCU.toLocaleString()],
     ['aUEC Earned', lifetimePayout > 0 ? lifetimePayout.toLocaleString() : '—'],
+    ...(profile?.auec_balance > 0 ? [['Wallet', `${Number(profile.auec_balance).toLocaleString()} aUEC`]] : []),
   ];
 
   return (

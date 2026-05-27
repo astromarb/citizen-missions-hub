@@ -1,6 +1,6 @@
 import { useIsMobile } from '../../hooks/useIsMobile.js';
 
-export default function LeaderboardView({ sessions, myProfileId }) {
+export default function LeaderboardView({ sessions, myProfileId, profiles = [] }) {
   const isMobile = useIsMobile();
   const allSessions = Object.values(sessions);
 
@@ -97,6 +97,12 @@ export default function LeaderboardView({ sessions, myProfileId }) {
   const fmtSCU = (n) => `${n.toLocaleString()} SCU`;
   const fmtAUEC= (n) => n > 0 ? `${n.toLocaleString()} aUEC` : '—';
 
+  // Wallet leaderboard — profiles who have verified their balance
+  const walletRows = profiles
+    .filter(p => p.auec_balance > 0)
+    .sort((a, b) => b.auec_balance - a.auec_balance)
+    .map(p => ({ id: p.id, callsign: p.callsign, color: p.color || '#8b949e', balance: p.auec_balance }));
+
   return (
     <div style={{ padding: 20 }}>
       <div style={{ display: 'flex', alignItems: 'baseline', gap: 12, marginBottom: 20 }}>
@@ -106,12 +112,61 @@ export default function LeaderboardView({ sessions, myProfileId }) {
         </div>
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: 16 }}>
-        <Board title="SCU Hauled"       rows={bySCU}       valueKey="scu"      format={fmtSCU}  />
-        <Board title="aUEC Earned"      rows={byPayout}    valueKey="payout"   format={fmtAUEC} />
-        <Board title="Sessions Flown"   rows={bySessions}  valueKey="sessions" format={fmt}     />
-        <Board title="Waypoints Completed" rows={byWaypoints} valueKey="waypoints" format={fmt} />
+      <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: 16, marginBottom: 16 }}>
+        <Board title="SCU Hauled"          rows={bySCU}        valueKey="scu"       format={fmtSCU}  />
+        <Board title="aUEC Earned"         rows={byPayout}     valueKey="payout"    format={fmtAUEC} />
+        <Board title="Sessions Flown"      rows={bySessions}   valueKey="sessions"  format={fmt}     />
+        <Board title="Waypoints Completed" rows={byWaypoints}  valueKey="waypoints" format={fmt}     />
       </div>
+
+      {/* ── Verified Wallet ── full-width, profile-level data ── */}
+      {walletRows.length > 0 && (
+        <div style={{ border: '2px solid var(--border)', background: 'var(--bg-1)' }}>
+          <div style={{
+            background: '#1a1a1a', padding: '12px 16px',
+            display: 'flex', alignItems: 'baseline', gap: 12,
+          }}>
+            <div style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 13, color: '#fff', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
+              Verified Wallet
+            </div>
+            <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: 'rgba(255,255,255,0.35)', letterSpacing: '0.08em' }}>
+              self-reported · {walletRows.length} pilot{walletRows.length !== 1 ? 's' : ''}
+            </div>
+          </div>
+          {walletRows.map((p, i) => {
+            const isMe = p.id === myProfileId;
+            return (
+              <div key={p.id} style={{
+                display: 'flex', alignItems: 'center', gap: 12,
+                padding: '11px 16px',
+                borderBottom: '1px solid var(--bg-3)',
+                background: isMe ? 'rgba(196,30,58,0.04)' : 'transparent',
+              }}>
+                <div style={{
+                  fontFamily: 'var(--font-mono)', fontWeight: 800, fontSize: 13,
+                  color: rankMedal(i), width: 24, flexShrink: 0, textAlign: 'center',
+                }}>
+                  {i === 0 ? '★' : `${i + 1}`}
+                </div>
+                <div style={{ width: 12, height: 12, borderRadius: '50%', background: p.color, flexShrink: 0, border: '2px solid var(--border)' }} />
+                <div style={{
+                  fontFamily: 'var(--font-display)', fontWeight: isMe ? 800 : 700, fontSize: 13,
+                  color: isMe ? '#c41e3a' : 'var(--text)', textTransform: 'uppercase',
+                  letterSpacing: '0.04em', flex: 1,
+                }}>
+                  {p.callsign}{isMe ? ' ★' : ''}
+                </div>
+                <div style={{
+                  fontFamily: 'var(--font-mono)', fontWeight: 700, fontSize: 13,
+                  color: i === 0 ? '#c41e3a' : '#2d8659',
+                }}>
+                  {Number(p.balance).toLocaleString()} aUEC
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
     </div>
   );
 }

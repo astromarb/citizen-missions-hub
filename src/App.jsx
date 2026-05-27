@@ -271,7 +271,7 @@ function AppInner() {
 
   useEffect(() => {
     if (!authSession) { setProfiles([]); return; }
-    supabase.from('profiles').select('id, callsign, color, avatar_url').order('callsign')
+    supabase.from('profiles').select('id, callsign, color, avatar_url, auec_balance, auec_balance_verified_at').order('callsign')
       .then(({ data }) => { if (data) setProfiles(data); });
   }, [authSession]);
 
@@ -680,7 +680,7 @@ function AppInner() {
 
           {activeTab === 'missions'    && <MissionsView sessions={sessions} myProfileId={myProfileId} profile={profile} avatarUrl={avatarUrl} onOpenSession={handleOpenSession} />}
           {activeTab === 'stats'       && <StatsView sessions={sessions} />}
-          {activeTab === 'leaderboard' && <LeaderboardView sessions={sessions} myProfileId={myProfileId} />}
+          {activeTab === 'leaderboard' && <LeaderboardView sessions={sessions} myProfileId={myProfileId} profiles={profiles} />}
           {activeTab === 'friends' && !viewingFriend && (
             <FriendsView
               friends={friends}
