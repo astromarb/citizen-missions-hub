@@ -1,10 +1,10 @@
 import { useState } from 'react';
 
 const EVENT_STYLE = {
-  SIGNED_IN:       { color: '#3B8B56', label: 'signed in' },
-  SIGNED_OUT:      { color: '#E24B4A', label: 'signed out' },
-  INITIAL_SESSION: { color: '#378ADD', label: 'session restored' },
-  TOKEN_REFRESHED: { color: '#8b949e', label: 'token refreshed' },
+  SIGNED_IN:       { color: '#2D7A1F', label: 'signed in' },
+  SIGNED_OUT:      { color: '#e50000', label: 'signed out' },
+  INITIAL_SESSION: { color: '#185FA5', label: 'session restored' },
+  TOKEN_REFRESHED: { color: '#666666', label: 'token refreshed' },
 };
 
 const fmtTime = (d) =>
@@ -24,34 +24,36 @@ export default function AuthLog({ entries }) {
         style={{
           display: 'flex', alignItems: 'center', gap: 8, userSelect: 'none',
           padding: '5px 12px', cursor: 'pointer',
-          background: 'var(--bg-2)', border: '1px solid var(--border)',
-          borderRadius: open ? '8px 8px 0 0' : 8,
-          borderBottom: open ? '1px solid var(--bg-2)' : '1px solid var(--border)',
+          background: open ? '#000' : '#fff',
+          border: '2px solid #000',
+          borderBottom: open ? '2px solid #000' : '2px solid #000',
         }}
       >
-        <span style={{ color: 'var(--gold)', fontSize: 9 }}>●</span>
-        <span style={{ color: 'var(--muted)', letterSpacing: '0.1em', textTransform: 'uppercase' }}>Auth Log</span>
+        <span style={{ color: '#e50000', fontSize: 9 }}>●</span>
+        <span style={{ color: open ? '#fff' : '#000', letterSpacing: '0.1em', textTransform: 'uppercase', fontWeight: 700 }}>Auth Log</span>
         {entries.length > 0 && (
           <span style={{
-            background: 'var(--bg-0)', border: '1px solid var(--border)',
-            borderRadius: 20, padding: '0 6px', fontSize: 10, color: 'var(--muted)',
+            background: open ? '#fff' : '#000', border: '1px solid',
+            borderColor: open ? '#fff' : '#000',
+            padding: '0 6px', fontSize: 10,
+            color: open ? '#000' : '#fff',
           }}>
             {entries.length}
           </span>
         )}
-        <span style={{ fontSize: 9, color: 'var(--muted)', opacity: 0.5 }}>{open ? '▾' : '▴'}</span>
+        <span style={{ fontSize: 9, color: open ? '#fff' : '#666', opacity: 0.7 }}>{open ? '▾' : '▴'}</span>
       </div>
 
       {/* Log panel */}
       {open && (
         <div style={{
           width: 340, maxHeight: 240, overflowY: 'auto',
-          background: 'var(--bg-0)', border: '1px solid var(--border)',
-          borderTop: 'none', borderRadius: '0 0 8px 8px',
+          background: '#fff', border: '2px solid #000',
+          borderTop: 'none',
         }}>
           {entries.length === 0 ? (
-            <div style={{ padding: '18px 12px', color: 'var(--muted)', letterSpacing: '0.06em', textAlign: 'center' }}>
-              NO EVENTS YET
+            <div style={{ padding: '18px 12px', color: 'var(--muted)', letterSpacing: '0.06em', textAlign: 'center', textTransform: 'uppercase', fontSize: 10 }}>
+              No Events Yet
             </div>
           ) : (
             entries.map((e) => {
@@ -59,15 +61,18 @@ export default function AuthLog({ entries }) {
               return (
                 <div key={e.id} style={{
                   display: 'flex', gap: 10, alignItems: 'center',
-                  padding: '5px 10px', borderBottom: '1px solid var(--bg-2)',
-                }}>
+                  padding: '5px 10px', borderBottom: '1px solid var(--bg-3)',
+                }}
+                  onMouseEnter={(el) => { el.currentTarget.style.background = 'var(--bg-2)'; }}
+                  onMouseLeave={(el) => { el.currentTarget.style.background = 'transparent'; }}
+                >
                   <span style={{ color: 'var(--muted)', flexShrink: 0, fontSize: 10 }}>
                     {fmtTime(e.time)}
                   </span>
-                  <span style={{ color: s.color, flexShrink: 0, minWidth: 110, letterSpacing: '0.04em' }}>
+                  <span style={{ color: s.color, flexShrink: 0, minWidth: 110, letterSpacing: '0.04em', fontWeight: 700 }}>
                     {s.label}
                   </span>
-                  <span style={{ color: 'var(--text)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                  <span style={{ color: '#000', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                     {e.name}
                   </span>
                 </div>

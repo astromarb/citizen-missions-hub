@@ -1,34 +1,107 @@
 import PlayerBadge from '../shared/PlayerBadge.jsx';
 import TypeBadge from '../shared/TypeBadge.jsx';
 import { keyToLabel } from '../../utils/dateUtils.js';
+
 export default function SessionView({ session, onBack, onAddContract, onToggleDone, onDeleteContract }) {
-  const label=keyToLabel(session.date);
-  const totalSCU=session.contracts.reduce((t,c)=>t+c.cargo.reduce((s,x)=>s+Number(x.scu||0),0),0);
+  const label = keyToLabel(session.date);
+  const totalSCU = session.contracts.reduce((t, c) => t + c.cargo.reduce((s, x) => s + Number(x.scu || 0), 0), 0);
+
   return (
     <div>
-      <div style={{padding:'14px 20px',borderBottom:'1px solid var(--border)',display:'flex',alignItems:'center',gap:14,flexWrap:'wrap'}}>
-        <button onClick={onBack} style={{background:'none',border:'1px solid var(--border)',color:'var(--muted)',padding:'5px 12px',borderRadius:6,cursor:'pointer',fontSize:12,fontFamily:'var(--font-mono)'}}>← Calendar</button>
-        <div style={{flex:1}}>
-          <div style={{fontFamily:'var(--font-mono)',fontSize:15,color:'var(--text)'}}>{label}</div>
-          <div style={{fontSize:11,color:'var(--muted)',fontFamily:'var(--font-mono)',marginTop:2}}>{session.contracts.length} contract{session.contracts.length!==1?'s':''} · {totalSCU.toLocaleString()} SCU</div>
+      {/* Session header */}
+      <div style={{ padding: '16px 20px', borderBottom: '2px solid #000', display: 'flex', alignItems: 'center', gap: 14, flexWrap: 'wrap', background: '#fff' }}>
+        <button onClick={onBack}
+          style={{ border: '2px solid #000', background: '#fff', color: '#000', padding: '6px 14px', cursor: 'pointer', fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 11, letterSpacing: '0.02em', textTransform: 'uppercase' }}
+          onMouseEnter={e => { e.currentTarget.style.background = '#000'; e.currentTarget.style.color = '#fff'; }}
+          onMouseLeave={e => { e.currentTarget.style.background = '#fff'; e.currentTarget.style.color = '#000'; }}
+        >← Calendar</button>
+
+        <div style={{ flex: 1 }}>
+          <div style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 18, letterSpacing: '-0.02em', color: '#000' }}>{label}</div>
+          <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--muted)', marginTop: 2, letterSpacing: '0.06em' }}>
+            {session.contracts.length} contract{session.contracts.length !== 1 ? 's' : ''} · {totalSCU.toLocaleString()} SCU
+          </div>
         </div>
-        <div style={{display:'flex',gap:6,flexWrap:'wrap'}}>{session.players.map(p=><PlayerBadge key={p} player={p}/>)}</div>
-        <button onClick={onAddContract} style={{padding:'8px 16px',border:'1px solid var(--gold)',background:'var(--gold-dim)',color:'var(--gold)',borderRadius:6,cursor:'pointer',fontSize:12,fontFamily:'var(--font-mono)'}}>+ Add Contract</button>
+
+        <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+          {session.players.map(p => <PlayerBadge key={p} player={p} />)}
+        </div>
+
+        <button onClick={onAddContract}
+          style={{ border: '2px solid #e50000', background: '#e50000', color: '#fff', padding: '8px 16px', cursor: 'pointer', fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.02em' }}
+          onMouseEnter={e => { e.currentTarget.style.background = '#000'; e.currentTarget.style.borderColor = '#000'; }}
+          onMouseLeave={e => { e.currentTarget.style.background = '#e50000'; e.currentTarget.style.borderColor = '#e50000'; }}
+        >+ Add Contract</button>
       </div>
-      <div style={{padding:'16px 20px'}}>
-        {session.contracts.length===0&&<div style={{textAlign:'center',padding:'40px 0',color:'var(--muted)',fontFamily:'var(--font-mono)',fontSize:12,letterSpacing:'0.06em'}}>NO CONTRACTS LOGGED — HIT "ADD CONTRACT" TO START</div>}
-        {session.contracts.map(contract=>(
-          <div key={contract.id} style={{background:'var(--bg-1)',border:'1px solid var(--bg-2)',borderRadius:8,padding:'12px 14px',marginBottom:10,opacity:contract.done?0.6:1}}>
-            <div style={{display:'flex',gap:12,alignItems:'flex-start'}}>
-              <button onClick={()=>onToggleDone(session.id,contract.id)} style={{width:20,height:20,borderRadius:'50%',flexShrink:0,marginTop:2,border:`1.5px solid ${contract.done?'#3B6D11':'var(--border)'}`,background:contract.done?'#3B6D11':'transparent',cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center'}}>
-                {contract.done&&<span style={{fontSize:10,color:'#97C459'}}>✓</span>}
+
+      {/* Contract list */}
+      <div style={{ padding: '16px 20px' }}>
+        {session.contracts.length === 0 && (
+          <div style={{ textAlign: 'center', padding: '60px 20px', border: '2px dashed #000', background: '#fff' }}>
+            <div style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 18, marginBottom: 8 }}>No Contracts Yet</div>
+            <div style={{ color: 'var(--muted)', fontSize: 13 }}>Hit "Add Contract" to log your first run.</div>
+          </div>
+        )}
+
+        {session.contracts.map(contract => (
+          <div key={contract.id}
+            style={{ border: '2px solid #000', background: '#fff', padding: '12px 14px', marginBottom: 8, opacity: contract.done ? 0.55 : 1, transition: 'border-color 0.15s' }}
+            onMouseEnter={e => { if (!contract.done) e.currentTarget.style.borderColor = '#e50000'; }}
+            onMouseLeave={e => { e.currentTarget.style.borderColor = '#000'; }}
+          >
+            <div style={{ display: 'flex', gap: 12, alignItems: 'flex-start' }}>
+
+              {/* Done toggle */}
+              <button onClick={() => onToggleDone(session.id, contract.id)}
+                title={contract.done ? 'Mark active' : 'Mark complete'}
+                style={{
+                  width: 20, height: 20, flexShrink: 0, marginTop: 2,
+                  border: `2px solid ${contract.done ? '#2D7A1F' : '#000'}`,
+                  background: contract.done ? '#2D7A1F' : 'transparent',
+                  cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                }}
+              >
+                {contract.done && <span style={{ fontSize: 10, color: '#fff', fontWeight: 800 }}>✓</span>}
               </button>
-              <div style={{flex:1}}>
-                <div style={{display:'flex',alignItems:'center',gap:8,marginBottom:7,flexWrap:'wrap'}}><TypeBadge type={contract.type}/><span style={{fontSize:11,color:'var(--muted)',fontFamily:'var(--font-mono)'}}>{contract.system}</span></div>
-                <div style={{fontSize:12,color:'var(--text)',fontFamily:'var(--font-mono)',marginBottom:7}}><span style={{color:'var(--muted)'}}>↑ </span>{contract.pickups.join(', ')}<span style={{color:'var(--muted)',margin:'0 8px'}}>→</span><span style={{color:'var(--muted)'}}>↓ </span>{contract.dropoffs.join(', ')}</div>
-                <div style={{display:'flex',gap:6,flexWrap:'wrap'}}>{contract.cargo.map((c,i)=><span key={i} style={{fontSize:11,padding:'2px 9px',borderRadius:4,background:'var(--gold-dim)',border:'0.5px solid var(--border)',color:'var(--gold)',fontFamily:'var(--font-mono)'}}>{c.commodity} · {c.scu} SCU</span>)}</div>
+
+              <div style={{ flex: 1, minWidth: 0 }}>
+                {/* Type badge + system */}
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8, flexWrap: 'wrap' }}>
+                  <TypeBadge type={contract.type} />
+                  <span style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--muted)', letterSpacing: '0.06em', textTransform: 'uppercase' }}>
+                    {contract.system}
+                  </span>
+                </div>
+
+                {/* Route */}
+                <div style={{ fontFamily: 'var(--font-mono)', fontSize: 12, color: '#000', marginBottom: 8 }}>
+                  <span style={{ color: 'var(--muted)' }}>↑ </span>
+                  {contract.pickups.join(', ')}
+                  <span style={{ color: 'var(--muted)', margin: '0 8px' }}>→</span>
+                  <span style={{ color: 'var(--muted)' }}>↓ </span>
+                  {contract.dropoffs.join(', ')}
+                </div>
+
+                {/* Cargo pills */}
+                <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+                  {contract.cargo.map((c, i) => (
+                    <span key={i} style={{
+                      fontFamily: 'var(--font-mono)', fontSize: 11, padding: '2px 8px',
+                      background: 'rgba(229,0,0,0.07)', border: '1.5px solid #e50000', color: '#e50000',
+                      fontWeight: 700,
+                    }}>
+                      {c.commodity} · {c.scu} SCU
+                    </span>
+                  ))}
+                </div>
               </div>
-              <button onClick={()=>onDeleteContract(session.id,contract.id)} style={{background:'none',border:'none',color:'var(--muted)',cursor:'pointer',fontSize:16,padding:'0 4px',lineHeight:1}}>×</button>
+
+              {/* Delete */}
+              <button onClick={() => onDeleteContract(session.id, contract.id)}
+                style={{ background: 'none', border: 'none', color: 'var(--muted)', cursor: 'pointer', fontSize: 18, padding: '0 4px', lineHeight: 1, fontWeight: 700 }}
+                onMouseEnter={e => { e.currentTarget.style.color = '#e50000'; }}
+                onMouseLeave={e => { e.currentTarget.style.color = 'var(--muted)'; }}
+              >×</button>
             </div>
           </div>
         ))}

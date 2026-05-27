@@ -49,40 +49,58 @@ function NewSessionModal({ dateKey, onSave, onClose }) {
   const label = d.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' });
   const toggle = (p) => setPlayers((prev) => prev.includes(p) ? prev.filter((x) => x !== p) : [...prev, p]);
 
-  const btn = (primary, disabled) => ({
-    padding: '8px 22px', borderRadius: 6, fontSize: 13, cursor: disabled ? 'default' : 'pointer',
-    fontFamily: 'var(--font-mono)', border: `1px solid ${primary ? 'var(--gold)' : 'var(--border)'}`,
-    background: primary ? 'var(--gold-dim)' : 'transparent',
-    color: primary ? 'var(--gold)' : 'var(--muted)', opacity: disabled ? 0.4 : 1,
-  });
+  const lbl = {
+    display: 'block', fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 10,
+    letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: 10, color: '#000',
+  };
 
   return (
-    <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.82)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 999 }}
+    <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 999, padding: 20 }}
       onClick={(e) => e.target === e.currentTarget && onClose()}>
-      <div style={{ background: 'var(--bg-0)', border: '1px solid var(--border)', borderRadius: 12, padding: 26, width: 400 }}>
-        <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--muted)', letterSpacing: '0.12em', textTransform: 'uppercase', marginBottom: 4 }}>
-          <span style={{ color: 'var(--gold)' }}>// </span>NEW GROUP SESSION
+      <div style={{ background: '#fff', border: '2px solid #000', padding: 28, width: 400 }}>
+        {/* Header */}
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 6 }}>
+          <div style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 20, letterSpacing: '-0.02em' }}>New Session</div>
+          <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--muted)', letterSpacing: '0.08em' }}>{label}</div>
         </div>
-        <div style={{ fontSize: 17, color: 'var(--text)', fontFamily: 'var(--font-mono)', marginBottom: 22 }}>{label}</div>
-        <div style={{ fontSize: 10, color: 'var(--muted)', letterSpacing: '0.07em', textTransform: 'uppercase', marginBottom: 10 }}>Who's flying today?</div>
+        <div style={{ height: 2, background: '#000', marginBottom: 20 }} />
+
+        <span style={lbl}>Who's flying today?</span>
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginBottom: 28 }}>
           {DEFAULT_PLAYERS.map((p) => {
             const active = players.includes(p);
+            const color = PLAYER_COLORS[p] || '#000';
             return (
               <button key={p} onClick={() => toggle(p)} style={{
-                padding: '7px 16px', borderRadius: 6, cursor: 'pointer', fontFamily: 'var(--font-mono)', fontSize: 13,
-                border: `1px solid ${active ? (PLAYER_COLORS[p] || 'var(--gold)') : 'var(--border)'}`,
-                background: active ? `${PLAYER_COLORS[p]}22` : 'var(--bg-1)',
-                color: active ? (PLAYER_COLORS[p] || 'var(--gold)') : 'var(--muted)',
+                padding: '7px 16px', cursor: 'pointer',
+                fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 12,
+                textTransform: 'uppercase', letterSpacing: '0.04em',
+                border: `2px solid ${active ? color : '#000'}`,
+                background: active ? `${color}18` : '#fff',
+                color: active ? color : '#000',
               }}>{p}</button>
             );
           })}
         </div>
-        <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-          <button style={btn(false, false)} onClick={onClose}>Cancel</button>
-          <button style={btn(true, !players.length)} onClick={() => players.length && onSave({ id: 's' + Date.now(), date: dateKey, players, contracts: [] })}>
-            Open Session →
-          </button>
+
+        <div style={{ display: 'flex', justifyContent: 'space-between', gap: 8 }}>
+          <button
+            style={{ padding: '10px 24px', fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 12, textTransform: 'uppercase', letterSpacing: '0.04em', border: '2px solid #000', background: '#fff', color: '#000', cursor: 'pointer' }}
+            onMouseEnter={e => { e.currentTarget.style.background = '#000'; e.currentTarget.style.color = '#fff'; }}
+            onMouseLeave={e => { e.currentTarget.style.background = '#fff'; e.currentTarget.style.color = '#000'; }}
+            onClick={onClose}
+          >Cancel</button>
+          <button
+            style={{
+              padding: '10px 24px', fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 12,
+              textTransform: 'uppercase', letterSpacing: '0.04em',
+              border: `2px solid ${players.length ? '#e50000' : '#ccc'}`,
+              background: players.length ? '#e50000' : 'var(--bg-3)',
+              color: players.length ? '#fff' : '#999',
+              cursor: players.length ? 'pointer' : 'default',
+            }}
+            onClick={() => players.length && onSave({ id: 's' + Date.now(), date: dateKey, players, contracts: [] })}
+          >Open Session →</button>
         </div>
       </div>
     </div>
@@ -171,8 +189,8 @@ export default function App() {
   if (authLoading) {
     return (
       <div style={{ minHeight: '100vh', background: 'var(--bg-0)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-        <div style={{ fontFamily: 'var(--font-mono)', fontSize: 12, color: 'var(--muted)', letterSpacing: '0.14em' }}>
-          INITIALIZING…
+        <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--muted)', letterSpacing: '0.14em', textTransform: 'uppercase' }}>
+          Initializing…
         </div>
       </div>
     );
@@ -187,17 +205,29 @@ export default function App() {
     <div style={{ minHeight: '100vh', background: 'var(--bg-0)', color: 'var(--text)' }}>
 
       {/* ── Top bar ── */}
-      <div style={{ background: 'var(--bg-1)', borderBottom: '1px solid var(--border)', padding: '12px 24px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 16 }}>
-        <div>
-          <div style={{ fontFamily: 'var(--font-mono)', fontSize: 14, letterSpacing: '0.14em', color: 'var(--gold)', textTransform: 'uppercase' }}>UEE Cargo Ops</div>
-          <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: 'var(--muted)', letterSpacing: '0.16em', marginTop: 1 }}>Mission Tracking System · v0.1</div>
+      <div style={{ background: '#000', borderBottom: '3px solid #e50000', padding: '0 24px', display: 'flex', alignItems: 'stretch', justifyContent: 'space-between', gap: 0 }}>
+
+        {/* Brand */}
+        <div style={{ padding: '14px 0', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+          <div style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 15, letterSpacing: '-0.01em', color: '#fff', textTransform: 'uppercase' }}>
+            Missions Tracker
+          </div>
+          <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: 'rgba(255,255,255,0.4)', letterSpacing: '0.12em', marginTop: 2, textTransform: 'uppercase' }}>
+            UEE Cargo Ops · v0.1
+          </div>
         </div>
 
-        <div style={{ display: 'flex', gap: 28 }}>
-          {[['Sessions', totalSessions], ['Contracts', totalContracts], ['Total SCU', totalSCU.toLocaleString()]].map(([l, v]) => (
-            <div key={l} style={{ textAlign: 'center' }}>
-              <div style={{ fontFamily: 'var(--font-mono)', fontSize: 18, color: 'var(--gold)' }}>{v}</div>
-              <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: 'var(--muted)', letterSpacing: '0.08em', textTransform: 'uppercase' }}>{l}</div>
+        {/* Stat strip */}
+        <div style={{ display: 'flex', alignItems: 'stretch' }}>
+          {[['Sessions', totalSessions], ['Contracts', totalContracts], ['Total SCU', totalSCU.toLocaleString()]].map(([l, v], i) => (
+            <div key={l} style={{
+              padding: '12px 24px', textAlign: 'center', display: 'flex', flexDirection: 'column', justifyContent: 'center',
+              borderLeft: '1px solid rgba(255,255,255,0.12)',
+              borderRight: i === 2 ? '1px solid rgba(255,255,255,0.12)' : 'none',
+              background: i === 0 ? 'rgba(229,0,0,0.15)' : 'transparent',
+            }}>
+              <div style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 20, color: i === 0 ? '#e50000' : '#fff', letterSpacing: '-0.02em', lineHeight: 1 }}>{v}</div>
+              <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: 'rgba(255,255,255,0.4)', letterSpacing: '0.1em', textTransform: 'uppercase', marginTop: 3 }}>{l}</div>
             </div>
           ))}
         </div>
@@ -206,21 +236,22 @@ export default function App() {
         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
           {avatarUrl && (
             <img src={avatarUrl} alt={userName}
-              style={{ width: 28, height: 28, borderRadius: '50%', border: '1px solid var(--border)', flexShrink: 0 }}
+              style={{ width: 28, height: 28, borderRadius: '50%', border: '2px solid rgba(255,255,255,0.2)', flexShrink: 0 }}
             />
           )}
-          <span style={{ fontFamily: 'var(--font-mono)', fontSize: 12, color: 'var(--text)', maxWidth: 130, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+          <span style={{ fontFamily: 'var(--font-mono)', fontSize: 12, color: 'rgba(255,255,255,0.7)', maxWidth: 130, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
             {userName}
           </span>
           <button
             onClick={() => supabase.auth.signOut()}
             style={{
-              padding: '4px 10px', borderRadius: 5, cursor: 'pointer',
-              border: '1px solid var(--border)', background: 'transparent',
-              color: 'var(--muted)', fontFamily: 'var(--font-mono)', fontSize: 11,
+              padding: '5px 12px', cursor: 'pointer',
+              border: '1px solid rgba(255,255,255,0.25)', background: 'transparent',
+              color: 'rgba(255,255,255,0.5)', fontFamily: 'var(--font-mono)', fontSize: 11,
+              textTransform: 'uppercase', letterSpacing: '0.06em',
             }}
-            onMouseEnter={(e) => { e.currentTarget.style.color = '#E24B4A'; e.currentTarget.style.borderColor = '#E24B4A'; }}
-            onMouseLeave={(e) => { e.currentTarget.style.color = 'var(--muted)'; e.currentTarget.style.borderColor = 'var(--border)'; }}
+            onMouseEnter={(e) => { e.currentTarget.style.color = '#e50000'; e.currentTarget.style.borderColor = '#e50000'; }}
+            onMouseLeave={(e) => { e.currentTarget.style.color = 'rgba(255,255,255,0.5)'; e.currentTarget.style.borderColor = 'rgba(255,255,255,0.25)'; }}
           >
             Sign out
           </button>
@@ -231,13 +262,26 @@ export default function App() {
       <div style={{ maxWidth: 800, margin: '0 auto' }}>
         {view === 'calendar' && (
           <div>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '14px 20px 4px' }}>
-              <button style={{ background: 'none', border: '1px solid var(--border)', color: 'var(--muted)', padding: '5px 12px', borderRadius: 6, cursor: 'pointer', fontSize: 13 }} onClick={() => navMonth(-1)}>←</button>
-              <div style={{ fontFamily: 'var(--font-mono)', fontSize: 15, color: 'var(--text)' }}>{monthName}</div>
-              <button style={{ background: 'none', border: '1px solid var(--border)', color: 'var(--muted)', padding: '5px 12px', borderRadius: 6, cursor: 'pointer', fontSize: 13 }} onClick={() => navMonth(1)}>→</button>
+            {/* Month navigation */}
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '16px 20px 8px' }}>
+              <button
+                style={{ border: '2px solid #000', background: '#fff', color: '#000', padding: '5px 14px', cursor: 'pointer', fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 12, textTransform: 'uppercase', letterSpacing: '0.04em' }}
+                onMouseEnter={e => { e.currentTarget.style.background = '#000'; e.currentTarget.style.color = '#fff'; }}
+                onMouseLeave={e => { e.currentTarget.style.background = '#fff'; e.currentTarget.style.color = '#000'; }}
+                onClick={() => navMonth(-1)}
+              >←</button>
+              <div style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 16, letterSpacing: '-0.01em', color: '#000' }}>{monthName}</div>
+              <button
+                style={{ border: '2px solid #000', background: '#fff', color: '#000', padding: '5px 14px', cursor: 'pointer', fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 12, textTransform: 'uppercase', letterSpacing: '0.04em' }}
+                onMouseEnter={e => { e.currentTarget.style.background = '#000'; e.currentTarget.style.color = '#fff'; }}
+                onMouseLeave={e => { e.currentTarget.style.background = '#fff'; e.currentTarget.style.color = '#000'; }}
+                onClick={() => navMonth(1)}
+              >→</button>
             </div>
+
             <CalendarView sessions={sessions} viewDate={viewDate} onSelectDate={openSession} onNewSession={(key) => setModal({ type: 'new-session', dateKey: key })} />
-            <div style={{ padding: '0 20px 10px', fontSize: 11, color: 'var(--muted)', fontFamily: 'var(--font-mono)' }}>
+
+            <div style={{ padding: '8px 20px 16px', fontSize: 11, color: 'var(--muted)', fontFamily: 'var(--font-mono)', letterSpacing: '0.04em' }}>
               Click any day to open an existing session or start a new one.
             </div>
           </div>
