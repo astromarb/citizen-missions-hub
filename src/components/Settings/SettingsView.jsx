@@ -119,15 +119,32 @@ export default function SettingsView({ profile, updateProfile, checkCallsign }) 
     try {
       const processed = await preprocessForOCR(file);
       const { createWorker } = await import('tesseract.js');
-      const worker = await createWorker('eng', 1, { logger: () => {} });
-      const { data: { text } } = await worker.recognize(processed);
-      await worker.terminate();
 
-      const amount = extractBalance(text);
-      if (amount) {
-        setAuecExtracted(amount);
+      // Pass 1 — full text mode, optimal for direct game screenshots
+      const w1 = await createWorker('eng', 1, { logger: () => {} });
+      const { data: { text: text1 } } = await w1.recognize(processed);
+      await w1.terminate();
+
+      const amount1 = extractBalance(text1);
+      if (amount1) { setAuecExtracted(amount1); return; }
+
+      // Pass 2 — sparse text + digits-only whitelist.
+      // PSM 11 finds scattered text rather than assuming document layout.
+      // The whitelist strips all non-numeric noise so only digit groups survive.
+      // Best recovery path for phone photos / HUD bar shots.
+      const w2 = await createWorker('eng', 1, { logger: () => {} });
+      await w2.setParameters({
+        tessedit_char_whitelist: '0123456789,',
+        tessedit_pageseg_mode: '11',
+      });
+      const { data: { text: text2 } } = await w2.recognize(processed);
+      await w2.terminate();
+
+      const amount2 = extractBalance(text2);
+      if (amount2) {
+        setAuecExtracted(amount2);
       } else {
-        setAuecScanError('No balance detected — open the Wallet tab in mobiGlas and screenshot that screen for best results, or enter manually below');
+        setAuecScanError('Balance not detected. Use a direct game screenshot (not a phone photo) for best results — or enter your balance manually below.');
       }
     } catch {
       setAuecScanError('Scan failed — please try again');
