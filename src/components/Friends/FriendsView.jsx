@@ -45,10 +45,10 @@ export default function FriendsView({ friends, pending, sent, searchUsers, sendR
   const actionBtn = (label, onClick, variant = 'default') => {
     const styles = {
       default: { border: '2px solid #000', background: '#fff', color: '#000' },
-      primary: { border: '2px solid #e50000', background: '#e50000', color: '#fff' },
+      primary: { border: '2px solid #c41e3a', background: '#c41e3a', color: '#fff' },
       muted:   { border: '2px solid #ccc', background: '#f5f5f5', color: '#999' },
       green:   { border: '2px solid #2D7A1F', background: '#fff', color: '#2D7A1F' },
-      danger:  { border: '2px solid #e50000', background: '#fff', color: '#e50000' },
+      danger:  { border: '2px solid #c41e3a', background: '#fff', color: '#c41e3a' },
     };
     const s = styles[variant] || styles.default;
     return (

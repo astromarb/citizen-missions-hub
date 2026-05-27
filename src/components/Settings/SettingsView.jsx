@@ -2,7 +2,7 @@ import { useState } from 'react';
 
 const SWATCH_COLORS = [
   '#378ADD', '#1D9E75', '#7F77DD', '#D85A30',
-  '#E24B4A', '#e50000', '#FFB347', '#4ECDC4',
+  '#E24B4A', '#c41e3a', '#FFB347', '#4ECDC4',
   '#C44D58', '#556270', '#2ECC71', '#F39C12',
 ];
 
@@ -86,8 +86,8 @@ export default function SettingsView({ profile, updateProfile, checkCallsign }) 
       style={{
         padding: '9px 20px', fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 12,
         textTransform: 'uppercase', letterSpacing: '0.04em', cursor: disabled ? 'default' : 'pointer',
-        border: `2px solid ${disabled ? '#ccc' : '#e50000'}`,
-        background: disabled ? '#f5f5f5' : '#e50000',
+        border: `2px solid ${disabled ? '#ccc' : '#c41e3a'}`,
+        background: disabled ? '#f5f5f5' : '#c41e3a',
         color: disabled ? '#999' : '#fff',
       }}
     >Save</button>
@@ -116,7 +116,7 @@ export default function SettingsView({ profile, updateProfile, checkCallsign }) 
             style={{ flex: 1, padding: '8px 10px', border: '2px solid #000', fontFamily: 'var(--font-mono)', fontSize: 13, outline: 'none' }}
             value={hexInput}
             onChange={e => handleHexInput(e.target.value)}
-            placeholder="#e50000"
+            placeholder="#c41e3a"
             maxLength={7}
           />
         </div>
@@ -133,12 +133,12 @@ export default function SettingsView({ profile, updateProfile, checkCallsign }) 
           {REGIONS.map(r => (
             <button key={r.key} onClick={() => setRegion(r.key)}
               style={{
-                padding: '16px 12px', border: `2px solid ${region === r.key ? '#e50000' : '#000'}`,
-                background: region === r.key ? 'rgba(229,0,0,0.05)' : '#fff',
+                padding: '16px 12px', border: `2px solid ${region === r.key ? '#c41e3a' : '#000'}`,
+                background: region === r.key ? 'rgba(196,30,58,0.05)' : '#fff',
                 cursor: 'pointer', textAlign: 'left',
               }}
             >
-              <div style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 13, color: region === r.key ? '#e50000' : '#000', marginBottom: 2 }}>{r.label}</div>
+              <div style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 13, color: region === r.key ? '#c41e3a' : '#000', marginBottom: 2 }}>{r.label}</div>
               <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '0.08em' }}>{r.sub}</div>
             </button>
           ))}
@@ -166,8 +166,8 @@ export default function SettingsView({ profile, updateProfile, checkCallsign }) 
         <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, minHeight: 16, marginBottom: 12 }}>
           {checking && <span style={{ color: 'var(--muted)' }}>Checking…</span>}
           {!checking && callsignStatus === 'available' && <span style={{ color: '#2D7A1F' }}>✓ Available</span>}
-          {!checking && callsignStatus === 'taken' && <span style={{ color: '#e50000' }}>✗ Taken</span>}
-          {!checking && callsignStatus === 'invalid' && <span style={{ color: '#e50000' }}>✗ 2–20 chars, letters/numbers/_/- only</span>}
+          {!checking && callsignStatus === 'taken' && <span style={{ color: '#c41e3a' }}>✗ Taken</span>}
+          {!checking && callsignStatus === 'invalid' && <span style={{ color: '#c41e3a' }}>✗ 2–20 chars, letters/numbers/_/- only</span>}
         </div>
         <div style={{ display: 'flex', alignItems: 'center' }}>
           {saveBtn(saveCallsign, callsignStatus !== 'available')}

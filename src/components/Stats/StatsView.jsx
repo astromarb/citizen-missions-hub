@@ -55,8 +55,8 @@ export default function StatsView({ sessions }) {
           ['Completed', doneCount],
           ['Total SCU', totalSCU.toLocaleString()],
         ].map(([label, val], i) => (
-          <div key={label} style={{ padding: '16px 12px', textAlign: 'center', borderRight: i < 3 ? '2px solid #000' : 'none', background: i === 3 ? 'rgba(229,0,0,0.05)' : '#fff' }}>
-            <div style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 26, color: i === 3 ? '#e50000' : '#000', letterSpacing: '-0.02em', lineHeight: 1 }}>{val}</div>
+          <div key={label} style={{ padding: '16px 12px', textAlign: 'center', borderRight: i < 3 ? '2px solid #000' : 'none', background: i === 3 ? 'rgba(196,30,58,0.05)' : '#fff' }}>
+            <div style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 26, color: i === 3 ? '#c41e3a' : '#000', letterSpacing: '-0.02em', lineHeight: 1 }}>{val}</div>
             <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '0.1em', marginTop: 4 }}>{label}</div>
           </div>
         ))}
@@ -70,10 +70,10 @@ export default function StatsView({ sessions }) {
             <div key={name} style={{ marginBottom: 8 }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 3 }}>
                 <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: '#000', fontWeight: 600 }}>{name}</span>
-                <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: '#e50000', fontWeight: 700 }}>{scu.toLocaleString()}</span>
+                <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: '#c41e3a', fontWeight: 700 }}>{scu.toLocaleString()}</span>
               </div>
               <div style={{ height: 4, background: 'var(--bg-3)', position: 'relative' }}>
-                <div style={{ position: 'absolute', inset: 0, right: `${100 - (scu / maxCommSCU * 100)}%`, background: '#e50000' }} />
+                <div style={{ position: 'absolute', inset: 0, right: `${100 - (scu / maxCommSCU * 100)}%`, background: '#c41e3a' }} />
               </div>
             </div>
           ))}
@@ -103,12 +103,16 @@ export default function StatsView({ sessions }) {
             <div style={{ border: '2px solid #000', padding: '16px', background: '#fff', flex: 1 }}>
               {section('Pilot SCU Ranking')}
               {topPlayers.map(([callsign, scu], i) => (
-                <div key={callsign} style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
-                  <span style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: i === 0 ? '#e50000' : 'var(--muted)', fontWeight: 700, width: 16 }}>
-                    {i + 1}
+                <div key={callsign} style={{
+                  display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                  padding: '10px 12px', marginBottom: 6,
+                  background: i === 0 ? 'rgba(196,30,58,0.05)' : '#f5f5f5',
+                  border: i === 0 ? '1px solid #c41e3a' : '1px solid #ddd',
+                }}>
+                  <span style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 13, color: '#000', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+                    {i + 1}. {callsign}
                   </span>
-                  <span style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 12, flex: 1, color: '#000' }}>{callsign}</span>
-                  <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: i === 0 ? '#e50000' : '#000', fontWeight: 700 }}>
+                  <span style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 13, color: '#c41e3a' }}>
                     {scu.toLocaleString()} SCU
                   </span>
                 </div>

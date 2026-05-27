@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 
 const SWATCH_COLORS = [
   '#378ADD', '#1D9E75', '#7F77DD', '#D85A30',
-  '#E24B4A', '#e50000', '#FFB347', '#4ECDC4',
+  '#E24B4A', '#c41e3a', '#FFB347', '#4ECDC4',
   '#C44D58', '#556270', '#2ECC71', '#F39C12',
 ];
 
@@ -67,8 +67,8 @@ export default function OnboardingFlow({ profile, updateProfile, checkCallsign, 
   const btnPrimary = (disabled) => ({
     padding: '11px 28px', fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 13,
     textTransform: 'uppercase', letterSpacing: '0.04em', cursor: disabled ? 'default' : 'pointer',
-    border: `2px solid ${disabled ? '#ccc' : '#e50000'}`,
-    background: disabled ? '#f5f5f5' : '#e50000',
+    border: `2px solid ${disabled ? '#ccc' : '#c41e3a'}`,
+    background: disabled ? '#f5f5f5' : '#c41e3a',
     color: disabled ? '#999' : '#fff',
   });
 
@@ -83,7 +83,7 @@ export default function OnboardingFlow({ profile, updateProfile, checkCallsign, 
 
         <div style={{ display: 'flex', gap: 4, marginBottom: 28 }}>
           {[1, 2, 3].map(s => (
-            <div key={s} style={{ flex: 1, height: 3, background: step >= s ? '#e50000' : '#e5e5e5' }} />
+            <div key={s} style={{ flex: 1, height: 3, background: step >= s ? '#c41e3a' : '#e5e5e5' }} />
           ))}
         </div>
 
@@ -93,7 +93,7 @@ export default function OnboardingFlow({ profile, updateProfile, checkCallsign, 
             <div style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 16, marginBottom: 6 }}>Choose your callsign</div>
             <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--muted)', marginBottom: 18 }}>2–20 chars, letters, numbers, _ and - only.</div>
             <input
-              style={{ ...inputStyle, borderColor: callsignStatus === 'taken' || callsignStatus === 'invalid' ? '#e50000' : '#000' }}
+              style={{ ...inputStyle, borderColor: callsignStatus === 'taken' || callsignStatus === 'invalid' ? '#c41e3a' : '#000' }}
               value={callsign}
               onChange={e => { setCallsign(e.target.value); setCallsignStatus(null); }}
               onBlur={handleCallsignBlur}
@@ -104,8 +104,8 @@ export default function OnboardingFlow({ profile, updateProfile, checkCallsign, 
             <div style={{ marginTop: 8, fontFamily: 'var(--font-mono)', fontSize: 11, minHeight: 16 }}>
               {checking && <span style={{ color: 'var(--muted)' }}>Checking…</span>}
               {!checking && callsignStatus === 'available' && <span style={{ color: '#2D7A1F' }}>✓ Available</span>}
-              {!checking && callsignStatus === 'taken' && <span style={{ color: '#e50000' }}>✗ Taken</span>}
-              {!checking && callsignStatus === 'invalid' && <span style={{ color: '#e50000' }}>✗ Invalid format</span>}
+              {!checking && callsignStatus === 'taken' && <span style={{ color: '#c41e3a' }}>✗ Taken</span>}
+              {!checking && callsignStatus === 'invalid' && <span style={{ color: '#c41e3a' }}>✗ Invalid format</span>}
             </div>
           </div>
         )}
@@ -130,7 +130,7 @@ export default function OnboardingFlow({ profile, updateProfile, checkCallsign, 
                 style={{ ...inputStyle, width: 'auto', flex: 1 }}
                 value={hexInput}
                 onChange={e => handleHexInput(e.target.value)}
-                placeholder="#e50000"
+                placeholder="#c41e3a"
                 maxLength={7}
               />
             </div>
@@ -145,12 +145,12 @@ export default function OnboardingFlow({ profile, updateProfile, checkCallsign, 
               {REGIONS.map(r => (
                 <button key={r.key} onClick={() => setRegion(r.key)}
                   style={{
-                    padding: '20px 14px', border: `2px solid ${region === r.key ? '#e50000' : '#000'}`,
-                    background: region === r.key ? 'rgba(229,0,0,0.05)' : '#fff',
+                    padding: '20px 14px', border: `2px solid ${region === r.key ? '#c41e3a' : '#000'}`,
+                    background: region === r.key ? 'rgba(196,30,58,0.05)' : '#fff',
                     cursor: 'pointer', textAlign: 'left',
                   }}
                 >
-                  <div style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 14, color: region === r.key ? '#e50000' : '#000', marginBottom: 4 }}>{r.label}</div>
+                  <div style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 14, color: region === r.key ? '#c41e3a' : '#000', marginBottom: 4 }}>{r.label}</div>
                   <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '0.08em' }}>{r.sub}</div>
                 </button>
               ))}

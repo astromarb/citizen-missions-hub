@@ -42,23 +42,23 @@ export default function CalendarView({ sessions, viewDate, onSelectDate, onNewSe
                 onClick={() => session ? onSelectDate(key) : onNewSession(key)}
                 style={{
                   aspectRatio: '1', padding: '6px 8px', cursor: 'pointer',
-                  border: isToday ? '2px solid #e50000' : '1px solid var(--bg-3)',
-                  background: isToday ? 'rgba(229,0,0,0.05)' : session ? '#fff' : '#fff',
+                  border: isToday ? '2px solid #c41e3a' : '1px solid var(--bg-3)',
+                  background: isToday ? 'rgba(196,30,58,0.05)' : session ? '#fff' : '#fff',
                   display: 'flex', flexDirection: 'column', justifyContent: 'space-between',
                   transition: 'background 0.1s',
                   outline: session && !isToday ? '1px solid #ccc' : 'none',
                 }}
-                onMouseEnter={e => { e.currentTarget.style.background = isToday ? 'rgba(229,0,0,0.1)' : 'var(--bg-2)'; }}
-                onMouseLeave={e => { e.currentTarget.style.background = isToday ? 'rgba(229,0,0,0.05)' : '#fff'; }}
+                onMouseEnter={e => { e.currentTarget.style.background = isToday ? 'rgba(196,30,58,0.1)' : 'var(--bg-2)'; }}
+                onMouseLeave={e => { e.currentTarget.style.background = isToday ? 'rgba(196,30,58,0.05)' : '#fff'; }}
               >
                 <div style={{
                   fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 12,
-                  color: isToday ? '#e50000' : '#000',
+                  color: isToday ? '#c41e3a' : '#000',
                 }}>{day}</div>
 
                 {session && (
                   <div>
-                    <div style={{ fontFamily: 'var(--font-mono)', fontSize: 8, color: allDone ? '#2D7A1F' : '#e50000', fontWeight: 700, marginBottom: 2 }}>
+                    <div style={{ fontFamily: 'var(--font-mono)', fontSize: 8, color: allDone ? '#2D7A1F' : '#c41e3a', fontWeight: 700, marginBottom: 2 }}>
                       {session.contracts.length}c{allDone ? ' ✓' : ''}
                     </div>
                     <div style={{ display: 'flex', gap: 2 }}>

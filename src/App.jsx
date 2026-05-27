@@ -4,6 +4,7 @@ import { useSessions } from '@/hooks/useSessions.js';
 import { useRefData } from '@/hooks/useRefData.js';
 import { useProfile } from '@/hooks/useProfile.js';
 import { useFriends } from '@/hooks/useFriends.js';
+import { SFX } from '@/hooks/useSound.js';
 import CalendarView from '@/components/Calendar/CalendarView.jsx';
 import SessionView from '@/components/Session/SessionView.jsx';
 import AddContractModal from '@/components/Contract/AddContractModal.jsx';
@@ -14,6 +15,7 @@ import StatsView from '@/components/Stats/StatsView.jsx';
 import FriendsView from '@/components/Friends/FriendsView.jsx';
 import SettingsView from '@/components/Settings/SettingsView.jsx';
 import OnboardingFlow from '@/components/Onboarding/OnboardingFlow.jsx';
+import { ToastProvider, useToast } from '@/components/shared/Toast.jsx';
 import { DEFAULT_PLAYERS, PLAYER_COLORS } from '@/data/players.js';
 import { fmtKey } from '@/utils/dateUtils.js';
 
@@ -32,32 +34,37 @@ function NewSessionModal({ dateKey, onSave, onClose, profiles, friends }) {
   const [players, setPlayers] = useState([]);
   const d = new Date(dateKey + 'T12:00:00');
   const label = d.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' });
-  const toggle = (callsign) =>
+  const toggle = (callsign) => {
+    SFX.boop();
     setPlayers(prev => prev.includes(callsign) ? prev.filter(x => x !== callsign) : [...prev, callsign]);
+  };
 
-  // Prefer friends list when available, fall back to all profiles then static list
   const displayList = friends && friends.length > 0
     ? friends.map(f => ({ id: f.id, callsign: f.callsign, color: f.color || '#8b949e', avatar_url: f.avatar_url }))
     : profiles.length > 0
       ? profiles
       : DEFAULT_PLAYERS.map(callsign => ({ id: callsign, callsign, color: PLAYER_COLORS[callsign] || '#8b949e', avatar_url: null }));
 
-  const lbl = {
-    display: 'block', fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 10,
-    letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: 10, color: '#000',
-  };
-
   return (
-    <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 999, padding: 20 }}
-      onClick={e => e.target === e.currentTarget && onClose()}>
-      <div style={{ background: '#fff', border: '2px solid #000', padding: 28, width: 400 }}>
+    <div style={{
+      position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)',
+      display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 999, padding: 20,
+    }}
+      onClick={e => { if (e.target === e.currentTarget) { SFX.back(); onClose(); } }}>
+      <div style={{ background: '#fff', border: '2px solid #000', padding: '32px 28px', width: 420 }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 6 }}>
-          <div style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 20, letterSpacing: '-0.02em' }}>New Session</div>
-          <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--muted)', letterSpacing: '0.08em' }}>{label}</div>
+          <div style={{
+            fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 22,
+            textTransform: 'uppercase', letterSpacing: '-0.01em',
+          }}>New Session</div>
+          <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: '#888', letterSpacing: '0.06em' }}>{label}</div>
         </div>
-        <div style={{ height: 2, background: '#000', marginBottom: 20 }} />
+        <div style={{ height: 3, background: '#c41e3a', marginBottom: 22 }} />
 
-        <span style={lbl}>Who's flying today?</span>
+        <div style={{
+          fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 10,
+          letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: 12, color: '#000',
+        }}>Who's flying today?</div>
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginBottom: 28 }}>
           {displayList.map(p => {
             const active = players.includes(p.callsign);
@@ -66,9 +73,9 @@ function NewSessionModal({ dateKey, onSave, onClose, profiles, friends }) {
               <button key={p.id} onClick={() => toggle(p.callsign)} style={{
                 padding: '7px 16px', cursor: 'pointer',
                 fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 12,
-                textTransform: 'uppercase', letterSpacing: '0.04em',
+                textTransform: 'uppercase', letterSpacing: '0.06em',
                 border: `2px solid ${active ? color : '#000'}`,
-                background: active ? `${color}18` : '#fff',
+                background: active ? `${color}20` : '#fff',
                 color: active ? color : '#000',
               }}>{p.callsign}</button>
             );
@@ -77,21 +84,25 @@ function NewSessionModal({ dateKey, onSave, onClose, profiles, friends }) {
 
         <div style={{ display: 'flex', justifyContent: 'space-between', gap: 8 }}>
           <button
-            style={{ padding: '10px 24px', fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 12, textTransform: 'uppercase', letterSpacing: '0.04em', border: '2px solid #000', background: '#fff', color: '#000', cursor: 'pointer' }}
+            style={{
+              padding: '10px 24px', fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 12,
+              textTransform: 'uppercase', letterSpacing: '0.06em',
+              border: '2px solid #000', background: '#fff', color: '#000', cursor: 'pointer',
+            }}
             onMouseEnter={e => { e.currentTarget.style.background = '#000'; e.currentTarget.style.color = '#fff'; }}
             onMouseLeave={e => { e.currentTarget.style.background = '#fff'; e.currentTarget.style.color = '#000'; }}
-            onClick={onClose}
+            onClick={() => { SFX.back(); onClose(); }}
           >Cancel</button>
           <button
             style={{
               padding: '10px 24px', fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 12,
-              textTransform: 'uppercase', letterSpacing: '0.04em',
-              border: `2px solid ${players.length ? '#e50000' : '#ccc'}`,
-              background: players.length ? '#e50000' : 'var(--bg-3)',
+              textTransform: 'uppercase', letterSpacing: '0.06em',
+              border: `2px solid ${players.length ? '#c41e3a' : '#ccc'}`,
+              background: players.length ? '#c41e3a' : '#e5e5e5',
               color: players.length ? '#fff' : '#999',
               cursor: players.length ? 'pointer' : 'default',
             }}
-            onClick={() => players.length && onSave({ date: dateKey, players })}
+            onClick={() => { if (players.length) { SFX.open(); onSave({ date: dateKey, players }); } }}
           >Open Session →</button>
         </div>
       </div>
@@ -101,7 +112,9 @@ function NewSessionModal({ dateKey, onSave, onClose, profiles, friends }) {
 
 // ─── ROOT APP ─────────────────────────────────────────────────────────────────
 
-export default function App() {
+function AppInner() {
+  const showToast = useToast();
+
   // ── Auth ──
   const [authSession, setAuthSession] = useState(null);
   const [authLoading, setAuthLoading] = useState(true);
@@ -148,8 +161,10 @@ export default function App() {
         const name = getUserName(session.user);
         lastNameRef.current = name;
         addLog('SIGNED_IN', name);
+        SFX.open();
       } else if (event === 'SIGNED_OUT') {
         addLog('SIGNED_OUT', lastNameRef.current);
+        SFX.back();
       } else if (event === 'INITIAL_SESSION' && session?.user) {
         const name = getUserName(session.user);
         lastNameRef.current = name;
@@ -162,20 +177,17 @@ export default function App() {
     return () => subscription.unsubscribe();
   }, [addLog]);
 
-  // ── Load profiles when authenticated ──
   useEffect(() => {
     if (!authSession) { setProfiles([]); return; }
     supabase.from('profiles').select('id, callsign, color, avatar_url').order('callsign')
       .then(({ data }) => { if (data) setProfiles(data); });
   }, [authSession]);
 
-  // ── Player color map (DB colors override static) ──
   const playerColors = { ...PLAYER_COLORS };
   profiles.forEach(p => { if (p.color) playerColors[p.callsign] = p.color; });
 
-  // ── Handlers ──
   const navMonth = (dir) => setViewDate(new Date(viewDate.getFullYear(), viewDate.getMonth() + dir, 1));
-  const openSession = (key) => { setSelectedDate(key); setView('session'); };
+  const openSession = (key) => { SFX.open(); setSelectedDate(key); setView('session'); };
 
   const saveSession = async ({ date: dateKey, players }) => {
     const sess = await createSession(dateKey, players);
@@ -186,6 +198,62 @@ export default function App() {
     const sessionId = sessions[selectedDate]?.id;
     if (sessionId) await createContract(sessionId, contract);
     setModal(null);
+    showToast('Contract added', 'success');
+    SFX.plus();
+  };
+
+  const handleToggleDone = (sessionId, contractId) => {
+    toggleDone(sessionId, contractId);
+    SFX.boop();
+  };
+
+  const handleDeleteContract = (sessionId, contractId) => {
+    deleteContract(sessionId, contractId);
+    showToast('Contract removed', 'info');
+    SFX.back();
+  };
+
+  const handleSetWaypointStatus = (waypointId, status) => {
+    setWaypointStatus(waypointId, status);
+    SFX.boop();
+    if (status === 'done') showToast('Waypoint marked complete', 'success');
+    else if (status === 'failed') showToast('Waypoint marked failed', 'error');
+  };
+
+  const handleCastVote = (contractId, sessionId) => {
+    castRemovalVote(contractId, sessionId);
+    SFX.boop();
+    showToast('Removal vote cast', 'info');
+  };
+
+  const handleWithdrawVote = (contractId) => {
+    withdrawRemovalVote(contractId);
+    SFX.back();
+    showToast('Vote withdrawn', 'info');
+  };
+
+  const handleAddPlayer = (sessionId, profileId) => {
+    addPlayerToSession(sessionId, profileId);
+    SFX.boop();
+    showToast('Pilot invited to session', 'success');
+  };
+
+  const handleFriendRequest = async (id) => {
+    await sendRequest(id);
+    SFX.plus();
+    showToast('Friend request sent', 'success');
+  };
+
+  const handleFriendRespond = async (fid, accept) => {
+    await respond(fid, accept);
+    SFX.boop();
+    showToast(accept ? 'Friend request accepted' : 'Request declined', accept ? 'success' : 'info');
+  };
+
+  const handleRemoveFriend = async (fid) => {
+    await removeFriend(fid);
+    SFX.back();
+    showToast('Removed from crew', 'info');
   };
 
   const totalSessions  = Object.keys(sessions).length;
@@ -193,11 +261,10 @@ export default function App() {
   const totalSCU       = Object.values(sessions).reduce((t, s) => t + s.contracts.reduce((ct, c) => ct + c.cargo.reduce((cg, x) => cg + Number(x.scu || 0), 0), 0), 0);
   const monthName      = viewDate.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
 
-  // ── Auth gates ──
   if (authLoading) {
     return (
-      <div style={{ minHeight: '100vh', background: 'var(--bg-0)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-        <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--muted)', letterSpacing: '0.14em', textTransform: 'uppercase' }}>Initializing…</div>
+      <div style={{ minHeight: '100vh', background: '#1a1a1a', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <div style={{ fontFamily: 'var(--font-display)', fontSize: 14, color: 'rgba(255,255,255,0.4)', letterSpacing: '0.18em', textTransform: 'uppercase' }}>Initializing…</div>
       </div>
     );
   }
@@ -206,13 +273,12 @@ export default function App() {
 
   if (sessionsLoading || profileLoading) {
     return (
-      <div style={{ minHeight: '100vh', background: 'var(--bg-0)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-        <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--muted)', letterSpacing: '0.14em', textTransform: 'uppercase' }}>Loading…</div>
+      <div style={{ minHeight: '100vh', background: '#1a1a1a', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <div style={{ fontFamily: 'var(--font-display)', fontSize: 14, color: 'rgba(255,255,255,0.4)', letterSpacing: '0.18em', textTransform: 'uppercase' }}>Loading…</div>
       </div>
     );
   }
 
-  // ── Onboarding gate ──
   if (profile && !profile.onboarding_complete) {
     return (
       <OnboardingFlow
@@ -230,6 +296,7 @@ export default function App() {
   const myCallsign  = profile?.callsign || null;
 
   const switchTab = (tab) => {
+    SFX.boop();
     setActiveTab(tab);
     if (tab !== 'calendar') setView('calendar');
   };
@@ -243,140 +310,233 @@ export default function App() {
   ];
 
   return (
-    <div style={{ minHeight: '100vh', background: 'var(--bg-0)', color: 'var(--text)' }}>
+    <div style={{ minHeight: '100vh', background: 'var(--bg-0)', color: 'var(--text)', display: 'flex', flexDirection: 'column' }}>
 
       {/* ── Top bar ── */}
-      <div style={{ background: '#000', borderBottom: '3px solid #e50000', padding: '0 24px', display: 'flex', alignItems: 'stretch', justifyContent: 'space-between', gap: 0 }}>
-        <div style={{ padding: '14px 0', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
-          <div style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 15, letterSpacing: '-0.01em', color: '#fff', textTransform: 'uppercase' }}>Missions Tracker</div>
-          <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: 'rgba(255,255,255,0.4)', letterSpacing: '0.12em', marginTop: 2, textTransform: 'uppercase' }}>UEE Cargo Ops · v0.1</div>
+      <div style={{
+        background: '#1a1a1a',
+        borderBottom: '2px solid #000',
+        padding: '0 24px',
+        display: 'flex',
+        alignItems: 'stretch',
+        justifyContent: 'space-between',
+        gap: 0,
+        flexShrink: 0,
+      }}>
+        {/* Wordmark */}
+        <div style={{ padding: '12px 0', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+          <div style={{
+            fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 18,
+            letterSpacing: '0.06em', color: '#fff', textTransform: 'uppercase', lineHeight: 1,
+          }}>CITIZEN</div>
+          <div style={{
+            fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 10,
+            letterSpacing: '0.18em', color: '#c41e3a', textTransform: 'uppercase', marginTop: 2,
+          }}>MISSIONS HUB</div>
         </div>
 
+        {/* Stats strip */}
         <div style={{ display: 'flex', alignItems: 'stretch' }}>
           {[['Sessions', totalSessions], ['Contracts', totalContracts], ['Total SCU', totalSCU.toLocaleString()]].map(([l, v], i) => (
             <div key={l} style={{
-              padding: '12px 24px', textAlign: 'center', display: 'flex', flexDirection: 'column', justifyContent: 'center',
-              borderLeft: '1px solid rgba(255,255,255,0.12)',
-              borderRight: i === 2 ? '1px solid rgba(255,255,255,0.12)' : 'none',
-              background: i === 0 ? 'rgba(229,0,0,0.15)' : 'transparent',
+              padding: '10px 22px', textAlign: 'center', display: 'flex',
+              flexDirection: 'column', justifyContent: 'center',
+              borderLeft: '1px solid rgba(255,255,255,0.1)',
+              borderRight: i === 2 ? '1px solid rgba(255,255,255,0.1)' : 'none',
             }}>
-              <div style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 20, color: i === 0 ? '#e50000' : '#fff', letterSpacing: '-0.02em', lineHeight: 1 }}>{v}</div>
-              <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: 'rgba(255,255,255,0.4)', letterSpacing: '0.1em', textTransform: 'uppercase', marginTop: 3 }}>{l}</div>
+              <div style={{
+                fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 20,
+                color: i === 2 ? '#c41e3a' : '#fff',
+                letterSpacing: '-0.02em', lineHeight: 1,
+              }}>{v}</div>
+              <div style={{
+                fontFamily: 'var(--font-mono)', fontSize: 8,
+                color: 'rgba(255,255,255,0.35)',
+                letterSpacing: '0.1em', textTransform: 'uppercase', marginTop: 3,
+              }}>{l}</div>
             </div>
           ))}
         </div>
 
+        {/* User info */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
           {avatarUrl && (
-            <img src={avatarUrl} alt={userName} style={{ width: 28, height: 28, borderRadius: '50%', border: '2px solid rgba(255,255,255,0.2)', flexShrink: 0 }} />
+            <img src={avatarUrl} alt={userName}
+              style={{ width: 28, height: 28, borderRadius: '50%', border: '2px solid rgba(255,255,255,0.2)', flexShrink: 0 }} />
           )}
-          <span style={{ fontFamily: 'var(--font-mono)', fontSize: 12, color: 'rgba(255,255,255,0.7)', maxWidth: 130, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+          {!avatarUrl && (
+            <div style={{
+              width: 28, height: 28, borderRadius: '50%', border: '2px solid rgba(255,255,255,0.2)',
+              background: profile?.color || '#8b949e',
+              display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
+            }}>
+              <span style={{ color: '#fff', fontWeight: 700, fontSize: 11, fontFamily: 'var(--font-display)' }}>
+                {(myCallsign || userName)[0]?.toUpperCase()}
+              </span>
+            </div>
+          )}
+          <span style={{
+            fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 13,
+            color: '#fff', maxWidth: 130,
+            overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+            textTransform: 'uppercase', letterSpacing: '0.04em',
+          }}>
             {myCallsign || userName}
           </span>
           <button
-            onClick={() => supabase.auth.signOut()}
-            style={{ padding: '5px 12px', cursor: 'pointer', border: '1px solid rgba(255,255,255,0.25)', background: 'transparent', color: 'rgba(255,255,255,0.5)', fontFamily: 'var(--font-mono)', fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.06em' }}
-            onMouseEnter={e => { e.currentTarget.style.color = '#e50000'; e.currentTarget.style.borderColor = '#e50000'; }}
+            onClick={() => { SFX.back(); supabase.auth.signOut(); }}
+            style={{
+              padding: '5px 12px', cursor: 'pointer',
+              border: '1px solid rgba(255,255,255,0.25)',
+              background: 'transparent', color: 'rgba(255,255,255,0.5)',
+              fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 11,
+              textTransform: 'uppercase', letterSpacing: '0.06em',
+            }}
+            onMouseEnter={e => { e.currentTarget.style.color = '#c41e3a'; e.currentTarget.style.borderColor = '#c41e3a'; }}
             onMouseLeave={e => { e.currentTarget.style.color = 'rgba(255,255,255,0.5)'; e.currentTarget.style.borderColor = 'rgba(255,255,255,0.25)'; }}
           >Sign out</button>
         </div>
       </div>
 
       {/* ── Tab nav ── */}
-      <div style={{ background: '#fff', borderBottom: '2px solid #000', display: 'flex' }}>
+      <div style={{
+        background: '#fff',
+        borderBottom: '2px solid #000',
+        display: 'flex',
+        padding: '0 24px',
+        flexShrink: 0,
+      }}>
         {TABS.map(([tab, label]) => (
           <button key={tab}
             onClick={() => switchTab(tab)}
             style={{
               padding: '10px 24px', border: 'none', cursor: 'pointer',
               fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 12,
-              textTransform: 'uppercase', letterSpacing: '0.06em',
+              textTransform: 'uppercase', letterSpacing: '0.08em',
               background: 'transparent',
-              color: activeTab === tab ? '#e50000' : '#666',
-              borderBottom: activeTab === tab ? '3px solid #e50000' : '3px solid transparent',
+              color: activeTab === tab ? '#c41e3a' : '#666',
+              borderBottom: activeTab === tab ? '3px solid #c41e3a' : '3px solid transparent',
               marginBottom: -2,
+              transition: 'color 0.15s',
             }}
+            onMouseEnter={e => { if (activeTab !== tab) e.currentTarget.style.color = '#000'; }}
+            onMouseLeave={e => { if (activeTab !== tab) e.currentTarget.style.color = '#666'; }}
           >{label}</button>
         ))}
       </div>
 
       {/* ── Content ── */}
-      <div style={{ maxWidth: 860, margin: '0 auto' }}>
+      <div style={{ flex: 1, overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
+        <div style={{ maxWidth: 900, width: '100%', margin: '0 auto', flex: 1, display: 'flex', flexDirection: 'column' }}>
 
-        {/* Calendar tab */}
-        {activeTab === 'calendar' && view === 'calendar' && (
-          <div>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '16px 20px 8px' }}>
-              <button
-                style={{ border: '2px solid #000', background: '#fff', color: '#000', padding: '5px 14px', cursor: 'pointer', fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 12, textTransform: 'uppercase', letterSpacing: '0.04em' }}
-                onMouseEnter={e => { e.currentTarget.style.background = '#000'; e.currentTarget.style.color = '#fff'; }}
-                onMouseLeave={e => { e.currentTarget.style.background = '#fff'; e.currentTarget.style.color = '#000'; }}
-                onClick={() => navMonth(-1)}
-              >←</button>
-              <div style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 16, letterSpacing: '-0.01em', color: '#000' }}>{monthName}</div>
-              <button
-                style={{ border: '2px solid #000', background: '#fff', color: '#000', padding: '5px 14px', cursor: 'pointer', fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 12, textTransform: 'uppercase', letterSpacing: '0.04em' }}
-                onMouseEnter={e => { e.currentTarget.style.background = '#000'; e.currentTarget.style.color = '#fff'; }}
-                onMouseLeave={e => { e.currentTarget.style.background = '#fff'; e.currentTarget.style.color = '#000'; }}
-                onClick={() => navMonth(1)}
-              >→</button>
+          {/* Calendar tab */}
+          {activeTab === 'calendar' && view === 'calendar' && (
+            <div>
+              <div style={{
+                display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                padding: '16px 20px 8px',
+              }}>
+                <button
+                  style={{
+                    border: '2px solid #000', background: '#fff', color: '#000', padding: '5px 14px',
+                    cursor: 'pointer', fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 12,
+                    textTransform: 'uppercase', letterSpacing: '0.04em',
+                  }}
+                  onMouseEnter={e => { e.currentTarget.style.background = '#000'; e.currentTarget.style.color = '#fff'; }}
+                  onMouseLeave={e => { e.currentTarget.style.background = '#fff'; e.currentTarget.style.color = '#000'; }}
+                  onClick={() => { SFX.back(); navMonth(-1); }}
+                >←</button>
+                <div style={{
+                  fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 16,
+                  letterSpacing: '-0.01em', color: '#000', textTransform: 'uppercase',
+                }}>{monthName}</div>
+                <button
+                  style={{
+                    border: '2px solid #000', background: '#fff', color: '#000', padding: '5px 14px',
+                    cursor: 'pointer', fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 12,
+                    textTransform: 'uppercase', letterSpacing: '0.04em',
+                  }}
+                  onMouseEnter={e => { e.currentTarget.style.background = '#000'; e.currentTarget.style.color = '#fff'; }}
+                  onMouseLeave={e => { e.currentTarget.style.background = '#fff'; e.currentTarget.style.color = '#000'; }}
+                  onClick={() => { SFX.back(); navMonth(1); }}
+                >→</button>
+              </div>
+              <CalendarView sessions={sessions} viewDate={viewDate} onSelectDate={openSession} onNewSession={key => { SFX.boop(); setModal({ type: 'new-session', dateKey: key }); }} />
+              <div style={{ padding: '8px 20px 16px', fontSize: 11, color: 'var(--muted)', fontFamily: 'var(--font-mono)', letterSpacing: '0.04em' }}>
+                Click any day to open an existing session or start a new one.
+              </div>
             </div>
-            <CalendarView sessions={sessions} viewDate={viewDate} onSelectDate={openSession} onNewSession={key => setModal({ type: 'new-session', dateKey: key })} />
-            <div style={{ padding: '8px 20px 16px', fontSize: 11, color: 'var(--muted)', fontFamily: 'var(--font-mono)', letterSpacing: '0.04em' }}>
-              Click any day to open an existing session or start a new one.
-            </div>
-          </div>
-        )}
+          )}
 
-        {activeTab === 'calendar' && view === 'session' && selectedDate && sessions[selectedDate] && (
-          <SessionView
-            session={sessions[selectedDate]}
-            onBack={() => setView('calendar')}
-            onAddContract={() => setModal({ type: 'add-contract' })}
-            onToggleDone={toggleDone}
-            onDeleteContract={deleteContract}
-            onSetWaypointStatus={setWaypointStatus}
-            onCastRemovalVote={castRemovalVote}
-            onWithdrawVote={withdrawRemovalVote}
-            onAddPlayer={addPlayerToSession}
-            playerColors={playerColors}
-            myProfileId={myProfileId}
-            myCallsign={myCallsign}
-            friends={friends}
-          />
-        )}
+          {activeTab === 'calendar' && view === 'session' && selectedDate && sessions[selectedDate] && (
+            <SessionView
+              session={sessions[selectedDate]}
+              onBack={() => { SFX.back(); setView('calendar'); }}
+              onAddContract={() => { SFX.open(); setModal({ type: 'add-contract' }); }}
+              onToggleDone={handleToggleDone}
+              onDeleteContract={handleDeleteContract}
+              onSetWaypointStatus={handleSetWaypointStatus}
+              onCastRemovalVote={handleCastVote}
+              onWithdrawVote={handleWithdrawVote}
+              onAddPlayer={handleAddPlayer}
+              playerColors={playerColors}
+              myProfileId={myProfileId}
+              myCallsign={myCallsign}
+              friends={friends}
+            />
+          )}
 
-        {activeTab === 'roster' && <RosterView sessions={sessions} profiles={profiles} />}
-        {activeTab === 'stats'  && <StatsView sessions={sessions} />}
-        {activeTab === 'friends' && (
-          <FriendsView
-            friends={friends}
-            pending={pending}
-            sent={sent}
-            searchUsers={searchUsers}
-            sendRequest={sendRequest}
-            respond={respond}
-            remove={removeFriend}
-          />
-        )}
-        {activeTab === 'settings' && profile && (
-          <SettingsView
-            profile={profile}
-            updateProfile={updateProfile}
-            checkCallsign={checkCallsign}
-          />
-        )}
+          {activeTab === 'roster'   && <RosterView sessions={sessions} profiles={profiles} />}
+          {activeTab === 'stats'    && <StatsView sessions={sessions} />}
+          {activeTab === 'friends'  && (
+            <FriendsView
+              friends={friends}
+              pending={pending}
+              sent={sent}
+              searchUsers={searchUsers}
+              sendRequest={handleFriendRequest}
+              respond={handleFriendRespond}
+              remove={handleRemoveFriend}
+            />
+          )}
+          {activeTab === 'settings' && profile && (
+            <SettingsView
+              profile={profile}
+              updateProfile={updateProfile}
+              checkCallsign={checkCallsign}
+            />
+          )}
+        </div>
       </div>
 
       {/* ── Modals ── */}
       {modal?.type === 'new-session' && (
-        <NewSessionModal dateKey={modal.dateKey} onSave={saveSession} onClose={() => setModal(null)} profiles={profiles} friends={friends} />
+        <NewSessionModal
+          dateKey={modal.dateKey}
+          onSave={saveSession}
+          onClose={() => { SFX.back(); setModal(null); }}
+          profiles={profiles}
+          friends={friends}
+        />
       )}
       {modal?.type === 'add-contract' && (
-        <AddContractModal onSave={addContract} onClose={() => setModal(null)} commodities={commodities} systemsMap={systemsMap} />
+        <AddContractModal
+          onSave={addContract}
+          onClose={() => { SFX.back(); setModal(null); }}
+          commodities={commodities}
+          systemsMap={systemsMap}
+        />
       )}
 
       <AuthLog entries={authLog} />
     </div>
+  );
+}
+
+export default function App() {
+  return (
+    <ToastProvider>
+      <AppInner />
+    </ToastProvider>
   );
 }

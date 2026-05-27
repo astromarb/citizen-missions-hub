@@ -65,7 +65,7 @@ export default function RosterView({ sessions, profiles }) {
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 4 }}>
                   {[['Sessions', sessCount], ['Contracts', contractCount], ['SCU', scu.toLocaleString()]].map(([label, val]) => (
                     <div key={label} style={{ textAlign: 'center', padding: '8px 2px', background: 'var(--bg-2)', border: '1px solid var(--bg-3)' }}>
-                      <div style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 17, color: '#e50000', letterSpacing: '-0.02em', lineHeight: 1 }}>{val}</div>
+                      <div style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 17, color: '#c41e3a', letterSpacing: '-0.02em', lineHeight: 1 }}>{val}</div>
                       <div style={{ fontFamily: 'var(--font-mono)', fontSize: 8, color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '0.08em', marginTop: 3 }}>{label}</div>
                     </div>
                   ))}

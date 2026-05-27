@@ -65,8 +65,8 @@ export default function AddContractModal({ onSave, onClose, commodities, systems
   const primaryBtn = (disabled) => ({
     padding: '10px 24px', fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 12,
     textTransform: 'uppercase', letterSpacing: '0.04em',
-    border: `2px solid ${disabled ? '#ccc' : '#e50000'}`,
-    background: disabled ? 'var(--bg-3)' : '#e50000',
+    border: `2px solid ${disabled ? '#ccc' : '#c41e3a'}`,
+    background: disabled ? 'var(--bg-3)' : '#c41e3a',
     color: disabled ? '#999' : '#fff',
     cursor: disabled ? 'default' : 'pointer',
   });
@@ -91,7 +91,7 @@ export default function AddContractModal({ onSave, onClose, commodities, systems
         {/* Progress */}
         <div style={{ display: 'flex', gap: 4, marginBottom: 24 }}>
           {[1, 2].map(s => (
-            <div key={s} style={{ flex: 1, height: 3, background: step >= s ? '#e50000' : 'var(--bg-3)' }} />
+            <div key={s} style={{ flex: 1, height: 3, background: step >= s ? '#c41e3a' : 'var(--bg-3)' }} />
           ))}
         </div>
 
@@ -100,8 +100,8 @@ export default function AddContractModal({ onSave, onClose, commodities, systems
           <div>
             {/* Auto-detected system badge */}
             {system && (
-              <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 18, padding: '10px 14px', background: 'rgba(229,0,0,0.05)', border: '2px solid #e50000' }}>
-                <span style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 13, color: '#e50000' }}>{type}</span>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 18, padding: '10px 14px', background: 'rgba(196,30,58,0.05)', border: '2px solid #c41e3a' }}>
+                <span style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 13, color: '#c41e3a' }}>{type}</span>
                 <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--muted)', letterSpacing: '0.06em' }}>{system}</span>
               </div>
             )}
@@ -128,7 +128,7 @@ export default function AddContractModal({ onSave, onClose, commodities, systems
                       />
                     </div>
                     {arr.length > 1 && (
-                      <button style={{ background: 'none', border: 'none', color: '#e50000', cursor: 'pointer', fontSize: 20, fontWeight: 700 }}
+                      <button style={{ background: 'none', border: 'none', color: '#c41e3a', cursor: 'pointer', fontSize: 20, fontWeight: 700 }}
                         onClick={() => setArr(arr.filter((_, j) => j !== i))}>×</button>
                     )}
                   </div>
@@ -155,7 +155,7 @@ export default function AddContractModal({ onSave, onClose, commodities, systems
                 />
                 <span style={{ fontSize: 11, color: 'var(--muted)', fontFamily: 'var(--font-mono)', flexShrink: 0 }}>SCU</span>
                 {cargo.length > 1 && (
-                  <button style={{ background: 'none', border: 'none', color: '#e50000', cursor: 'pointer', fontSize: 20, fontWeight: 700 }}
+                  <button style={{ background: 'none', border: 'none', color: '#c41e3a', cursor: 'pointer', fontSize: 20, fontWeight: 700 }}
                     onClick={() => setCargo(cargo.filter((_, j) => j !== i))}>×</button>
                 )}
               </div>
@@ -169,7 +169,7 @@ export default function AddContractModal({ onSave, onClose, commodities, systems
             <div style={{ marginTop: 20, padding: '14px', background: 'var(--bg-2)', border: '2px solid #000' }}>
               <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--muted)', marginBottom: 8 }}>Route Summary</div>
               <div style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 14, marginBottom: 4 }}>
-                <span style={{ color: '#e50000' }}>{type || 'Hauling'}</span>
+                <span style={{ color: '#c41e3a' }}>{type || 'Hauling'}</span>
                 {system && <span style={{ color: 'var(--muted)', fontWeight: 400 }}> · {system}</span>}
               </div>
               <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--muted)', marginBottom: 8 }}>
@@ -177,7 +177,7 @@ export default function AddContractModal({ onSave, onClose, commodities, systems
                 <span style={{ margin: '0 6px' }}>→</span>
                 {dropoffs.filter(d => d.name).map(d => d.name).join(', ')}
               </div>
-              <div style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 18, color: '#e50000', letterSpacing: '-0.02em' }}>
+              <div style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 18, color: '#c41e3a', letterSpacing: '-0.02em' }}>
                 {totalSCU.toLocaleString()} SCU
               </div>
             </div>
