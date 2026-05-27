@@ -158,17 +158,16 @@ WHERE system = 'Stanton' AND body = 'Yela' AND name = 'INS Jericho';
 DELETE FROM public.locations
 WHERE system = 'Pyro' AND body = 'Deep Space' AND name = 'Orbituary';
 
--- Normalise RAYARI outpost name capitalisation
--- v1/v2 used all-caps 'RAYARI'; Section 4 uses mixed-case 'Rayari'
--- Must rename first so ON CONFLICT keys in Section 4 match
-UPDATE public.locations SET name = 'Rayari Cantwell Research Outpost'
-  WHERE system = 'Stanton' AND name = 'RAYARI Cantwell Research Outpost';
-UPDATE public.locations SET name = 'Rayari McGrath Research Outpost'
-  WHERE system = 'Stanton' AND name = 'RAYARI McGrath Research Outpost';
-UPDATE public.locations SET name = 'Rayari Anvik Research Outpost'
-  WHERE system = 'Stanton' AND name = 'RAYARI Anvik Research Outpost';
-UPDATE public.locations SET name = 'Rayari Deltana Research Outpost'
-  WHERE system = 'Stanton' AND name = 'RAYARI Deltana Research Outpost';
+-- RAYARI outpost name capitalisation: v2 already inserted the mixed-case 'Rayari ...' rows,
+-- so renaming the stale uppercase 'RAYARI ...' rows would collide. Delete them instead;
+-- Section 4's upsert will insert/update the correct mixed-case entries.
+DELETE FROM public.locations
+  WHERE system = 'Stanton' AND name IN (
+    'RAYARI Cantwell Research Outpost',
+    'RAYARI McGrath Research Outpost',
+    'RAYARI Anvik Research Outpost',
+    'RAYARI Deltana Research Outpost'
+  );
 
 -- ─────────────────────────────────────────────────────────────
 -- SECTION 3: De-dup after body moves
