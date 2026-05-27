@@ -4,6 +4,10 @@ import { supabase } from '@/lib/supabase.js';
 const xf = (s) => ({
   id: s.id,
   date: s.date,
+  startedAt: s.started_at || null,
+  pausedAt: s.paused_at || null,
+  totalPausedMs: s.total_paused_ms || 0,
+  endedAt: s.ended_at || null,
   players: (s.session_players || []).map(sp => sp.profiles?.callsign).filter(Boolean),
   members: (s.session_players || []).map(sp => sp.profiles).filter(Boolean),
   contracts: (s.contracts || []).map(c => ({
@@ -11,6 +15,7 @@ const xf = (s) => ({
     type: c.type,
     system: c.system,
     done: c.done,
+    payout: Number(c.payout) || 0,
     creatorId: c.creator_id || null,
     creatorCallsign: c.creator?.callsign || null,
     creatorColor: c.creator?.color || null,
@@ -46,10 +51,10 @@ export function useSessions(enabled = true, userId) {
     const { data, error } = await supabase
       .from('sessions')
       .select(`
-        id, date,
+        id, date, started_at, paused_at, total_paused_ms, ended_at,
         session_players ( profiles ( id, callsign, color, avatar_url, home_region ) ),
         contracts (
-          id, type, system, done, created_at, creator_id,
+          id, type, system, done, payout, created_at, creator_id,
           creator:profiles!creator_id ( callsign, color ),
           contract_removal_votes ( voter_id ),
           contract_waypoints (
@@ -114,7 +119,7 @@ export function useSessions(enabled = true, userId) {
 
     const { data: c, error } = await supabase
       .from('contracts')
-      .insert({ session_id: sessionId, type: contract.type, system: contract.system, done: false, creator_id: user?.id || null })
+      .insert({ session_id: sessionId, type: contract.type, system: contract.system, done: false, creator_id: user?.id || null, payout: Number(contract.payout) || 0 })
       .select('id')
       .single();
     if (error) { console.error('createContract:', error); return; }
@@ -235,9 +240,53 @@ export function useSessions(enabled = true, userId) {
     await load();
   }, [load]);
 
+  // ── startSession ───────────────────────────────────────────
+  const startSession = useCallback(async (sessionId) => {
+    const now = new Date().toISOString();
+    await supabase.from('sessions').update({ started_at: now, paused_at: null }).eq('id', sessionId);
+    await load();
+  }, [load]);
+
+  // ── pauseSession ───────────────────────────────────────────
+  const pauseSession = useCallback(async (sessionId) => {
+    const now = new Date().toISOString();
+    await supabase.from('sessions').update({ paused_at: now }).eq('id', sessionId);
+    await load();
+  }, [load]);
+
+  // ── resumeSession ──────────────────────────────────────────
+  const resumeSession = useCallback(async (sessionId) => {
+    // Find current paused_at and accumulate
+    const sess = Object.values(sessions).find(s => s.id === sessionId);
+    if (!sess?.pausedAt) return;
+    const addedMs = Date.now() - new Date(sess.pausedAt).getTime();
+    await supabase.from('sessions').update({
+      paused_at: null,
+      total_paused_ms: (sess.totalPausedMs || 0) + addedMs,
+    }).eq('id', sessionId);
+    await load();
+  }, [sessions, load]);
+
+  // ── endSession ─────────────────────────────────────────────
+  const endSession = useCallback(async (sessionId) => {
+    const sess = Object.values(sessions).find(s => s.id === sessionId);
+    let totalPausedMs = sess?.totalPausedMs || 0;
+    // If currently paused, accumulate that pause too
+    if (sess?.pausedAt) {
+      totalPausedMs += Date.now() - new Date(sess.pausedAt).getTime();
+    }
+    await supabase.from('sessions').update({
+      ended_at: new Date().toISOString(),
+      paused_at: null,
+      total_paused_ms: totalPausedMs,
+    }).eq('id', sessionId);
+    await load();
+  }, [sessions, load]);
+
   return {
     sessions, loading,
     createSession, createContract, toggleDone, deleteContract,
     setWaypointStatus, castRemovalVote, withdrawRemovalVote, addPlayerToSession,
+    startSession, pauseSession, resumeSession, endSession,
   };
 }

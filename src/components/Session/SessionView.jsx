@@ -1,8 +1,98 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import TypeBadge from '../shared/TypeBadge.jsx';
 import { keyToLabel } from '../../utils/dateUtils.js';
 
 const wpName = (w) => (typeof w === 'object' ? w.name : w) || '';
+
+function SessionTimer({ session, onStart, onPause, onResume, onEnd }) {
+  const [now, setNow] = useState(Date.now());
+
+  useEffect(() => {
+    if (!session.startedAt || session.endedAt) return;
+    if (session.pausedAt) return; // paused, no tick
+    const id = setInterval(() => setNow(Date.now()), 1000);
+    return () => clearInterval(id);
+  }, [session.startedAt, session.pausedAt, session.endedAt]);
+
+  const formatDuration = (ms) => {
+    if (ms < 0) ms = 0;
+    const s = Math.floor(ms / 1000);
+    const h = Math.floor(s / 3600);
+    const m = Math.floor((s % 3600) / 60);
+    const sec = s % 60;
+    if (h > 0) return `${h}h ${String(m).padStart(2,'0')}m ${String(sec).padStart(2,'0')}s`;
+    return `${m}m ${String(sec).padStart(2,'0')}s`;
+  };
+
+  let elapsed = 0;
+  if (session.startedAt) {
+    const end = session.endedAt ? new Date(session.endedAt).getTime() : now;
+    const paused = session.pausedAt
+      ? (session.totalPausedMs || 0) + (now - new Date(session.pausedAt).getTime())
+      : (session.totalPausedMs || 0);
+    elapsed = end - new Date(session.startedAt).getTime() - paused;
+  }
+
+  const isPaused = !!session.pausedAt;
+  const isEnded = !!session.endedAt;
+  const isStarted = !!session.startedAt;
+
+  return (
+    <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
+      {isStarted && (
+        <div style={{
+          fontFamily: 'var(--font-mono)', fontSize: 16, fontWeight: 700,
+          color: isEnded ? '#2d8659' : isPaused ? '#ff9800' : '#fff',
+          letterSpacing: '0.06em',
+          background: '#000', padding: '4px 12px', border: '2px solid #333',
+        }}>
+          ⏱ {formatDuration(elapsed)}
+          {isPaused && <span style={{ fontSize: 10, marginLeft: 6, color: '#ff9800' }}>PAUSED</span>}
+          {isEnded && <span style={{ fontSize: 10, marginLeft: 6, color: '#2d8659' }}>ENDED</span>}
+        </div>
+      )}
+
+      {!isStarted && (
+        <button onClick={onStart} style={{
+          background: '#2d8659', border: '2px solid #000', color: '#fff',
+          padding: '8px 16px', cursor: 'pointer',
+          fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 12,
+          textTransform: 'uppercase', letterSpacing: '0.06em',
+        }}>▶ Start Session</button>
+      )}
+
+      {isStarted && !isEnded && !isPaused && (
+        <button onClick={onPause} style={{
+          background: '#ff9800', border: '2px solid #000', color: '#fff',
+          padding: '8px 16px', cursor: 'pointer',
+          fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 11,
+          textTransform: 'uppercase', letterSpacing: '0.04em',
+        }}>⏸ Pause</button>
+      )}
+
+      {isStarted && !isEnded && isPaused && (
+        <button onClick={onResume} style={{
+          background: '#0066cc', border: '2px solid #000', color: '#fff',
+          padding: '8px 16px', cursor: 'pointer',
+          fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 11,
+          textTransform: 'uppercase', letterSpacing: '0.04em',
+        }}>▶ Resume</button>
+      )}
+
+      {isStarted && !isEnded && (
+        <button onClick={onEnd} style={{
+          background: 'transparent', border: '2px solid rgba(255,255,255,0.3)', color: 'rgba(255,255,255,0.6)',
+          padding: '8px 14px', cursor: 'pointer',
+          fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 11,
+          textTransform: 'uppercase', letterSpacing: '0.04em',
+        }}
+        onMouseEnter={e => { e.currentTarget.style.borderColor = '#c41e3a'; e.currentTarget.style.color = '#c41e3a'; }}
+        onMouseLeave={e => { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.3)'; e.currentTarget.style.color = 'rgba(255,255,255,0.6)'; }}
+        >■ End</button>
+      )}
+    </div>
+  );
+}
 
 function PlayerSeat({ member }) {
   const color = member?.color || '#8b949e';
@@ -62,43 +152,59 @@ function WaypointRow({ waypoint, myProfileId, members, onSetStatus }) {
           const m = memberMap[c.profileId];
           const label = m?.callsign || c.profileId.slice(0, 6);
           const col = m?.color || '#888';
-          const done = c.status === 'done';
+          const icon = c.status === 'done' ? '✅' : c.status === 'picked_up' ? '🟠' : '❌';
+          const borderCol = c.status === 'done' ? '#2d8659' : c.status === 'picked_up' ? '#ff9800' : '#c41e3a';
           return (
             <span key={c.profileId} style={{
               fontFamily: 'var(--font-mono)', fontSize: 10, padding: '2px 7px',
-              background: done ? 'rgba(45,134,89,0.1)' : 'rgba(196,30,58,0.08)',
-              border: `1.5px solid ${done ? '#2d8659' : '#c41e3a'}`,
-              color: done ? '#2d8659' : '#c41e3a',
-              fontWeight: 600,
+              border: `1.5px solid ${borderCol}`,
+              color: borderCol, fontWeight: 600,
             }}>
-              <span style={{ color: col }}>■</span> {label} {done ? '✅' : '❌'}
+              <span style={{ color: col }}>■</span> {label} {icon}
             </span>
           );
         })}
 
         {myProfileId && (
           <div style={{ display: 'flex', gap: 3 }}>
+            {/* Orange circle — Picked Up */}
+            <button
+              onClick={() => onSetStatus(waypoint.id, myCompletion?.status === 'picked_up' ? null : 'picked_up')}
+              title="Mark picked up / in transit"
+              style={{
+                width: 28, height: 28, borderRadius: '50%', cursor: 'pointer',
+                border: `2px solid ${myCompletion?.status === 'picked_up' ? '#ff9800' : '#ccc'}`,
+                background: myCompletion?.status === 'picked_up' ? '#ff9800' : 'transparent',
+                color: myCompletion?.status === 'picked_up' ? '#fff' : '#bbb',
+                fontWeight: 700, fontSize: 12,
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+              }}
+            >●</button>
+            {/* Green check — Delivered/Done */}
             <button
               onClick={() => onSetStatus(waypoint.id, myCompletion?.status === 'done' ? null : 'done')}
+              title="Mark delivered / done"
               style={{
-                width: 28, height: 28, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                width: 28, height: 28, cursor: 'pointer',
                 border: `2px solid #000`,
                 background: myCompletion?.status === 'done' ? '#2d8659' : '#fff',
                 color: myCompletion?.status === 'done' ? '#fff' : '#666',
                 fontWeight: 700, fontSize: 13,
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
               }}
-              title="Mark done"
             >✓</button>
+            {/* Red X — Failed */}
             <button
               onClick={() => onSetStatus(waypoint.id, myCompletion?.status === 'failed' ? null : 'failed')}
+              title="Mark failed"
               style={{
-                width: 28, height: 28, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                width: 28, height: 28, cursor: 'pointer',
                 border: `2px solid ${myCompletion?.status === 'failed' ? '#c41e3a' : '#ccc'}`,
                 background: 'transparent',
-                color: '#c41e3a',
+                color: myCompletion?.status === 'failed' ? '#c41e3a' : '#bbb',
                 fontWeight: 700, fontSize: 13,
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
               }}
-              title="Mark failed"
             >✕</button>
           </div>
         )}
@@ -110,6 +216,7 @@ function WaypointRow({ waypoint, myProfileId, members, onSetStatus }) {
 export default function SessionView({
   session, onBack, onAddContract, onToggleDone, onDeleteContract,
   onSetWaypointStatus, onCastRemovalVote, onWithdrawVote, onAddPlayer,
+  onStartSession, onPauseSession, onResumeSession, onEndSession,
   playerColors, myProfileId, myCallsign, friends,
 }) {
   const [showInvite, setShowInvite] = useState(false);
@@ -172,16 +279,25 @@ export default function SessionView({
           </div>
         </div>
 
-        <button onClick={onAddContract}
-          style={{
-            background: '#c41e3a', border: '2px solid #000', color: '#fff',
-            padding: '10px 20px', cursor: 'pointer',
-            fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 12,
-            letterSpacing: '0.08em', textTransform: 'uppercase',
-          }}
-          onMouseEnter={e => { e.currentTarget.style.background = '#a01830'; }}
-          onMouseLeave={e => { e.currentTarget.style.background = '#c41e3a'; }}
-        >+ Add Contract</button>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
+          <SessionTimer
+            session={session}
+            onStart={() => onStartSession?.(session.id)}
+            onPause={() => onPauseSession?.(session.id)}
+            onResume={() => onResumeSession?.(session.id)}
+            onEnd={() => onEndSession?.(session.id)}
+          />
+          <button onClick={onAddContract}
+            style={{
+              background: '#c41e3a', border: '2px solid #000', color: '#fff',
+              padding: '10px 20px', cursor: 'pointer',
+              fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 12,
+              letterSpacing: '0.08em', textTransform: 'uppercase',
+            }}
+            onMouseEnter={e => { e.currentTarget.style.background = '#a01830'; }}
+            onMouseLeave={e => { e.currentTarget.style.background = '#c41e3a'; }}
+          >+ Add Contract</button>
+        </div>
       </div>
 
       {/* ── Grey content area ── */}
@@ -323,6 +439,15 @@ export default function SessionView({
                   }}>
                     {contract.system}
                   </span>
+                  {contract.payout > 0 && (
+                    <span style={{
+                      fontFamily: 'var(--font-mono)', fontSize: 11, color: '#2d8659', fontWeight: 700,
+                      background: 'rgba(45,134,89,0.08)', border: '1.5px solid #2d8659',
+                      padding: '2px 8px',
+                    }}>
+                      {contract.payout.toLocaleString()} aUEC
+                    </span>
+                  )}
                   {contract.creatorCallsign && (
                     <span style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: '#888' }}>
                       Posted by:{' '}

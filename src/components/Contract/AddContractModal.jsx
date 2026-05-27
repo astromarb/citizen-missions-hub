@@ -36,6 +36,7 @@ export default function AddContractModal({ onSave, onClose, commodities, systems
   const [pickups,  setPickups]  = useState([emptyWp()]);
   const [dropoffs, setDropoffs] = useState([emptyWp()]);
   const [cargo,    setCargo]    = useState([{ commodity: '', scu: '' }]);
+  const [payout,   setPayout]   = useState('');
 
   const { system, type } = useMemo(
     () => deriveRoute(pickups, dropoffs, systemsMap || {}),
@@ -54,6 +55,7 @@ export default function AddContractModal({ onSave, onClose, commodities, systems
     pickups:  pickups.filter(p => p.name),
     dropoffs: dropoffs.filter(d => d.name),
     cargo:    cargo.filter(c => c.commodity && c.scu),
+    payout:   Number(payout) || 0,
   });
 
   const setPickup  = (i, v) => { const a = [...pickups];  a[i] = v; setPickups(a); };
@@ -145,6 +147,21 @@ export default function AddContractModal({ onSave, onClose, commodities, systems
         {/* ── STEP 2: Cargo ── */}
         {step === 2 && (
           <div>
+            {/* Payout */}
+            <div style={{ marginBottom: 16 }}>
+              <span style={lbl}>Mission Payout (aUEC)</span>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                <input
+                  type="number" min="0" step="1000"
+                  style={{ flex: 1, padding: '8px 10px', background: '#fff', border: '2px solid #000', color: '#000', fontSize: 13, fontFamily: 'var(--font-mono)', outline: 'none' }}
+                  placeholder="e.g. 450000"
+                  value={payout}
+                  onChange={e => setPayout(e.target.value)}
+                />
+                <span style={{ fontSize: 11, color: 'var(--muted)', fontFamily: 'var(--font-mono)', flexShrink: 0 }}>aUEC</span>
+              </div>
+            </div>
+
             {cargo.map((c, i) => (
               <div key={i} style={{ display: 'flex', gap: 8, alignItems: 'center', marginBottom: 8 }}>
                 <CommodityAutocomplete value={c.commodity} onChange={v => setCargoCom(i, v)} commodities={commodities} />
@@ -180,6 +197,11 @@ export default function AddContractModal({ onSave, onClose, commodities, systems
               <div style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 18, color: '#c41e3a', letterSpacing: '-0.02em' }}>
                 {totalSCU.toLocaleString()} SCU
               </div>
+              {payout && Number(payout) > 0 && (
+                <div style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 14, color: '#2d8659', marginTop: 4 }}>
+                  {Number(payout).toLocaleString()} aUEC
+                </div>
+              )}
             </div>
           </div>
         )}

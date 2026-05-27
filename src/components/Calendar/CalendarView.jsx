@@ -58,12 +58,12 @@ export default function CalendarView({ sessions, viewDate, onSelectDate, onNewSe
 
                 {session && (
                   <div>
-                    <div style={{ fontFamily: 'var(--font-mono)', fontSize: 8, color: allDone ? '#2D7A1F' : '#c41e3a', fontWeight: 700, marginBottom: 2 }}>
+                    <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: allDone ? '#2D7A1F' : '#c41e3a', fontWeight: 700, marginBottom: 2 }}>
                       {session.contracts.length}c{allDone ? ' ✓' : ''}
                     </div>
                     <div style={{ display: 'flex', gap: 2 }}>
                       {session.players.slice(0, 5).map(p => (
-                        <span key={p} style={{ width: 4, height: 4, borderRadius: '50%', background: PLAYER_COLORS[p] || '#000', display: 'inline-block' }} />
+                        <span key={p} style={{ width: 6, height: 6, borderRadius: '50%', background: PLAYER_COLORS[p] || '#000', display: 'inline-block' }} />
                       ))}
                     </div>
                   </div>

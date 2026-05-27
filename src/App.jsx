@@ -15,6 +15,7 @@ import StatsView from '@/components/Stats/StatsView.jsx';
 import FriendsView from '@/components/Friends/FriendsView.jsx';
 import SettingsView from '@/components/Settings/SettingsView.jsx';
 import OnboardingFlow from '@/components/Onboarding/OnboardingFlow.jsx';
+import MissionsView from '@/components/Missions/MissionsView.jsx';
 import { ToastProvider, useToast } from '@/components/shared/Toast.jsx';
 import { DEFAULT_PLAYERS, PLAYER_COLORS } from '@/data/players.js';
 import { fmtKey } from '@/utils/dateUtils.js';
@@ -138,6 +139,7 @@ function AppInner() {
     sessions, loading: sessionsLoading,
     createSession, createContract, toggleDone, deleteContract,
     setWaypointStatus, castRemovalVote, withdrawRemovalVote, addPlayerToSession,
+    startSession, pauseSession, resumeSession, endSession,
   } = useSessions(!!authSession, userId);
   const { commodities, systemsMap } = useRefData(!!authSession);
   const { profile, loading: profileLoading, checkCallsign, updateProfile, reload: reloadProfile } = useProfile(userId);
@@ -238,6 +240,11 @@ function AppInner() {
     showToast('Pilot invited to session', 'success');
   };
 
+  const handleStartSession  = (sessionId) => { startSession(sessionId);  SFX.open(); showToast('Session started', 'success'); };
+  const handlePauseSession  = (sessionId) => { pauseSession(sessionId);  SFX.back(); showToast('Session paused', 'info'); };
+  const handleResumeSession = (sessionId) => { resumeSession(sessionId); SFX.boop(); showToast('Session resumed', 'success'); };
+  const handleEndSession    = (sessionId) => { endSession(sessionId);    SFX.back(); showToast('Session ended', 'info'); };
+
   const handleFriendRequest = async (id) => {
     await sendRequest(id);
     SFX.plus();
@@ -303,6 +310,7 @@ function AppInner() {
 
   const TABS = [
     ['calendar', 'Calendar'],
+    ['missions', 'Missions'],
     ['roster',   'Roster'],
     ['stats',    'Stats'],
     ['friends',  'Friends'],
@@ -479,6 +487,10 @@ function AppInner() {
               onCastRemovalVote={handleCastVote}
               onWithdrawVote={handleWithdrawVote}
               onAddPlayer={handleAddPlayer}
+              onStartSession={handleStartSession}
+              onPauseSession={handlePauseSession}
+              onResumeSession={handleResumeSession}
+              onEndSession={handleEndSession}
               playerColors={playerColors}
               myProfileId={myProfileId}
               myCallsign={myCallsign}
@@ -486,8 +498,9 @@ function AppInner() {
             />
           )}
 
-          {activeTab === 'roster'   && <RosterView sessions={sessions} profiles={profiles} />}
-          {activeTab === 'stats'    && <StatsView sessions={sessions} />}
+          {activeTab === 'missions'  && <MissionsView sessions={sessions} myProfileId={myProfileId} />}
+          {activeTab === 'roster'    && <RosterView sessions={sessions} profiles={profiles} />}
+          {activeTab === 'stats'     && <StatsView sessions={sessions} />}
           {activeTab === 'friends'  && (
             <FriendsView
               friends={friends}
