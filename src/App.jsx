@@ -38,15 +38,29 @@ const getUserName = (user) =>
 
 function NewSessionModal({ dateKey, onSave, onClose, profiles, friends }) {
   const [players, setPlayers] = useState([]);
+  const [query, setQuery] = useState('');
+  const [dropdownOpen, setDropdownOpen] = useState(false);
   const d = new Date(dateKey + 'T12:00:00');
   const label = d.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' });
-  const toggle = (callsign) => {
-    SFX.boop();
-    setPlayers(prev => prev.includes(callsign) ? prev.filter(x => x !== callsign) : [...prev, callsign]);
-  };
 
   const friendList = (friends || []).map(f => ({ id: f.id, callsign: f.callsign, color: f.color || '#8b949e' }));
   const hasFriends = friendList.length > 0;
+
+  const filtered = friendList.filter(f =>
+    !players.includes(f.callsign) &&
+    (query.trim() === '' || f.callsign.toLowerCase().includes(query.toLowerCase()))
+  );
+
+  const addPlayer = (callsign) => {
+    SFX.boop();
+    setPlayers(prev => [...prev, callsign]);
+    setQuery('');
+    setDropdownOpen(false);
+  };
+
+  const removePlayer = (callsign) => {
+    setPlayers(prev => prev.filter(x => x !== callsign));
+  };
 
   return (
     <div style={{
@@ -54,7 +68,7 @@ function NewSessionModal({ dateKey, onSave, onClose, profiles, friends }) {
       display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 999, padding: 20,
     }}
       onClick={e => { if (e.target === e.currentTarget) { SFX.back(); onClose(); } }}>
-      <div style={{ background: 'var(--bg-1)', border: '2px solid var(--border)', padding: '32px 28px', width: 420 }}>
+      <div style={{ background: 'var(--bg-1)', border: '2px solid var(--border)', padding: '32px 28px', width: 420, maxWidth: '100%' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 6 }}>
           <div style={{
             fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 22,
@@ -75,21 +89,83 @@ function NewSessionModal({ dateKey, onSave, onClose, profiles, friends }) {
             <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--muted)' }}>You can still fly solo — or add crew from the Friends tab.</div>
           </div>
         ) : (
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginBottom: 28 }}>
-            {friendList.map(p => {
-              const active = players.includes(p.callsign);
-              const color = p.color;
-              return (
-                <button key={p.id} onClick={() => toggle(p.callsign)} style={{
-                  padding: '7px 16px', cursor: 'pointer',
-                  fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 12,
-                  textTransform: 'uppercase', letterSpacing: '0.06em',
-                  border: `2px solid ${active ? color : 'var(--border)'}`,
-                  background: active ? `${color}20` : 'var(--bg-1)',
-                  color: active ? color : 'var(--text)',
-                }}>{p.callsign}</button>
-              );
-            })}
+          <div style={{ marginBottom: 28 }}>
+            {/* Selected crew chips */}
+            {players.length > 0 && (
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginBottom: 10 }}>
+                {players.map(cs => {
+                  const f = friendList.find(x => x.callsign === cs);
+                  const chipColor = f?.color || '#8b949e';
+                  return (
+                    <div key={cs} style={{
+                      display: 'flex', alignItems: 'center', gap: 6,
+                      padding: '4px 8px 4px 10px',
+                      border: `2px solid ${chipColor}`,
+                      background: `${chipColor}22`,
+                    }}>
+                      <div style={{ width: 8, height: 8, borderRadius: '50%', background: chipColor, flexShrink: 0 }} />
+                      <span style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.04em', color: chipColor }}>{cs}</span>
+                      <button
+                        onClick={() => removePlayer(cs)}
+                        style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '0 0 0 2px', color: chipColor, fontWeight: 800, fontSize: 14, lineHeight: 1, display: 'flex', alignItems: 'center' }}
+                      >×</button>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+
+            {/* Search input + dropdown */}
+            <div style={{ position: 'relative' }}
+              onBlur={e => { if (!e.currentTarget.contains(e.relatedTarget)) setDropdownOpen(false); }}>
+              <input
+                value={query}
+                onChange={e => { setQuery(e.target.value); setDropdownOpen(true); }}
+                onFocus={() => setDropdownOpen(true)}
+                placeholder={players.length ? 'Add more crew…' : 'Search crew by callsign…'}
+                style={{
+                  width: '100%', padding: '9px 12px',
+                  border: '2px solid var(--border)', background: 'var(--bg-1)',
+                  fontFamily: 'var(--font-display)', fontWeight: 600, fontSize: 12,
+                  color: 'var(--text)', outline: 'none', letterSpacing: '0.02em',
+                }}
+              />
+              {dropdownOpen && filtered.length > 0 && (
+                <div style={{
+                  position: 'absolute', top: '100%', left: 0, right: 0,
+                  border: '2px solid var(--border)', borderTop: 'none',
+                  background: 'var(--bg-1)', zIndex: 10, maxHeight: 200, overflowY: 'auto',
+                }}>
+                  {filtered.map(f => (
+                    <button
+                      key={f.id}
+                      onMouseDown={e => e.preventDefault()}
+                      onClick={() => addPlayer(f.callsign)}
+                      style={{
+                        display: 'flex', alignItems: 'center', gap: 10,
+                        width: '100%', padding: '9px 14px', cursor: 'pointer',
+                        border: 'none', borderBottom: '1px solid var(--bg-2)',
+                        background: 'var(--bg-1)', textAlign: 'left',
+                      }}
+                      onMouseEnter={e => { e.currentTarget.style.background = 'var(--bg-2)'; }}
+                      onMouseLeave={e => { e.currentTarget.style.background = 'var(--bg-1)'; }}
+                    >
+                      <div style={{ width: 10, height: 10, borderRadius: '50%', background: f.color, border: '1px solid var(--border)', flexShrink: 0 }} />
+                      <span style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 12, textTransform: 'uppercase', letterSpacing: '0.04em', color: 'var(--text)' }}>{f.callsign}</span>
+                    </button>
+                  ))}
+                </div>
+              )}
+              {dropdownOpen && filtered.length === 0 && query.trim() !== '' && (
+                <div style={{
+                  position: 'absolute', top: '100%', left: 0, right: 0,
+                  border: '2px solid var(--border)', borderTop: 'none',
+                  background: 'var(--bg-1)', zIndex: 10,
+                  padding: '10px 14px',
+                  fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--muted)',
+                }}>No match found</div>
+              )}
+            </div>
           </div>
         )}
 
