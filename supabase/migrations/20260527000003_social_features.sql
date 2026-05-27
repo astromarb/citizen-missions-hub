@@ -56,57 +56,60 @@ ALTER TABLE public.friendships            ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.contract_removal_votes ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.waypoint_completions   ENABLE ROW LEVEL SECURITY;
 
--- friendships: select where you're a party
-CREATE POLICY IF NOT EXISTS "friendships_select" ON public.friendships
+-- friendships policies
+DROP POLICY IF EXISTS "friendships_select" ON public.friendships;
+CREATE POLICY "friendships_select" ON public.friendships
   FOR SELECT TO authenticated
   USING (requester_id = auth.uid() OR addressee_id = auth.uid());
 
--- friendships: insert only as requester
-CREATE POLICY IF NOT EXISTS "friendships_insert" ON public.friendships
+DROP POLICY IF EXISTS "friendships_insert" ON public.friendships;
+CREATE POLICY "friendships_insert" ON public.friendships
   FOR INSERT TO authenticated
   WITH CHECK (requester_id = auth.uid());
 
--- friendships: update only as addressee (accepting/declining)
-CREATE POLICY IF NOT EXISTS "friendships_update" ON public.friendships
+DROP POLICY IF EXISTS "friendships_update" ON public.friendships;
+CREATE POLICY "friendships_update" ON public.friendships
   FOR UPDATE TO authenticated
   USING (addressee_id = auth.uid());
 
--- friendships: delete as either party (unfriend or cancel request)
-CREATE POLICY IF NOT EXISTS "friendships_delete" ON public.friendships
+DROP POLICY IF EXISTS "friendships_delete" ON public.friendships;
+CREATE POLICY "friendships_delete" ON public.friendships
   FOR DELETE TO authenticated
   USING (requester_id = auth.uid() OR addressee_id = auth.uid());
 
--- contract_removal_votes: anyone can see votes
-CREATE POLICY IF NOT EXISTS "removal_votes_select" ON public.contract_removal_votes
+-- contract_removal_votes policies
+DROP POLICY IF EXISTS "removal_votes_select" ON public.contract_removal_votes;
+CREATE POLICY "removal_votes_select" ON public.contract_removal_votes
   FOR SELECT TO authenticated
   USING (true);
 
--- contract_removal_votes: insert only as yourself
-CREATE POLICY IF NOT EXISTS "removal_votes_insert" ON public.contract_removal_votes
+DROP POLICY IF EXISTS "removal_votes_insert" ON public.contract_removal_votes;
+CREATE POLICY "removal_votes_insert" ON public.contract_removal_votes
   FOR INSERT TO authenticated
   WITH CHECK (voter_id = auth.uid());
 
--- contract_removal_votes: delete only your own vote
-CREATE POLICY IF NOT EXISTS "removal_votes_delete" ON public.contract_removal_votes
+DROP POLICY IF EXISTS "removal_votes_delete" ON public.contract_removal_votes;
+CREATE POLICY "removal_votes_delete" ON public.contract_removal_votes
   FOR DELETE TO authenticated
   USING (voter_id = auth.uid());
 
--- waypoint_completions: anyone can read
-CREATE POLICY IF NOT EXISTS "waypoint_completions_select" ON public.waypoint_completions
+-- waypoint_completions policies
+DROP POLICY IF EXISTS "waypoint_completions_select" ON public.waypoint_completions;
+CREATE POLICY "waypoint_completions_select" ON public.waypoint_completions
   FOR SELECT TO authenticated
   USING (true);
 
--- waypoint_completions: insert only your own
-CREATE POLICY IF NOT EXISTS "waypoint_completions_insert" ON public.waypoint_completions
+DROP POLICY IF EXISTS "waypoint_completions_insert" ON public.waypoint_completions;
+CREATE POLICY "waypoint_completions_insert" ON public.waypoint_completions
   FOR INSERT TO authenticated
   WITH CHECK (profile_id = auth.uid());
 
--- waypoint_completions: update only your own
-CREATE POLICY IF NOT EXISTS "waypoint_completions_update" ON public.waypoint_completions
+DROP POLICY IF EXISTS "waypoint_completions_update" ON public.waypoint_completions;
+CREATE POLICY "waypoint_completions_update" ON public.waypoint_completions
   FOR UPDATE TO authenticated
   USING (profile_id = auth.uid());
 
--- waypoint_completions: delete only your own
-CREATE POLICY IF NOT EXISTS "waypoint_completions_delete" ON public.waypoint_completions
+DROP POLICY IF EXISTS "waypoint_completions_delete" ON public.waypoint_completions;
+CREATE POLICY "waypoint_completions_delete" ON public.waypoint_completions
   FOR DELETE TO authenticated
   USING (profile_id = auth.uid());
