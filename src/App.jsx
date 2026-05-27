@@ -66,12 +66,12 @@ function NewSessionModal({ dateKey, onSave, onClose, profiles, friends }) {
         <div style={{
           fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 10,
           letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: 12, color: 'var(--text)',
-        }}>Select crew from friends</div>
+        }}>Select crew from friends <span style={{ fontWeight: 400, color: 'var(--muted)', fontSize: 9, letterSpacing: '0.06em' }}>(optional — leave empty to fly solo)</span></div>
 
         {!hasFriends ? (
           <div style={{ padding: '18px 14px', background: 'var(--bg-2)', border: '2px dashed #ccc', marginBottom: 28, textAlign: 'center' }}>
             <div style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 13, color: 'var(--muted)', marginBottom: 4 }}>No friends yet</div>
-            <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--muted)' }}>Add crew from the Friends tab first.</div>
+            <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--muted)' }}>You can still fly solo — or add crew from the Friends tab.</div>
           </div>
         ) : (
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginBottom: 28 }}>
@@ -107,13 +107,12 @@ function NewSessionModal({ dateKey, onSave, onClose, profiles, friends }) {
             style={{
               padding: '10px 24px', fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 12,
               textTransform: 'uppercase', letterSpacing: '0.06em',
-              border: `2px solid ${players.length ? '#c41e3a' : '#ccc'}`,
-              background: players.length ? '#c41e3a' : 'var(--bg-3)',
-              color: players.length ? '#fff' : '#999',
-              cursor: players.length ? 'pointer' : 'default',
+              border: '2px solid #c41e3a', background: '#c41e3a', color: '#fff', cursor: 'pointer',
             }}
-            onClick={() => { if (players.length) { SFX.open(); onSave({ date: dateKey, players }); } }}
-          >Open Session →</button>
+            onMouseEnter={e => { e.currentTarget.style.background = '#a01830'; e.currentTarget.style.borderColor = '#a01830'; }}
+            onMouseLeave={e => { e.currentTarget.style.background = '#c41e3a'; e.currentTarget.style.borderColor = '#c41e3a'; }}
+            onClick={() => { SFX.open(); onSave({ date: dateKey, players }); }}
+          >{players.length ? 'Open Session →' : 'Fly Solo →'}</button>
         </div>
       </div>
     </div>
