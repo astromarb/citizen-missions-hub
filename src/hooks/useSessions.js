@@ -79,9 +79,14 @@ export function useSessions(enabled = true, userId) {
     load();
 
     channelRef.current = supabase
-      .channel('social-realtime')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'waypoint_completions' }, load)
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'contract_removal_votes' }, load)
+      .channel('sessions-realtime')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'sessions' },           load)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'session_players' },    load)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'contracts' },          load)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'contract_waypoints' }, load)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'cargo_items' },        load)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'waypoint_completions'},load)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'contract_removal_votes'}, load)
       .subscribe();
 
     return () => {
