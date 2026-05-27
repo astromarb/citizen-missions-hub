@@ -148,15 +148,14 @@ SET is_active = false,
     notes     = 'Removed in Alpha 3.20.0; replaced by Seraphim Station'
 WHERE system = 'Stanton' AND name = 'Port Olisar';
 
--- INS Jericho is a MIC-L1 station, not on Yela (v1 placed it under Yela)
-UPDATE public.locations
-SET body  = 'MicroTech',
-    notes = 'UEE Navy outpost near MIC-L1; v1 incorrectly placed under Yela'
+-- INS Jericho: delete the v1 Yela row; v2 may have already inserted the MicroTech row,
+-- and Section 4 will upsert the correct entry.
+DELETE FROM public.locations
 WHERE system = 'Stanton' AND body = 'Yela' AND name = 'INS Jericho';
 
--- Orbituary orbits Bloom (Pyro III high orbit); v1 placed it under Pyro Deep Space
-UPDATE public.locations
-SET body = 'Pyro III'
+-- Orbituary: delete the v1 Deep Space row; v2 already inserted the Pyro III row,
+-- and Section 4 will upsert the correct entry.
+DELETE FROM public.locations
 WHERE system = 'Pyro' AND body = 'Deep Space' AND name = 'Orbituary';
 
 -- Normalise RAYARI outpost name capitalisation
