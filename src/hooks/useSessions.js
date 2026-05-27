@@ -103,20 +103,26 @@ export function useSessions(enabled = true, userId) {
       .single();
     if (error) { console.error('createSession:', error); return null; }
 
+    // Build the full player list: creator first, then selected friends
+    const playerRows = [];
+    if (userId) playerRows.push({ session_id: sess.id, profile_id: userId });
+
     if (players.length) {
       const { data: profs } = await supabase
         .from('profiles').select('id, callsign').in('callsign', players);
       if (profs?.length) {
-        await supabase.from('session_players').insert(
-          profs.map(p => ({ session_id: sess.id, profile_id: p.id }))
-        );
+        for (const p of profs) {
+          if (p.id !== userId) playerRows.push({ session_id: sess.id, profile_id: p.id });
+        }
       }
     }
 
-    const newSession = { id: sess.id, date: dateKey, players, members: [], contracts: [], startedAt: null, pausedAt: null, totalPausedMs: 0, endedAt: null };
-    setSessions(prev => ({ ...prev, [sess.id]: newSession }));
-    return newSession;
-  }, []);
+    if (playerRows.length) await supabase.from('session_players').insert(playerRows);
+
+    // Load fresh so members (including creator's profile) are populated
+    await load();
+    return { id: sess.id };
+  }, [userId, load]);
 
   // ── createContract ─────────────────────────────────────────
   const createContract = useCallback(async (sessionId, contract) => {
