@@ -23,7 +23,7 @@ export function useRefData(enabled = true) {
     async function load() {
       const [commRes, locRes] = await Promise.all([
         supabase.from('commodities').select('name').order('sort_order').order('name'),
-        supabase.from('locations').select('system, body, name').order('sort_order').order('name'),
+        supabase.from('locations').select('system, body, name').eq('is_active', true).order('sort_order').order('name'),
       ]);
 
       if (!commRes.error && commRes.data?.length) {
