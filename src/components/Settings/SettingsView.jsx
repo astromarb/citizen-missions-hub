@@ -49,9 +49,10 @@ export default function SettingsView({ profile, updateProfile, checkCallsign }) 
 
   const flash = (setter) => { setter(true); setTimeout(() => setter(false), 2000); };
 
-  // Preprocess image for OCR: grayscale → contrast boost → invert.
-  // SC's UI is light text on dark background; inverting gives Tesseract
-  // the dark-text-on-white input it reads most accurately.
+  // Preprocess image for OCR:
+  // 1. Blur (0.8px) — kills moiré noise from phone photos of monitors
+  // 2. Grayscale + 2.2× contrast — sharpens edges
+  // 3. Invert — SC's light-on-dark becomes dark-on-white, Tesseract's sweet spot
   const preprocessForOCR = (file) => new Promise((resolve, reject) => {
     const img = new Image();
     const url = URL.createObjectURL(file);
@@ -60,14 +61,15 @@ export default function SettingsView({ profile, updateProfile, checkCallsign }) 
       canvas.width = img.width;
       canvas.height = img.height;
       const ctx = canvas.getContext('2d');
+      ctx.filter = 'blur(0.8px)';
       ctx.drawImage(img, 0, 0);
+      ctx.filter = 'none';
       const id = ctx.getImageData(0, 0, canvas.width, canvas.height);
       const d = id.data;
       for (let i = 0; i < d.length; i += 4) {
         const g = 0.299 * d[i] + 0.587 * d[i + 1] + 0.114 * d[i + 2];
         const c = Math.min(255, Math.max(0, 2.2 * (g - 128) + 128));
-        const inv = 255 - c;
-        d[i] = d[i + 1] = d[i + 2] = inv;
+        d[i] = d[i + 1] = d[i + 2] = 255 - c;
       }
       ctx.putImageData(id, 0, 0);
       URL.revokeObjectURL(url);
@@ -77,29 +79,35 @@ export default function SettingsView({ profile, updateProfile, checkCallsign }) 
     img.src = url;
   });
 
+  // Parse a raw OCR string into an integer, rejecting anything below 10,000 aUEC.
+  // Real wallet balances are never single or double digits.
+  const parseAmount = (str) => {
+    const n = parseInt(str.replace(/[,\s]/g, ''), 10);
+    return (!isNaN(n) && n >= 10000) ? n : null;
+  };
+
   const extractBalance = (text) => {
-    // Pattern 1: explicit "aUEC" suffix — Wallet tab
-    const auecMatch = text.match(/(\d[\d,]+)\s*a[Uu][Ee][Cc]/);
-    if (auecMatch) {
-      const n = parseInt(auecMatch[1].replace(/,/g, ''), 10);
-      if (n > 0) return n;
+    // Pattern 1: comma-formatted or 5+ digit number before "aUEC"
+    // Requires at least one comma group OR 5 bare digits — blocks "2 aUEC", "3 aUEC"
+    for (const m of text.matchAll(/(\d{1,3}(?:,\d{3})+|\d{5,})\s*a[Uu][Ee][Cc]/g)) {
+      const n = parseAmount(m[1]);
+      if (n) return n;
     }
-    // Pattern 2: SC credit symbol (≡) read by OCR as =, 三, |, # etc.
-    const symMatch = text.match(/[=三≡|#*]{1,3}\s*(\d[\d,\s]+)/);
-    if (symMatch) {
-      const n = parseInt(symMatch[1].replace(/[,\s]/g, ''), 10);
-      if (n > 0) return n;
+    // Pattern 2: SC credit symbol read by OCR as =, 三, |, # etc.
+    for (const m of text.matchAll(/[=三≡|#*]{1,3}\s*(\d{1,3}(?:,\d{3})+|\d{5,})/g)) {
+      const n = parseAmount(m[1]);
+      if (n) return n;
     }
-    // Pattern 3: labelled balance text — Wallet tab header labels
-    const labelMatch = text.match(/(?:BALANCE|WALLET|CREDITS|FUNDS|UEC)[:\s]*(\d[\d,]+)/i);
-    if (labelMatch) {
-      const n = parseInt(labelMatch[1].replace(/,/g, ''), 10);
-      if (n > 0) return n;
+    // Pattern 3: Wallet tab label prefixes
+    for (const m of text.matchAll(/(?:BALANCE|WALLET|CREDITS|FUNDS|UEC)[:\s]*(\d[\d,]+)/gi)) {
+      const n = parseAmount(m[1]);
+      if (n) return n;
     }
-    // Fallback: largest 5+ digit number found anywhere
-    const nums = [...text.matchAll(/\d[\d,]{4,}/g)]
-      .map(m => parseInt(m[0].replace(/,/g, ''), 10))
-      .filter(n => !isNaN(n) && n > 0);
+    // Fallback: largest comma-formatted number OR 6+ bare digit number in the text
+    // \d{1,3}(?:,\d{3})+ matches "2,130,558" but not "2" or "130"
+    const nums = [...text.matchAll(/\b\d{1,3}(?:,\d{3})+\b|\b\d{6,}\b/g)]
+      .map(m => parseAmount(m[0]))
+      .filter(Boolean);
     return nums.length > 0 ? Math.max(...nums) : null;
   };
 
