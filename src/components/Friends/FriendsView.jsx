@@ -20,7 +20,7 @@ const sectionLabel = {
   marginBottom: 10, marginTop: 20,
 };
 
-export default function FriendsView({ friends, pending, sent, searchUsers, sendRequest, respond, remove, onViewProfile }) {
+export default function FriendsView({ friends, pending, sent, sessionInvites, searchUsers, sendRequest, respond, remove, onViewProfile, onRespondToSessionInvite }) {
   const [query, setQuery] = useState('');
   const [results, setResults] = useState([]);
   const [searching, setSearching] = useState(false);
@@ -73,9 +73,44 @@ export default function FriendsView({ friends, pending, sent, searchUsers, sendR
     </div>
   );
 
+  const pendingInvites = sessionInvites || [];
+
   return (
     <div style={{ padding: '20px' }}>
-      <div style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 20, letterSpacing: '-0.02em', marginBottom: 20 }}>Crew Network</div>
+      <div style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 20, letterSpacing: '-0.02em', marginBottom: 20 }}>Requests & Crew</div>
+
+      {/* ── Session Invites ── */}
+      {pendingInvites.length > 0 && (
+        <div style={{ marginBottom: 4 }}>
+          <div style={sectionLabel}>Session Invites ({pendingInvites.length})</div>
+          <div style={{ border: '2px solid #c41e3a', background: '#fff', padding: '0 16px' }}>
+            {pendingInvites.map(inv => {
+              const d = inv.session?.date
+                ? new Date(inv.session.date + 'T12:00:00').toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })
+                : 'Unknown date';
+              return (
+                <div key={inv.id} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '12px 0', borderBottom: '1px solid #f0f0f0' }}>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 13, color: '#000' }}>
+                      Session · {d}
+                    </div>
+                    <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '0.08em', marginTop: 2 }}>
+                      Invited by{' '}
+                      <span style={{ color: inv.inviter?.color || '#888', fontWeight: 700 }}>
+                        {inv.inviter?.callsign || '?'}
+                      </span>
+                    </div>
+                  </div>
+                  <div style={{ display: 'flex', gap: 6, flexShrink: 0 }}>
+                    {actionBtn('Accept', () => onRespondToSessionInvite?.(inv.id, true, inv.session_id), 'green')}
+                    {actionBtn('Decline', () => onRespondToSessionInvite?.(inv.id, false, inv.session_id), 'danger')}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
 
       {/* Search */}
       <div style={{ border: '2px solid #000', background: '#fff', padding: 16, marginBottom: 4 }}>

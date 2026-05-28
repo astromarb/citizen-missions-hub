@@ -4,6 +4,7 @@ import { supabase } from '@/lib/supabase.js';
 const xf = (s) => ({
   id: s.id,
   date: s.date,
+  inviteToken: s.invite_token || null,
   createdBy: s.created_by || null,
   createdAt: s.created_at || null,
   startedAt: s.started_at || null,

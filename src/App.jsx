@@ -4,10 +4,12 @@ import { useSessions } from '@/hooks/useSessions.js';
 import { useRefData } from '@/hooks/useRefData.js';
 import { useProfile } from '@/hooks/useProfile.js';
 import { useFriends } from '@/hooks/useFriends.js';
+import { useSessionInvites } from '@/hooks/useSessionInvites.js';
 import { useIsMobile } from '@/hooks/useIsMobile.js';
 import { SFX } from '@/hooks/useSound.js';
 import CalendarView from '@/components/Calendar/CalendarView.jsx';
 import SessionView from '@/components/Session/SessionView.jsx';
+import JoinSessionModal from '@/components/Session/JoinSessionModal.jsx';
 import AddContractModal from '@/components/Contract/AddContractModal.jsx';
 import SessionManageList from '@/components/Session/SessionManageList.jsx';
 import LoginScreen from '@/components/Auth/LoginScreen.jsx';
@@ -234,6 +236,8 @@ function AppInner() {
   const { commodities, systemsMap } = useRefData(!!authSession);
   const { profile, loading: profileLoading, checkCallsign, updateProfile, reload: reloadProfile } = useProfile(userId);
   const { friends, pending, sent, searchUsers, sendRequest, respond, remove: removeFriend } = useFriends(userId, !!authSession);
+  const { incoming: sessionInvites, createInvite, respondToInvite } = useSessionInvites(userId, !!authSession);
+  const [joinToken, setJoinToken] = useState(() => new URLSearchParams(window.location.search).get('join'));
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
@@ -347,10 +351,24 @@ function AppInner() {
     showToast('Vote withdrawn', 'info');
   };
 
-  const handleAddPlayer = (sessionId, profileId) => {
-    addPlayerToSession(sessionId, profileId);
+  const handleInvitePlayer = async (sessionId, profileId) => {
+    const ok = await createInvite(sessionId, profileId);
     SFX.boop();
-    showToast('Pilot invited to session', 'success');
+    showToast(ok ? 'Session invite sent' : 'Could not send invite — pilot may already be in session', ok ? 'success' : 'error');
+  };
+
+  const handleRespondToSessionInvite = async (inviteId, accept, sessionId) => {
+    const result = await respondToInvite(inviteId, accept, sessionId);
+    if (accept && result) {
+      SFX.open();
+      showToast('Joined session!', 'success');
+      handleOpenSession(sessionId);
+    } else if (!accept) {
+      SFX.back();
+      showToast('Invite declined', 'info');
+    } else {
+      showToast('Could not join session', 'error');
+    }
   };
 
   const handleStartSession  = (sessionId) => { startSession(sessionId);  SFX.open(); showToast('Session started', 'success'); };
@@ -427,12 +445,13 @@ function AppInner() {
     if (tab !== 'friends') setViewingFriend(null);
   };
 
+  const totalPendingRequests = (pending?.length || 0) + (sessionInvites?.length || 0);
   const TABS = [
     ['missions',     'Missions'],
     ['calendar',     'Calendar'],
     ['stats',        'Stats'],
     ['leaderboard',  'Leaderboard'],
-    ['friends',      'Friends'],
+    ['friends',      totalPendingRequests > 0 ? `Requests (${totalPendingRequests})` : 'Requests'],
     ['settings',     'Settings'],
   ];
 
@@ -648,7 +667,7 @@ function AppInner() {
               onSetWaypointStatus={handleSetWaypointStatus}
               onCastRemovalVote={handleCastVote}
               onWithdrawVote={handleWithdrawVote}
-              onAddPlayer={handleAddPlayer}
+              onInvitePlayer={handleInvitePlayer}
               onStartSession={handleStartSession}
               onPauseSession={handlePauseSession}
               onResumeSession={handleResumeSession}
@@ -664,6 +683,12 @@ function AppInner() {
               myProfileId={myProfileId}
               myCallsign={myCallsign}
               friends={friends}
+              onCopyInviteLink={() => {
+                const token = sessions[selectedSessionId]?.inviteToken;
+                if (!token) return;
+                const link = `${window.location.origin}${window.location.pathname}?join=${token}`;
+                navigator.clipboard.writeText(link).then(() => showToast('Invite link copied to clipboard', 'success'));
+              }}
             />
           )}
 
@@ -675,11 +700,13 @@ function AppInner() {
               friends={friends}
               pending={pending}
               sent={sent}
+              sessionInvites={sessionInvites}
               searchUsers={searchUsers}
               sendRequest={handleFriendRequest}
               respond={handleFriendRespond}
               remove={handleRemoveFriend}
               onViewProfile={f => { SFX.open(); setViewingFriend(f); }}
+              onRespondToSessionInvite={handleRespondToSessionInvite}
             />
           )}
           {activeTab === 'friends' && viewingFriend && (
@@ -700,6 +727,26 @@ function AppInner() {
           )}
         </div>
       </div>
+
+      {/* ── Join Session Modal (from invite link ?join=TOKEN) ── */}
+      {joinToken && myProfileId && (
+        <JoinSessionModal
+          token={joinToken}
+          myProfileId={myProfileId}
+          onJoined={(sessionId) => {
+            setJoinToken(null);
+            SFX.open();
+            showToast('Joined session!', 'success');
+            window.history.replaceState(null, '', window.location.pathname);
+            handleOpenSession(sessionId);
+          }}
+          onDismiss={() => {
+            setJoinToken(null);
+            SFX.back();
+            window.history.replaceState(null, '', window.location.pathname);
+          }}
+        />
+      )}
 
       {/* ── Modals ── */}
       {modal?.type === 'session-picker' && (

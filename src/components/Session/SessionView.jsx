@@ -341,12 +341,13 @@ function WaypointRow({ waypoint, myProfileId, members, onSetStatus, canEdit, kin
 
 export default function SessionView({
   session, onBack, onAddContract, onToggleDone, onDeleteContract,
-  onSetWaypointStatus, onCastRemovalVote, onWithdrawVote, onAddPlayer,
+  onSetWaypointStatus, onCastRemovalVote, onWithdrawVote, onInvitePlayer,
   onStartSession, onPauseSession, onResumeSession, onEndSession,
   onDeleteSession, onUpdateSession, onUpdateContract,
   onUpdateWaypoint, onUpdateCargoItem,
   commodities, systemsMap,
   playerColors, myProfileId, myCallsign, friends,
+  onCopyInviteLink,
 }) {
   const [showInvite, setShowInvite]       = useState(false);
   const [inviteQuery, setInviteQuery]     = useState('');
@@ -440,6 +441,19 @@ export default function SessionView({
               onResume={() => onResumeSession?.(session.id)}
               onEnd={() => onEndSession?.(session.id)}
             />
+          )}
+          {isSessionMember && onCopyInviteLink && (
+            <button onClick={onCopyInviteLink}
+              title="Copy invite link"
+              style={{
+                background: 'transparent', border: '2px solid rgba(255,255,255,0.25)',
+                color: 'rgba(255,255,255,0.6)', padding: '8px 14px', cursor: 'pointer',
+                fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 11,
+                textTransform: 'uppercase', letterSpacing: '0.04em',
+              }}
+              onMouseEnter={e => { e.currentTarget.style.color = '#fff'; e.currentTarget.style.borderColor = 'rgba(255,255,255,0.6)'; }}
+              onMouseLeave={e => { e.currentTarget.style.color = 'rgba(255,255,255,0.6)'; e.currentTarget.style.borderColor = 'rgba(255,255,255,0.25)'; }}
+            >🔗 Copy Invite Link</button>
           )}
           {isSessionMember && (
             <button onClick={onAddContract}
@@ -557,7 +571,7 @@ export default function SessionView({
                         <div style={{ maxHeight: 200, overflowY: 'auto' }}>
                           {filtered.map(f => (
                             <button key={f.id} onMouseDown={e => e.preventDefault()}
-                              onClick={() => { onAddPlayer?.(session.id, f.id); setShowInvite(false); setInviteQuery(''); }}
+                              onClick={() => { onInvitePlayer?.(session.id, f.id); setShowInvite(false); setInviteQuery(''); }}
                               style={{ display: 'flex', alignItems: 'center', gap: 8, width: '100%', padding: '9px 12px', border: 'none', background: 'var(--bg-1)', cursor: 'pointer', textAlign: 'left' }}
                               onMouseEnter={e => { e.currentTarget.style.background = 'var(--bg-2)'; }}
                               onMouseLeave={e => { e.currentTarget.style.background = 'var(--bg-1)'; }}
