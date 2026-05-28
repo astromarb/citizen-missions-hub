@@ -7,9 +7,9 @@ const lbl = {
   letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: 6, color: 'var(--text)',
 };
 
-const emptyWp = () => ({ name: '', body: '' });
+const emptyWp    = () => ({ name: '', body: '' });
+const emptyItem  = () => ({ commodity: '', scu: '' });
 
-// Derive system string + contract type from selected locations
 function deriveRoute(pickups, dropoffs, systemsMap) {
   const sysFor = (name) => {
     if (!name) return null;
@@ -26,7 +26,6 @@ function deriveRoute(pickups, dropoffs, systemsMap) {
   if (allSystems.length === 0) return { system: null, type: null };
 
   if (allSystems.length === 1) {
-    // All named locations share the same non-empty body → local (on-body) hauling
     const named = [...pickups, ...dropoffs].filter(l => l.name?.trim());
     const bodies = named.map(l => l.body).filter(Boolean);
     if (bodies.length === named.length && named.length > 0 && new Set(bodies).size === 1) {
@@ -41,52 +40,88 @@ function deriveRoute(pickups, dropoffs, systemsMap) {
 }
 
 const MISSION_CATEGORIES = [
-  { key: 'hauling', label: 'Hauling', available: true },
-  { key: 'bounty',  label: 'Bounty Hunting', available: false },
-  { key: 'mining',  label: 'Mining',  available: false },
-  { key: 'salvage', label: 'Salvage', available: false },
-  { key: 'security',label: 'Security', available: false },
+  { key: 'hauling',  label: 'Hauling',         available: true },
+  { key: 'bounty',   label: 'Bounty Hunting',   available: false },
+  { key: 'mining',   label: 'Mining',            available: false },
+  { key: 'salvage',  label: 'Salvage',           available: false },
+  { key: 'security', label: 'Security',          available: false },
 ];
 
 export default function AddContractModal({ onSave, onClose, commodities, systemsMap }) {
-  const [step, setStep]       = useState(0);
+  const [step,     setStep]     = useState(0);
   const [pickups,  setPickups]  = useState([emptyWp()]);
   const [dropoffs, setDropoffs] = useState([emptyWp()]);
-  const [cargo,    setCargo]    = useState([{ commodity: '', scu: '', fromLocation: '', toLocation: '' }]);
   const [payout,   setPayout]   = useState('');
+
+  // cargoByPickup[i] = array of { commodity, scu } items for pickups[i]
+  const [cargoByPickup, setCargoByPickup] = useState([[emptyItem()]]);
 
   const { system, type } = useMemo(
     () => deriveRoute(pickups, dropoffs, systemsMap || {}),
     [pickups, dropoffs, systemsMap],
   );
 
-  const hasPickup  = pickups.some(p => p.name?.trim());
-  const hasDropoff = dropoffs.some(d => d.name?.trim());
-  const canAdvance = step === 1
-    ? hasPickup && hasDropoff
-    : cargo.some(c => c.commodity && Number(c.scu) > 0);
+  const filledPickups  = pickups.filter(p => p.name?.trim());
+  const filledDropoffs = dropoffs.filter(d => d.name?.trim());
+  const hasPickup  = filledPickups.length > 0;
+  const hasDropoff = filledDropoffs.length > 0;
+  const totalSCU   = cargoByPickup.flat().reduce((t, c) => t + (Number(c.scu) || 0), 0);
+  const hasAnyCargo = cargoByPickup.flat().some(c => c.commodity && Number(c.scu) > 0);
+
+  const canAdvance = step === 1 ? hasPickup && hasDropoff : hasAnyCargo;
   const totalSteps = 3;
 
-  const save = () => onSave({
-    type:     type     || 'Hauling - Stellar',
-    system:   system   || 'Unknown',
-    pickups:  pickups.filter(p => p.name),
-    dropoffs: dropoffs.filter(d => d.name),
-    cargo:    cargo.filter(c => c.commodity && c.scu).map(c => ({ ...c, fromLocation: c.fromLocation || null, toLocation: c.toLocation || null })),
-    payout:   Number(payout) || 0,
-  });
+  // ── Cargo helpers ───────────────────────────────────────────
+  const updateCargoItem = (pi, ii, patch) =>
+    setCargoByPickup(prev =>
+      prev.map((g, gi) => gi !== pi ? g : g.map((item, ji) => ji !== ii ? item : { ...item, ...patch }))
+    );
 
-  const setPickup  = (i, v) => { const a = [...pickups];  a[i] = v; setPickups(a); };
-  const setDropoff = (i, v) => { const a = [...dropoffs]; a[i] = v; setDropoffs(a); };
-  const setCargoCom  = (i, v) => { const a = [...cargo]; a[i] = { ...a[i], commodity: v };    setCargo(a); };
-  const setCargoSCU  = (i, v) => { const a = [...cargo]; a[i] = { ...a[i], scu: v };         setCargo(a); };
-  const setCargoFrom = (i, v) => { const a = [...cargo]; a[i] = { ...a[i], fromLocation: v }; setCargo(a); };
-  const setCargoTo   = (i, v) => { const a = [...cargo]; a[i] = { ...a[i], toLocation: v };   setCargo(a); };
+  const addCargoItem = (pi) =>
+    setCargoByPickup(prev =>
+      prev.map((g, gi) => gi !== pi ? g : [...g, emptyItem()])
+    );
 
-  const pickupNames  = pickups.filter(p => p.name).map(p => p.name);
-  const dropoffNames = dropoffs.filter(d => d.name).map(d => d.name);
-  const totalSCU = cargo.reduce((t, c) => t + (Number(c.scu) || 0), 0);
+  const removeCargoItem = (pi, ii) =>
+    setCargoByPickup(prev =>
+      prev.map((g, gi) => gi !== pi ? g : g.filter((_, ji) => ji !== ii))
+    );
 
+  // ── Advance step 1 → 2 ─────────────────────────────────────
+  const advanceToCargo = () => {
+    const groups = filledPickups.length > 0
+      ? filledPickups.map(() => [emptyItem()])
+      : [[emptyItem()]];
+    setCargoByPickup(groups);
+    setStep(2);
+  };
+
+  // ── Save ────────────────────────────────────────────────────
+  const save = () => {
+    const singleDropoff = filledDropoffs.length === 1 ? filledDropoffs[0].name : null;
+    const flatCargo = cargoByPickup.flatMap((group, pi) => {
+      const pickup = filledPickups[pi];
+      return group
+        .filter(c => c.commodity && Number(c.scu) > 0)
+        .map(c => ({
+          commodity:    c.commodity,
+          scu:          c.scu,
+          fromLocation: pickup?.name   || null,
+          toLocation:   singleDropoff  || null,
+        }));
+    });
+
+    onSave({
+      type:     type     || 'Hauling - Stellar',
+      system:   system   || 'Unknown',
+      pickups:  filledPickups,
+      dropoffs: filledDropoffs,
+      cargo:    flatCargo,
+      payout:   Number(payout) || 0,
+    });
+  };
+
+  // ── Style helpers ────────────────────────────────────────────
   const primaryBtn = (disabled) => ({
     padding: '10px 24px', fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 12,
     textTransform: 'uppercase', letterSpacing: '0.04em',
@@ -103,7 +138,6 @@ export default function AddContractModal({ onSave, onClose, commodities, systems
 
   return (
     <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 999, padding: 20 }}>
-
       <div style={{ background: 'var(--bg-1)', border: '2px solid var(--border)', padding: 28, width: 500, maxHeight: '90vh', overflowY: 'auto' }}>
 
         {/* Header */}
@@ -115,11 +149,11 @@ export default function AddContractModal({ onSave, onClose, commodities, systems
         {/* Progress */}
         <div style={{ display: 'flex', gap: 4, marginBottom: 24 }}>
           {[0, 1, 2].map(s => (
-            <div key={s} style={{ flex: 1, height: 3, background: step > s ? '#c41e3a' : step === s ? '#c41e3a' : 'var(--bg-3)' }} />
+            <div key={s} style={{ flex: 1, height: 3, background: step >= s ? '#c41e3a' : 'var(--bg-3)' }} />
           ))}
         </div>
 
-        {/* ── STEP 0: Mission Category ── */}
+        {/* ── STEP 0: Mission Category ─────────────────────────── */}
         {step === 0 && (
           <div>
             <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--muted)', letterSpacing: '0.08em', marginBottom: 16, textTransform: 'uppercase' }}>
@@ -127,10 +161,7 @@ export default function AddContractModal({ onSave, onClose, commodities, systems
             </div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
               {MISSION_CATEGORIES.map(cat => (
-                <button
-                  key={cat.key}
-                  disabled={!cat.available}
-                  onClick={() => cat.available && setStep(1)}
+                <button key={cat.key} disabled={!cat.available} onClick={() => cat.available && setStep(1)}
                   style={{
                     width: '100%', padding: '16px 20px', textAlign: 'left',
                     border: `2px solid ${cat.available ? '#c41e3a' : 'var(--bg-3)'}`,
@@ -155,25 +186,23 @@ export default function AddContractModal({ onSave, onClose, commodities, systems
           </div>
         )}
 
-        {/* ── STEP 1: Route ── */}
+        {/* ── STEP 1: Route ────────────────────────────────────── */}
         {step === 1 && (
           <div>
-            {/* Auto-detected system badge */}
-            {system && (
+            {system ? (
               <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 18, padding: '10px 14px', background: 'rgba(196,30,58,0.05)', border: '2px solid #c41e3a' }}>
                 <span style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 13, color: '#c41e3a' }}>{type}</span>
                 <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--muted)', letterSpacing: '0.06em' }}>{system}</span>
               </div>
-            )}
-            {!system && (hasPickup || hasDropoff) && (
+            ) : (hasPickup || hasDropoff) ? (
               <div style={{ marginBottom: 18, padding: '10px 14px', background: 'var(--bg-2)', border: '2px solid #ccc' }}>
                 <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--muted)' }}>Type a location name to auto-detect system</span>
               </div>
-            )}
+            ) : null}
 
             {[
-              ['Pickup Locations', pickups, setPickup, setPickups, '↑'],
-              ['Dropoff Locations', dropoffs, setDropoff, setDropoffs, '↓'],
+              ['Pickup Locations', pickups, (i, v) => { const a = [...pickups]; a[i] = v; setPickups(a); }, setPickups, '↑'],
+              ['Dropoff Locations', dropoffs, (i, v) => { const a = [...dropoffs]; a[i] = v; setDropoffs(a); }, setDropoffs, '↓'],
             ].map(([label, arr, setter, setArr, arrow]) => (
               <div key={label} style={{ marginBottom: 20 }}>
                 <span style={lbl}>{arrow} {label}</span>
@@ -183,7 +212,7 @@ export default function AddContractModal({ onSave, onClose, commodities, systems
                       <LocationAutocomplete
                         value={v}
                         onChange={x => setter(i, x)}
-                        placeholder={`Search ${label.toLowerCase()}…`}
+                        placeholder={`Search ${label.split(' ')[0].toLowerCase()} location…`}
                         systemsMap={systemsMap}
                       />
                     </div>
@@ -202,11 +231,11 @@ export default function AddContractModal({ onSave, onClose, commodities, systems
           </div>
         )}
 
-        {/* ── STEP 2: Cargo ── */}
+        {/* ── STEP 2: Cargo ────────────────────────────────────── */}
         {step === 2 && (
           <div>
             {/* Payout */}
-            <div style={{ marginBottom: 16 }}>
+            <div style={{ marginBottom: 20 }}>
               <span style={lbl}>Mission Payout (aUEC)</span>
               <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                 <input
@@ -220,53 +249,57 @@ export default function AddContractModal({ onSave, onClose, commodities, systems
               </div>
             </div>
 
-            {cargo.map((c, i) => (
-              <div key={i} style={{ marginBottom: 10, padding: '10px 12px', border: '1px solid var(--bg-3)', background: 'var(--bg-2)' }}>
-                <div style={{ display: 'flex', gap: 8, alignItems: 'center', marginBottom: (pickupNames.length > 0 || dropoffNames.length > 0) ? 6 : 0 }}>
-                  <CommodityAutocomplete value={c.commodity} onChange={v => setCargoCom(i, v)} commodities={commodities} />
-                  <input type="number" min="1"
-                    style={{ width: 80, padding: '8px 10px', background: 'var(--bg-1)', border: '2px solid var(--border)', color: 'var(--text)', fontSize: 13, textAlign: 'right', fontFamily: 'var(--font-mono)', outline: 'none' }}
-                    placeholder="SCU" value={c.scu}
-                    onChange={e => setCargoSCU(i, e.target.value)}
-                  />
-                  <span style={{ fontSize: 11, color: 'var(--muted)', fontFamily: 'var(--font-mono)', flexShrink: 0 }}>SCU</span>
-                  {cargo.length > 1 && (
-                    <button style={{ background: 'none', border: 'none', color: '#c41e3a', cursor: 'pointer', fontSize: 20, fontWeight: 700, marginLeft: 'auto' }}
-                      onClick={() => setCargo(cargo.filter((_, j) => j !== i))}>×</button>
+            {/* Per-pickup cargo sections */}
+            <div style={{ marginBottom: 4 }}>
+              <span style={lbl}>↑ What are you picking up?</span>
+            </div>
+            {(filledPickups.length > 0 ? filledPickups : [{ name: 'Pickup', body: '' }]).map((pickup, pi) => (
+              <div key={pi} style={{ marginBottom: 12, border: '1px solid var(--bg-3)', background: 'var(--bg-2)' }}>
+                {/* Location header */}
+                <div style={{ padding: '8px 12px', borderBottom: '1px solid var(--bg-3)', display: 'flex', alignItems: 'baseline', gap: 8 }}>
+                  <span style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 12, textTransform: 'uppercase', letterSpacing: '0.04em', color: 'var(--text)' }}>
+                    {pickup.name}
+                  </span>
+                  {pickup.body && (
+                    <span style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
+                      {pickup.body}
+                    </span>
                   )}
                 </div>
-                {(pickupNames.length > 0 || dropoffNames.length > 0) && (
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                    <span style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '0.08em', flexShrink: 0 }}>FROM</span>
-                    <select
-                      value={c.fromLocation || ''}
-                      onChange={e => setCargoFrom(i, e.target.value)}
-                      style={{ flex: 1, padding: '4px 6px', border: '1.5px solid var(--border)', background: 'var(--bg-1)', color: c.fromLocation ? 'var(--text)' : 'var(--muted)', fontFamily: 'var(--font-mono)', fontSize: 11, outline: 'none' }}
-                    >
-                      <option value="">— any pickup —</option>
-                      {pickupNames.map(n => <option key={n} value={n}>{n}</option>)}
-                    </select>
-                    <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--muted)', flexShrink: 0 }}>→</span>
-                    <span style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '0.08em', flexShrink: 0 }}>TO</span>
-                    <select
-                      value={c.toLocation || ''}
-                      onChange={e => setCargoTo(i, e.target.value)}
-                      style={{ flex: 1, padding: '4px 6px', border: '1.5px solid var(--border)', background: 'var(--bg-1)', color: c.toLocation ? 'var(--text)' : 'var(--muted)', fontFamily: 'var(--font-mono)', fontSize: 11, outline: 'none' }}
-                    >
-                      <option value="">— any dropoff —</option>
-                      {dropoffNames.map(n => <option key={n} value={n}>{n}</option>)}
-                    </select>
-                  </div>
-                )}
+                {/* Cargo rows */}
+                <div style={{ padding: '10px 12px' }}>
+                  {(cargoByPickup[pi] || [emptyItem()]).map((item, ii) => (
+                    <div key={ii} style={{ display: 'flex', gap: 8, alignItems: 'center', marginBottom: 6 }}>
+                      <div style={{ flex: 1 }}>
+                        <CommodityAutocomplete
+                          value={item.commodity}
+                          onChange={v => updateCargoItem(pi, ii, { commodity: v })}
+                          commodities={commodities}
+                        />
+                      </div>
+                      <input type="number" min="1"
+                        style={{ width: 68, padding: '8px 8px', background: 'var(--bg-1)', border: '2px solid var(--border)', color: 'var(--text)', fontSize: 13, textAlign: 'right', fontFamily: 'var(--font-mono)', outline: 'none' }}
+                        placeholder="SCU"
+                        value={item.scu}
+                        onChange={e => updateCargoItem(pi, ii, { scu: e.target.value })}
+                      />
+                      <span style={{ fontSize: 11, color: 'var(--muted)', fontFamily: 'var(--font-mono)', width: 28, flexShrink: 0 }}>SCU</span>
+                      {(cargoByPickup[pi]?.length || 1) > 1 && (
+                        <button style={{ background: 'none', border: 'none', color: '#c41e3a', cursor: 'pointer', fontSize: 18, fontWeight: 700, flexShrink: 0 }}
+                          onClick={() => removeCargoItem(pi, ii)}>×</button>
+                      )}
+                    </div>
+                  ))}
+                  <button style={{ background: 'none', border: 'none', color: 'var(--muted)', cursor: 'pointer', fontSize: 11, fontFamily: 'var(--font-display)', fontWeight: 700, textDecoration: 'underline', padding: '2px 0' }}
+                    onClick={() => addCargoItem(pi)}>
+                    + Add item
+                  </button>
+                </div>
               </div>
             ))}
-            <button style={{ background: 'none', border: 'none', color: 'var(--text)', cursor: 'pointer', fontSize: 12, fontFamily: 'var(--font-display)', fontWeight: 700, textDecoration: 'underline', padding: '4px 0' }}
-              onClick={() => setCargo([...cargo, { commodity: '', scu: '', fromLocation: '', toLocation: '' }])}>
-              + Add commodity
-            </button>
 
-            {/* Summary */}
-            <div style={{ marginTop: 20, padding: '12px 14px', background: 'var(--bg-2)', border: '2px solid #000' }}>
+            {/* Route summary */}
+            <div style={{ marginTop: 16, padding: '12px 14px', background: 'var(--bg-2)', border: '2px solid #000' }}>
               <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--muted)', marginBottom: 6 }}>Route Summary</div>
               <div style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 14, marginBottom: 8 }}>
                 <span style={{ color: '#c41e3a' }}>{type || 'Hauling'}</span>
@@ -297,24 +330,15 @@ export default function AddContractModal({ onSave, onClose, commodities, systems
             <button style={primaryBtn(!canAdvance)}
               onClick={() => {
                 if (!canAdvance) return;
-                if (step < 2) {
-                  // Pre-seed cargo rows: one per pickup/dropoff slot (whichever is more)
-                  const filled = Math.max(
-                    pickups.filter(p => p.name?.trim()).length,
-                    dropoffs.filter(d => d.name?.trim()).length,
-                    1,
-                  );
-                  setCargo(Array.from({ length: filled }, () => ({ commodity: '', scu: '', fromLocation: '', toLocation: '' })));
-                  setStep(2);
-                } else {
-                  save();
-                }
+                if (step === 1) advanceToCargo();
+                else save();
               }}
             >
               {step < 2 ? 'Continue →' : 'Save Contract'}
             </button>
           )}
         </div>
+
       </div>
     </div>
   );
