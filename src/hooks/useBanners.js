@@ -20,7 +20,11 @@ function setNameFromFile(filename) {
 
 function groupIntoSets(fileObjects) {
   const setMap = {};
-  fileObjects.forEach(({ name, updatedAt }) => {
+  fileObjects.forEach((item) => {
+    // Support both old format (plain string) and new format ({ name, updatedAt })
+    const name      = typeof item === 'string' ? item : item.name;
+    const updatedAt = typeof item === 'string' ? '' : (item.updatedAt || '');
+    if (!name) return;
     const setName = setNameFromFile(name);
     if (!setMap[setName]) setMap[setName] = [];
     setMap[setName].push({ id: name, src: getUrl(name, updatedAt) });
@@ -41,7 +45,8 @@ export function useBanners() {
         if (error || !data?.files) { setLoading(false); return; }
         setSets(groupIntoSets(data.files));
         setLoading(false);
-      });
+      })
+      .catch(() => setLoading(false));
   }, []);
 
   return { sets, loading };
