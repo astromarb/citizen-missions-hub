@@ -23,16 +23,19 @@ export function useRefData(enabled = true) {
     async function load() {
       const [commRes, locRes] = await Promise.all([
         supabase.from('commodities').select('name').order('sort_order').order('name'),
-        supabase.from('locations').select('system, body, name').eq('is_active', true).order('sort_order').order('name'),
+        supabase.from('locations').select('system, body, name, location_type').eq('is_active', true).order('sort_order').order('name'),
       ]);
 
       if (!commRes.error && commRes.data?.length) {
         setCommodities(commRes.data.map(c => c.name));
       }
 
+      const EXCLUDED_TYPES = new Set(['moon', 'comm-array', 'jump-point']);
+
       if (!locRes.error && locRes.data?.length) {
         const map = {};
         for (const loc of locRes.data) {
+          if (EXCLUDED_TYPES.has(loc.location_type)) continue;
           if (!map[loc.system]) map[loc.system] = [];
           map[loc.system].push({ name: loc.name, body: loc.body });
         }

@@ -11,19 +11,26 @@ export const SYSTEMS = {
     "Baijini Point", "Port Tressler", "Seraphim Station", "Covalex Hub Gundo",
     "Magnus Gateway", "Pyro Gateway (Stanton)", "Grim HEX", "Everus Harbor",
     "Attritus OLP", "Vivere OLP", "Lamina OLP", "Ruptura OLP",
-    "Daymar", "Cellin", "Yela", "Aberdeen", "Magda", "Arial", "Ita", "Wala",
-    "ARC Mining 045", "ARC Mining 056", "ARC Mining 061",
+    "ArcCorp Mining Area 045", "ArcCorp Mining Area 056", "ArcCorp Mining Area 061",
     "Shubin Mining SM0-22", "Brio's Breaker Yard", "Reclamation & Disposal Orinth",
     "RAYARI Cantwell Research Outpost", "RAYARI McGrath Research Outpost",
     "RAYARI Deltana Research Outpost", "RAYARI Anvik Research Outpost",
     "Security Post Kareah", "INS Jericho", "ICC ScanHub Stanton",
+    "New Babbage Interstellar Spaceport", "Teasa Spaceport", "Riker Memorial Spaceport",
+    "Shubin Mining Facility SAL-2", "Shubin Mining Facility SAL-5",
+    "Loveridge Mineral Reserve", "ArcCorp Mining Area 157",
+    "Kudre Ore", "Samson & Sons Salvage Center",
+    "Devlin Scrap & Salvage", "Nuen Waste Management",
   ],
   Pyro: [
     "Ruin Station", "Checkmate", "Orbituary",
-    "Pyro I", "Bloom (Pyro II)", "Monox (Pyro III)", "Pyro IV", "Pyro V", "Terminus (Pyro VI)",
-    "Adir", "Ignis", "Fairo", "Fuego", "Vatra", "Vuur", "Akiro Cluster",
+    "Pyro Gateway (Pyro)", "Stanton Gateway (Pyro)",
+    "Gaslight", "Patch City",
+    "Thistlewood", "Limestone Outlook", "Shack Cracker",
   ],
-  Nyx: ["Levski (Delamar)", "Delamar"],
+  Nyx: [
+    "Levski (Delamar)",
+  ],
 };
 
 export const ALL_LOCATIONS = Object.entries(SYSTEMS).flatMap(([system, locs]) =>
