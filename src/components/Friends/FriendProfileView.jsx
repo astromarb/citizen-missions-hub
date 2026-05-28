@@ -1,3 +1,4 @@
+import { useRef, useLayoutEffect, useState } from 'react';
 import { useIsMobile } from '../../hooks/useIsMobile.js';
 import LandingZoneBadge, { AlphaBadge } from '../shared/LandingZoneBadge.jsx';
 import { typeBg } from '../../data/contractTypes.js';
@@ -243,6 +244,17 @@ export default function FriendProfileView({ friend, sessions, myProfileId, onBac
     ['aUEC Earned', lifetimePayout > 0 ? lifetimePayout.toLocaleString() : '—'],
   ];
 
+  const cardRef = useRef(null);
+  const [cardH, setCardH] = useState(320);
+  useLayoutEffect(() => {
+    if (cardRef.current) setCardH(cardRef.current.offsetHeight);
+  }, [friend, statsRows.length]);
+
+  const bannerObj = friend?.banner_panel ? getBanner(friend.banner_panel) : null;
+  const txtCol   = bannerObj?.textColor ?? '#fff';
+  const lblCol   = bannerObj ? (txtCol === '#fff' ? 'rgba(255,255,255,0.72)' : 'rgba(0,0,0,0.6)') : 'var(--muted)';
+  const shadow   = bannerObj ? '0 1px 4px rgba(0,0,0,0.75)' : 'none';
+
   return (
     <div style={{ padding: isMobile ? 12 : 20, display: 'flex', flexDirection: isMobile ? 'column' : 'row', gap: isMobile ? 16 : 24, alignItems: 'flex-start' }}>
 
@@ -264,29 +276,29 @@ export default function FriendProfileView({ friend, sessions, myProfileId, onBac
         >← Back to Crew</button>
 
         {/* Profile card */}
-        <div style={{ border: '2px solid var(--border)', background: 'var(--bg-1)', display: isMobile ? 'block' : 'flex', overflow: 'hidden' }}>
+        <div ref={cardRef} style={{ border: '2px solid var(--border)', background: 'var(--bg-1)', position: 'relative', overflow: 'hidden' }}>
 
-          {/* ── Banner strip — left side, desktop only ── */}
-          {!isMobile && friend?.banner_panel && getBanner(friend.banner_panel) && (
-            <div style={{
-              width: 70, flexShrink: 0, position: 'relative',
-              backgroundImage: `url(${getBanner(friend.banner_panel).src})`,
-              backgroundSize: 'cover', backgroundPosition: 'center',
-              backgroundColor: getBanner(friend.banner_panel).fallbackBg,
-            }}>
+          {/* Mobile: banner bleeds into career stats */}
+          {isMobile && bannerObj && (
+            <>
               <div style={{
-                position: 'absolute', top: 0, right: 0, bottom: 0, width: '55%',
-                background: 'linear-gradient(to right, transparent, var(--bg-1))',
-                pointerEvents: 'none',
+                position: 'absolute', top: 0, left: 0, right: 0, height: 190,
+                backgroundImage: `url(${bannerObj.src})`,
+                backgroundSize: 'cover', backgroundPosition: 'top center',
+                backgroundColor: bannerObj.fallbackBg, zIndex: 0,
               }} />
-            </div>
+              <div style={{
+                position: 'absolute', top: 65, left: 0, right: 0, height: 140,
+                background: 'linear-gradient(to bottom, transparent, var(--bg-1))',
+                zIndex: 1, pointerEvents: 'none',
+              }} />
+            </>
           )}
 
-          {/* ── Profile content ── */}
-          <div style={{ flex: 1, minWidth: 0 }}>
+          <div style={{ position: 'relative', zIndex: 2 }}>
             {isMobile ? (
               /* Mobile: horizontal header */
-              <div style={{ background: '#1a1a1a', padding: '14px 16px', display: 'flex', alignItems: 'center', gap: 12 }}>
+              <div style={{ padding: '14px 16px', display: 'flex', alignItems: 'center', gap: 12 }}>
                 {avatarUrl ? (
                   <img src={avatarUrl} alt={callsign}
                     style={{ width: 58, height: 58, borderRadius: '50%', border: `3px solid ${color}`, objectFit: 'cover', flexShrink: 0 }} />
@@ -296,7 +308,7 @@ export default function FriendProfileView({ friend, sessions, myProfileId, onBac
                   </div>
                 )}
                 <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 17, color: '#fff', textTransform: 'uppercase', letterSpacing: '0.04em', lineHeight: 1.1 }}>{callsign}</div>
+                  <div style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 17, color: bannerObj ? txtCol : '#fff', textTransform: 'uppercase', letterSpacing: '0.04em', lineHeight: 1.1, textShadow: shadow }}>{callsign}</div>
                 </div>
                 <div style={{ display: 'flex', gap: 4, flexShrink: 0 }}>
                   {displayBadges.map(id => renderBadge(id, 'xs'))}
@@ -305,7 +317,7 @@ export default function FriendProfileView({ friend, sessions, myProfileId, onBac
               </div>
             ) : (
               /* Desktop: vertical header */
-              <div style={{ background: '#1a1a1a', padding: '24px 14px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 14 }}>
+              <div style={{ background: '#1a1a1a', padding: '24px 18px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 14 }}>
                 {avatarUrl ? (
                   <img src={avatarUrl} alt={callsign}
                     style={{ width: 90, height: 90, borderRadius: '50%', border: `4px solid ${color}`, objectFit: 'cover' }} />
@@ -325,22 +337,22 @@ export default function FriendProfileView({ friend, sessions, myProfileId, onBac
             )}
 
             {/* Career stats */}
-            <div style={{ padding: isMobile ? '10px 14px' : '14px 16px' }}>
-              <div style={{ fontFamily: 'var(--font-mono)', fontSize: isMobile ? 8 : 10, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'var(--muted)', marginBottom: 8 }}>Career Stats</div>
+            <div style={{ padding: isMobile ? '10px 14px' : '18px 20px' }}>
+              <div style={{ fontFamily: 'var(--font-mono)', fontSize: isMobile ? 8 : 10, letterSpacing: '0.14em', textTransform: 'uppercase', color: isMobile && bannerObj ? lblCol : 'var(--muted)', marginBottom: 8, textShadow: isMobile ? shadow : 'none' }}>Career Stats</div>
               {isMobile ? (
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px 16px' }}>
                   {statsRows.map(([label, val]) => (
                     <div key={label}>
-                      <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: 'var(--muted)', letterSpacing: '0.04em' }}>{label}</div>
-                      <div style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 14, color: 'var(--text)', letterSpacing: '-0.01em' }}>{val}</div>
+                      <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: bannerObj ? lblCol : 'var(--muted)', letterSpacing: '0.04em', textShadow: shadow }}>{label}</div>
+                      <div style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 14, color: bannerObj ? txtCol : 'var(--text)', letterSpacing: '-0.01em', textShadow: shadow }}>{val}</div>
                     </div>
                   ))}
                 </div>
               ) : (
                 statsRows.map(([label, val]) => (
-                  <div key={label} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', padding: '8px 0', borderBottom: '1px solid var(--bg-2)' }}>
-                    <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--muted)', letterSpacing: '0.04em' }}>{label}</span>
-                    <span style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 14, color: 'var(--text)', letterSpacing: '-0.01em' }}>{val}</span>
+                  <div key={label} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', padding: '9px 0', borderBottom: '1px solid var(--bg-2)' }}>
+                    <span style={{ fontFamily: 'var(--font-mono)', fontSize: 12, color: 'var(--muted)', letterSpacing: '0.04em' }}>{label}</span>
+                    <span style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 16, color: 'var(--text)', letterSpacing: '-0.01em' }}>{val}</span>
                   </div>
                 ))
               )}
@@ -351,6 +363,19 @@ export default function FriendProfileView({ friend, sessions, myProfileId, onBac
 
       {/* ── Right panel ── */}
       <div style={{ flex: 1, minWidth: 0 }}>
+
+        {/* Desktop banner square — matches profile card height */}
+        {!isMobile && bannerObj && (
+          <div style={{
+            width: cardH, height: cardH,
+            backgroundImage: `url(${bannerObj.src})`,
+            backgroundSize: 'cover', backgroundPosition: 'center',
+            backgroundColor: bannerObj.fallbackBg,
+            border: '2px solid var(--border)',
+            marginBottom: 20, flexShrink: 0,
+          }} />
+        )}
+
         <div style={{ display: 'flex', alignItems: 'baseline', gap: 12, marginBottom: 6 }}>
           <div style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 20, letterSpacing: '-0.02em' }}>Mission History</div>
           <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--muted)', letterSpacing: '0.08em' }}>
