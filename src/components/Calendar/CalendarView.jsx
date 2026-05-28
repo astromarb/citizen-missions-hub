@@ -3,7 +3,7 @@ import { fmtKey, daysInMonth, firstWeekday } from '../../utils/dateUtils.js';
 
 const TODAY_KEY = fmtKey(new Date());
 
-export default function CalendarView({ sessionsByDate, viewDate, onSelectDate, onShowPicker, onNewSession }) {
+export default function CalendarView({ sessionsByDate, viewDate, myProfileId, onSelectDate, onShowPicker, onNewSession }) {
   const year = viewDate.getFullYear(), month = viewDate.getMonth();
   const cells = [];
   for (let i = 0; i < firstWeekday(year, month); i++) cells.push(null);
@@ -42,8 +42,12 @@ export default function CalendarView({ sessionsByDate, viewDate, onSelectDate, o
 
             const handleClick = () => {
               if (isFuture) return;
-              if (dateSessions.length === 1) onSelectDate(dateSessions[0].id);
-              else if (dateSessions.length > 1) onShowPicker(key, dateSessions);
+              // Only navigate to sessions the user is a member of
+              const mine = myProfileId
+                ? dateSessions.filter(s => s.members?.some(m => m.id === myProfileId))
+                : dateSessions;
+              if (mine.length === 1) onSelectDate(mine[0].id);
+              else if (mine.length > 1) onShowPicker(key, mine);
               else onNewSession(key);
             };
 

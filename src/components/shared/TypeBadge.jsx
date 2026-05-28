@@ -1,6 +1,7 @@
 const STYLES = {
-  'Hauling - Stellar':      { bg: '#0066cc', color: '#fff', border: '#0066cc' },
-  'Hauling - Interstellar': { bg: '#c41e3a', color: '#fff', border: '#c41e3a' },
+  'Hauling - Stellar':      { bg: '#0066cc', color: '#fff' },
+  'Hauling - Interstellar': { bg: '#c41e3a', color: '#fff' },
+  'Hauling - Local':        { bg: '#E8731A', color: '#fff' },
 };
 
 export default function TypeBadge({ type }) {

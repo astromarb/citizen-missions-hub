@@ -221,6 +221,7 @@ export default function SessionView({
   playerColors, myProfileId, myCallsign, friends,
 }) {
   const [showInvite, setShowInvite] = useState(false);
+  const [inviteQuery, setInviteQuery] = useState('');
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [editingDate, setEditingDate] = useState(false);
   const [newDate, setNewDate] = useState(session.date);
@@ -413,7 +414,7 @@ export default function SessionView({
                 {showInvite && (
                   <div style={{
                     position: 'absolute', top: 62, left: '50%', transform: 'translateX(-50%)',
-                    background: 'var(--bg-1)', border: '2px solid var(--border)', minWidth: 190, zIndex: 50,
+                    background: 'var(--bg-1)', border: '2px solid var(--border)', width: 220, zIndex: 50,
                     boxShadow: '4px 4px 0 rgba(0,0,0,0.3)',
                   }}>
                     <div style={{
@@ -421,28 +422,50 @@ export default function SessionView({
                       fontFamily: 'var(--font-mono)', fontSize: 9, textTransform: 'uppercase',
                       color: 'var(--muted)', letterSpacing: '0.08em',
                     }}>Add to Session</div>
-                    {invitableFriends.length === 0 ? (
-                      <div style={{ padding: '12px', fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--muted)' }}>
-                        No friends to add
-                      </div>
-                    ) : (
-                      invitableFriends.map(f => (
-                        <button key={f.id}
-                          onClick={() => { onAddPlayer?.(session.id, f.id); setShowInvite(false); }}
-                          style={{
-                            display: 'flex', alignItems: 'center', gap: 8, width: '100%',
-                            padding: '9px 12px', border: 'none', background: 'var(--bg-1)',
-                            cursor: 'pointer', textAlign: 'left',
-                          }}
-                          onMouseEnter={e => { e.currentTarget.style.background = getComputedStyle(document.documentElement).getPropertyValue('--bg-2').trim(); }}
-                          onMouseLeave={e => { e.currentTarget.style.background = getComputedStyle(document.documentElement).getPropertyValue('--bg-1').trim(); }}
-                        >
-                          <div style={{ width: 24, height: 24, borderRadius: '50%', background: f.color || '#8b949e', flexShrink: 0, border: '2px solid var(--border)' }} />
-                          <span style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 12, textTransform: 'uppercase' }}>{f.callsign}</span>
-                        </button>
-                      ))
-                    )}
-                    <button onClick={() => setShowInvite(false)}
+                    <div style={{ padding: '8px 10px', borderBottom: '1px solid var(--bg-3)' }}>
+                      <input
+                        autoFocus
+                        value={inviteQuery}
+                        onChange={e => setInviteQuery(e.target.value)}
+                        placeholder="Search pilot…"
+                        style={{
+                          width: '100%', boxSizing: 'border-box',
+                          padding: '6px 8px', border: '2px solid var(--border)',
+                          background: 'var(--bg-0)', color: 'var(--text)',
+                          fontFamily: 'var(--font-mono)', fontSize: 11, outline: 'none',
+                        }}
+                      />
+                    </div>
+                    {(() => {
+                      const filtered = invitableFriends.filter(f =>
+                        inviteQuery.trim() === '' || f.callsign?.toLowerCase().includes(inviteQuery.toLowerCase())
+                      );
+                      return filtered.length === 0 ? (
+                        <div style={{ padding: '12px', fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--muted)' }}>
+                          {invitableFriends.length === 0 ? 'No friends to add' : 'No match'}
+                        </div>
+                      ) : (
+                        <div style={{ maxHeight: 200, overflowY: 'auto' }}>
+                          {filtered.map(f => (
+                            <button key={f.id}
+                              onMouseDown={e => e.preventDefault()}
+                              onClick={() => { onAddPlayer?.(session.id, f.id); setShowInvite(false); setInviteQuery(''); }}
+                              style={{
+                                display: 'flex', alignItems: 'center', gap: 8, width: '100%',
+                                padding: '9px 12px', border: 'none', background: 'var(--bg-1)',
+                                cursor: 'pointer', textAlign: 'left',
+                              }}
+                              onMouseEnter={e => { e.currentTarget.style.background = 'var(--bg-2)'; }}
+                              onMouseLeave={e => { e.currentTarget.style.background = 'var(--bg-1)'; }}
+                            >
+                              <div style={{ width: 24, height: 24, borderRadius: '50%', background: f.color || '#8b949e', flexShrink: 0, border: '2px solid var(--border)' }} />
+                              <span style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 12, textTransform: 'uppercase' }}>{f.callsign}</span>
+                            </button>
+                          ))}
+                        </div>
+                      );
+                    })()}
+                    <button onClick={() => { setShowInvite(false); setInviteQuery(''); }}
                       style={{
                         width: '100%', padding: '7px', border: 'none', borderTop: '1px solid var(--bg-3)',
                         background: 'var(--bg-2)', cursor: 'pointer',

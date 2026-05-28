@@ -634,6 +634,7 @@ function AppInner() {
                     <CalendarView
                       sessionsByDate={sessionsByDate}
                       viewDate={viewDate}
+                      myProfileId={myProfileId}
                       onSelectDate={(id) => openSession(id)}
                       onShowPicker={(key, sessList) => setModal({ type: 'session-picker', dateKey: key, sessions: sessList })}
                       onNewSession={key => {

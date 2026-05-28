@@ -24,7 +24,16 @@ function deriveRoute(pickups, dropoffs, systemsMap) {
   const allSystems = [...new Set([...pSystems, ...dSystems])];
 
   if (allSystems.length === 0) return { system: null, type: null };
-  if (allSystems.length === 1) return { system: allSystems[0], type: 'Hauling - Stellar' };
+
+  if (allSystems.length === 1) {
+    // All named locations share the same non-empty body → local (on-body) hauling
+    const named = [...pickups, ...dropoffs].filter(l => l.name?.trim());
+    const bodies = named.map(l => l.body).filter(Boolean);
+    if (bodies.length === named.length && named.length > 0 && new Set(bodies).size === 1) {
+      return { system: allSystems[0], type: 'Hauling - Local' };
+    }
+    return { system: allSystems[0], type: 'Hauling - Stellar' };
+  }
 
   const from = pSystems[0] || allSystems[0];
   const to   = dSystems.find(s => s !== from) || allSystems.find(s => s !== from) || allSystems[1];
