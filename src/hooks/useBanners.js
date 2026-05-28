@@ -13,27 +13,28 @@ function setNameFromFile(filename) {
   return prefix.map(w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()).join(' ') + ' Set';
 }
 
+function groupIntoSets(filenames) {
+  const setMap = {};
+  filenames.forEach(name => {
+    const setName = setNameFromFile(name);
+    if (!setMap[setName]) setMap[setName] = [];
+    setMap[setName].push({ id: name, src: getUrl(name) });
+  });
+  return Object.entries(setMap).map(([name, banners]) => ({ name, banners }));
+}
+
 export function useBanners() {
   const [sets,    setSets]    = useState([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    supabase.storage
-      .from('images')
-      .list('', { limit: 200, sortBy: { column: 'name', order: 'asc' } })
+    // Use the list-banners edge function which runs with service-role
+    // to bypass storage RLS that prevents client-side bucket listing.
+    supabase.functions
+      .invoke('list-banners')
       .then(({ data, error }) => {
-        if (error || !data) { setLoading(false); return; }
-
-        const imgs = data.filter(f => /\.(png|jpg|jpeg|webp|gif)$/i.test(f.name));
-
-        const setMap = {};
-        imgs.forEach(f => {
-          const name = setNameFromFile(f.name);
-          if (!setMap[name]) setMap[name] = [];
-          setMap[name].push({ id: f.name, src: getUrl(f.name) });
-        });
-
-        setSets(Object.entries(setMap).map(([name, banners]) => ({ name, banners })));
+        if (error || !data?.files) { setLoading(false); return; }
+        setSets(groupIntoSets(data.files));
         setLoading(false);
       });
   }, []);
