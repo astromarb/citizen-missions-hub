@@ -2,6 +2,7 @@ import { useIsMobile } from '../../hooks/useIsMobile.js';
 import LandingZoneBadge, { AlphaBadge } from '../shared/LandingZoneBadge.jsx';
 import { typeBg } from '../../data/contractTypes.js';
 import { getContractSize } from '../../utils/contractSize.js';
+import { getBanner } from '../../data/profileBanners.js';
 
 const DAY_COLORS = [
   { bg: '#e8db7d', text: '#000' }, // Sunday
@@ -326,6 +327,17 @@ export default function FriendProfileView({ friend, sessions, myProfileId, onBac
             )}
           </div>
         </div>
+
+        {/* ── Profile banner panel ── */}
+        {!isMobile && friend?.banner_panel && getBanner(friend.banner_panel) && (
+          <div style={{
+            width: '100%', aspectRatio: '1',
+            backgroundImage: `url(${getBanner(friend.banner_panel).src})`,
+            backgroundSize: 'cover', backgroundPosition: 'center',
+            backgroundColor: getBanner(friend.banner_panel).fallbackBg,
+            border: '2px solid var(--border)', marginTop: 16,
+          }} />
+        )}
       </div>
 
       {/* ── Right panel ── */}

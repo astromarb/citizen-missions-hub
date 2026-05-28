@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/lib/supabase.js';
 
-const profileFields = 'id, callsign, color, avatar_url, home_region, badges';
+const profileFields = 'id, callsign, color, avatar_url, home_region, badges, banner_panel';
 
 export function useFriends(userId, enabled = true) {
   const [friends, setFriends] = useState([]);

@@ -1,9 +1,9 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { supabase } from '@/lib/supabase.js';
 import LandingZoneBadge, { AlphaBadge } from '../shared/LandingZoneBadge.jsx';
+import { BANNERS, getBanner } from '../../data/profileBanners.js';
 
 // ── Color palette ─────────────────────────────────────────────────────────────
-// 11 families × 7 shades = 77 colours, arranged light→dark left-to-right.
 const COLOR_ROWS = [
   { label: 'Red',     colors: ['#fecaca', '#fca5a5', '#f87171', '#ef4444', '#dc2626', '#b91c1c', '#7f1d1d'] },
   { label: 'Orange',  colors: ['#fed7aa', '#fdba74', '#fb923c', '#f97316', '#ea580c', '#c2410c', '#7c2d12'] },
@@ -52,21 +52,36 @@ function SavedBadge({ visible }) {
   );
 }
 
+function SaveError({ msg }) {
+  if (!msg) return null;
+  return (
+    <div style={{
+      fontFamily: 'var(--font-mono)', fontSize: 10, color: '#c41e3a',
+      marginTop: 6, letterSpacing: '0.02em', lineHeight: 1.4,
+    }}>
+      ✗ {msg}
+    </div>
+  );
+}
+
 export default function SettingsView({ profile, updateProfile, checkCallsign }) {
   // ── Colour ─────────────────────────────────────────────────────────────────
   const [color,      setColor]      = useState(profile?.color || '#3b82f6');
   const [hexInput,   setHexInput]   = useState(profile?.color || '#3b82f6');
   const [colorSaved, setColorSaved] = useState(false);
+  const [colorError, setColorError] = useState(null);
 
   // ── Home region ─────────────────────────────────────────────────────────────
   const [region,      setRegion]      = useState(profile?.home_region || '');
   const [regionSaved, setRegionSaved] = useState(false);
+  const [regionError, setRegionError] = useState(null);
 
   // ── Callsign ────────────────────────────────────────────────────────────────
   const [callsign,       setCallsign]       = useState(profile?.callsign || '');
   const [callsignStatus, setCallsignStatus] = useState(null);
   const [checking,       setChecking]       = useState(false);
   const [callsignSaved,  setCallsignSaved]  = useState(false);
+  const [callsignError,  setCallsignError]  = useState(null);
 
   // ── Badges ──────────────────────────────────────────────────────────────────
   const earnedBadgeIds = [
@@ -79,10 +94,17 @@ export default function SettingsView({ profile, updateProfile, checkCallsign }) 
     return [...earnedBadgeIds];
   });
   const [badgesSaved, setBadgesSaved] = useState(false);
+  const [badgesError, setBadgesError] = useState(null);
+
+  // ── Banner panel ─────────────────────────────────────────────────────────────
+  const [bannerPanel, setBannerPanel] = useState(profile?.banner_panel || null);
+  const [bannerSaved, setBannerSaved] = useState(false);
+  const [bannerError, setBannerError] = useState(null);
 
   // ── RSI handle ──────────────────────────────────────────────────────────────
   const [rsiHandle,      setRsiHandle]      = useState(profile?.rsi_handle || '');
   const [rsiHandleSaved, setRsiHandleSaved] = useState(false);
+  const [rsiHandleError, setRsiHandleError] = useState(null);
 
   // ── aUEC balance ────────────────────────────────────────────────────────────
   const [auecScanning,  setAuecScanning]  = useState(false);
@@ -90,47 +112,70 @@ export default function SettingsView({ profile, updateProfile, checkCallsign }) 
   const [auecScanError, setAuecScanError] = useState(null);
   const [auecManual,    setAuecManual]    = useState('');
   const [auecSaved,     setAuecSaved]     = useState(false);
+  const [auecError,     setAuecError]     = useState(null);
   const auecFileRef = useRef(null);
 
   const [saving, setSaving] = useState(false);
 
   const flash = (setter) => { setter(true); setTimeout(() => setter(false), 2000); };
 
-  // ── Save handlers ────────────────────────────────────────────────────────────
+  // ── Re-sync local state when profile reloads (e.g. after a successful save) ─
+  useEffect(() => {
+    if (!profile) return;
+    setColor(profile.color || '#3b82f6');
+    setHexInput(profile.color || '#3b82f6');
+    setRegion(profile.home_region || '');
+    setRsiHandle(profile.rsi_handle || '');
+    setBannerPanel(profile.banner_panel || null);
+    if (profile.badges?.length > 0) setSelectedBadges([...profile.badges]);
+  // Only resync on first load or when user data changes server-side.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [profile?.id]);
+
+  // ── Save handlers ─────────────────────────────────────────────────────────────
   const saveColor = async () => {
+    setColorError(null);
     setSaving(true);
-    await updateProfile({ color });
+    const { error } = await updateProfile({ color });
     setSaving(false);
-    flash(setColorSaved);
+    if (error) setColorError(error.message || 'Save failed');
+    else flash(setColorSaved);
   };
 
   const saveBadges = async () => {
+    setBadgesError(null);
     setSaving(true);
-    await updateProfile({ badges: selectedBadges });
+    const { error } = await updateProfile({ badges: selectedBadges });
     setSaving(false);
-    flash(setBadgesSaved);
+    if (error) setBadgesError(error.message || 'Save failed');
+    else flash(setBadgesSaved);
   };
 
   const saveRegion = async () => {
     if (!region) return;
+    setRegionError(null);
     setSaving(true);
-    await updateProfile({ home_region: region });
+    const { error } = await updateProfile({ home_region: region });
     setSaving(false);
-    flash(setRegionSaved);
+    if (error) setRegionError(error.message || 'Save failed');
+    else flash(setRegionSaved);
   };
 
   const saveRsiHandle = async () => {
     if (!rsiHandle.trim()) return;
+    setRsiHandleError(null);
     setSaving(true);
-    await updateProfile({ rsi_handle: rsiHandle.trim().toUpperCase() });
+    const { error } = await updateProfile({ rsi_handle: rsiHandle.trim().toUpperCase() });
     setSaving(false);
-    flash(setRsiHandleSaved);
+    if (error) setRsiHandleError(error.message || 'Save failed');
+    else flash(setRsiHandleSaved);
   };
 
   const saveAuecBalance = async (amount) => {
     if (!amount || amount <= 0) return;
+    setAuecError(null);
     setSaving(true);
-    await updateProfile({
+    const { error } = await updateProfile({
       auec_balance: amount,
       auec_balance_verified_at: new Date().toISOString(),
       ...(rsiHandle.trim() ? { rsi_handle: rsiHandle.trim().toUpperCase() } : {}),
@@ -139,7 +184,17 @@ export default function SettingsView({ profile, updateProfile, checkCallsign }) 
     setAuecManual('');
     setAuecScanError(null);
     setSaving(false);
-    flash(setAuecSaved);
+    if (error) setAuecError(error.message || 'Save failed');
+    else flash(setAuecSaved);
+  };
+
+  const saveBanner = async () => {
+    setBannerError(null);
+    setSaving(true);
+    const { error } = await updateProfile({ banner_panel: bannerPanel });
+    setSaving(false);
+    if (error) setBannerError(error.message || 'Save failed');
+    else flash(setBannerSaved);
   };
 
   const handleCallsignBlur = async () => {
@@ -152,10 +207,12 @@ export default function SettingsView({ profile, updateProfile, checkCallsign }) 
 
   const saveCallsign = async () => {
     if (!callsignRegex.test(callsign) || callsignStatus !== 'available') return;
+    setCallsignError(null);
     setSaving(true);
-    await updateProfile({ callsign });
+    const { error } = await updateProfile({ callsign });
     setSaving(false);
-    flash(setCallsignSaved);
+    if (error) setCallsignError(error.message || 'Save failed');
+    else { setCallsignStatus(null); flash(setCallsignSaved); }
   };
 
   const handleAuecScan = async (file) => {
@@ -293,6 +350,7 @@ export default function SettingsView({ profile, updateProfile, checkCallsign }) 
           {saveBtn(saveColor, false)}
           <SavedBadge visible={colorSaved} />
         </div>
+        <SaveError msg={colorError} />
       </div>
 
       {/* ── Profile Badges ───────────────────────────────────────────────────── */}
@@ -378,6 +436,7 @@ export default function SettingsView({ profile, updateProfile, checkCallsign }) 
           {saveBtn(saveBadges, false)}
           <SavedBadge visible={badgesSaved} />
         </div>
+        <SaveError msg={badgesError} />
       </div>
 
       {/* ── Home Region ─────────────────────────────────────────────────────── */}
@@ -409,6 +468,97 @@ export default function SettingsView({ profile, updateProfile, checkCallsign }) 
           {saveBtn(saveRegion, !region)}
           <SavedBadge visible={regionSaved} />
         </div>
+        <SaveError msg={regionError} />
+      </div>
+
+      {/* ── Profile Banner ────────────────────────────────────────────────────── */}
+      <div style={{ border: '2px solid #000', background: '#fff', padding: '20px', marginBottom: 16 }}>
+        {sectionTitle('Profile Banner')}
+        <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--muted)', marginBottom: 16, lineHeight: 1.6 }}>
+          Select a panel displayed beneath your pilot profile card.
+        </div>
+
+        <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', marginBottom: 16 }}>
+          {/* No banner option */}
+          <button
+            onClick={() => setBannerPanel(null)}
+            style={{
+              width: 100, height: 100, flexShrink: 0,
+              border: `2px solid ${bannerPanel === null ? '#c41e3a' : '#ccc'}`,
+              background: bannerPanel === null ? 'rgba(196,30,58,0.04)' : '#fafafa',
+              cursor: 'pointer', display: 'flex', flexDirection: 'column',
+              alignItems: 'center', justifyContent: 'center', gap: 6,
+              position: 'relative',
+            }}
+          >
+            <span style={{ fontSize: 22, color: '#ccc' }}>✕</span>
+            <span style={{ fontFamily: 'var(--font-mono)', fontSize: 8, color: bannerPanel === null ? '#c41e3a' : '#999', textTransform: 'uppercase', letterSpacing: '0.08em' }}>None</span>
+            {bannerPanel === null && (
+              <div style={{ position: 'absolute', top: -4, right: -4, width: 16, height: 16, borderRadius: '50%', background: '#c41e3a', border: '2px solid #fff', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <span style={{ color: '#fff', fontSize: 8, lineHeight: 1 }}>✓</span>
+              </div>
+            )}
+          </button>
+
+          {BANNERS.map(b => {
+            const selected = bannerPanel === b.id;
+            return (
+              <button
+                key={b.id}
+                onClick={() => setBannerPanel(b.id)}
+                style={{
+                  width: 100, height: 100, flexShrink: 0, padding: 0,
+                  border: `2px solid ${selected ? '#c41e3a' : '#ccc'}`,
+                  cursor: 'pointer', position: 'relative', overflow: 'hidden',
+                  outline: 'none',
+                }}
+              >
+                <div style={{
+                  width: '100%', height: '100%',
+                  backgroundImage: `url(${b.src})`,
+                  backgroundSize: 'cover',
+                  backgroundPosition: 'center',
+                  backgroundColor: b.fallbackBg,
+                }} />
+                {/* Label overlay */}
+                <div style={{
+                  position: 'absolute', bottom: 0, left: 0, right: 0,
+                  background: 'rgba(0,0,0,0.6)', padding: '4px 5px',
+                }}>
+                  <span style={{ fontFamily: 'var(--font-mono)', fontSize: 7, color: '#fff', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
+                    {b.label}
+                  </span>
+                </div>
+                {selected && (
+                  <div style={{ position: 'absolute', top: -4, right: -4, width: 16, height: 16, borderRadius: '50%', background: '#c41e3a', border: '2px solid #fff', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    <span style={{ color: '#fff', fontSize: 8, lineHeight: 1 }}>✓</span>
+                  </div>
+                )}
+              </button>
+            );
+          })}
+        </div>
+
+        {/* Preview */}
+        {bannerPanel && getBanner(bannerPanel) && (
+          <div style={{ marginBottom: 14 }}>
+            <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: 6 }}>Preview</div>
+            <div style={{
+              width: 180, height: 180,
+              backgroundImage: `url(${getBanner(bannerPanel).src})`,
+              backgroundSize: 'cover',
+              backgroundPosition: 'center',
+              backgroundColor: getBanner(bannerPanel).fallbackBg,
+              border: '2px solid #ccc',
+            }} />
+          </div>
+        )}
+
+        <div style={{ display: 'flex', alignItems: 'center' }}>
+          {saveBtn(saveBanner, false)}
+          <SavedBadge visible={bannerSaved} />
+        </div>
+        <SaveError msg={bannerError} />
       </div>
 
       {/* ── Callsign ────────────────────────────────────────────────────────── */}
@@ -435,6 +585,7 @@ export default function SettingsView({ profile, updateProfile, checkCallsign }) 
           {saveBtn(saveCallsign, callsignStatus !== 'available')}
           <SavedBadge visible={callsignSaved} />
         </div>
+        <SaveError msg={callsignError} />
       </div>
 
       {/* ── aUEC Balance Verification ────────────────────────────────────────── */}
@@ -459,6 +610,7 @@ export default function SettingsView({ profile, updateProfile, checkCallsign }) 
             {saveBtn(saveRsiHandle, !rsiHandle.trim())}
             <SavedBadge visible={rsiHandleSaved} />
           </div>
+          <SaveError msg={rsiHandleError} />
         </div>
 
         {/* Current verified balance */}
@@ -468,7 +620,10 @@ export default function SettingsView({ profile, updateProfile, checkCallsign }) 
               {Number(profile.auec_balance).toLocaleString()} aUEC
             </div>
             <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: 'var(--muted)', marginTop: 4, textTransform: 'uppercase', letterSpacing: '0.08em' }}>
-              Last verified {new Date(profile.auec_balance_verified_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+              Last verified {new Date(profile.auec_balance_verified_at).toLocaleString('en-US', {
+                month: 'short', day: 'numeric', year: 'numeric',
+                hour: 'numeric', minute: '2-digit',
+              })}
             </div>
           </div>
         )}
@@ -543,6 +698,7 @@ export default function SettingsView({ profile, updateProfile, checkCallsign }) 
             Enter your RSI handle above to enable scanning.
           </div>
         )}
+        <SaveError msg={auecError} />
         <div style={{ marginTop: 14, fontFamily: 'var(--font-mono)', fontSize: 9, color: 'var(--muted)', lineHeight: 1.7, letterSpacing: '0.02em' }}>
           <strong style={{ color: 'var(--text)' }}>How it works:</strong> upload any screenshot where your RSI handle and ≡ aUEC balance are visible. Direct game screenshots and phone photos of your monitor both work.
         </div>

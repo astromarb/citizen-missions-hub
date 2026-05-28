@@ -3,6 +3,7 @@ import { useIsMobile } from '../../hooks/useIsMobile.js';
 import LandingZoneBadge, { AlphaBadge } from '../shared/LandingZoneBadge.jsx';
 import { typeBg } from '../../data/contractTypes.js';
 import { getContractSize } from '../../utils/contractSize.js';
+import { getBanner } from '../../data/profileBanners.js';
 
 // M  T  W  Th  F  Sa  Su  (JS getDay: 0=Sun)
 const DAY_COLORS = [
@@ -333,6 +334,17 @@ export default function MissionsView({ sessions, myProfileId, profile, avatarUrl
             )}
           </div>
         </div>
+
+        {/* ── Profile banner panel ── */}
+        {!isMobile && profile?.banner_panel && getBanner(profile.banner_panel) && (
+          <div style={{
+            width: '100%', aspectRatio: '1',
+            backgroundImage: `url(${getBanner(profile.banner_panel).src})`,
+            backgroundSize: 'cover', backgroundPosition: 'center',
+            backgroundColor: getBanner(profile.banner_panel).fallbackBg,
+            border: '2px solid var(--border)', marginTop: 16,
+          }} />
+        )}
       </div>
 
       {/* ── Sessions panel ── */}

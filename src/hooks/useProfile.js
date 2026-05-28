@@ -1,6 +1,8 @@
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/lib/supabase.js';
 
+const SELECT_FIELDS = 'id, callsign, color, avatar_url, home_region, onboarding_complete, auec_balance, auec_balance_verified_at, rsi_handle, badges, banner_panel';
+
 export function useProfile(userId) {
   const [profile, setProfile] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -10,9 +12,10 @@ export function useProfile(userId) {
     try {
       const { data, error } = await supabase
         .from('profiles')
-        .select('id, callsign, color, avatar_url, home_region, onboarding_complete, auec_balance, auec_balance_verified_at, rsi_handle, badges')
+        .select(SELECT_FIELDS)
         .eq('id', userId)
         .single();
+      if (error) console.error('useProfile load:', error);
       if (!error && data) setProfile(data);
     } catch (e) {
       console.error('useProfile load:', e);
@@ -35,16 +38,18 @@ export function useProfile(userId) {
 
   const updateProfile = useCallback(async (updates) => {
     if (!userId) return { error: new Error('No user') };
-    // Use upsert so a new user whose trigger-created profile is missing
-    // still gets created with the correct data.
-    const { data, error } = await supabase
+    // Upsert the changes, then reload the full profile so React state
+    // always reflects the actual DB row (avoids silent partial-update bugs).
+    const { error } = await supabase
       .from('profiles')
-      .upsert({ id: userId, ...updates }, { onConflict: 'id' })
-      .select('id, callsign, color, avatar_url, home_region, onboarding_complete, auec_balance, auec_balance_verified_at, rsi_handle, badges')
-      .single();
-    if (!error && data) setProfile(data);
-    return { error };
-  }, [userId]);
+      .upsert({ id: userId, ...updates }, { onConflict: 'id' });
+    if (error) {
+      console.error('updateProfile:', error);
+      return { error };
+    }
+    await load();
+    return { error: null };
+  }, [userId, load]);
 
   return { profile, loading, checkCallsign, updateProfile, reload: load };
 }
