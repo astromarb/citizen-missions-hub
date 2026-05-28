@@ -40,8 +40,16 @@ function deriveRoute(pickups, dropoffs, systemsMap) {
   return { system: `${from} → ${to}`, type: 'Hauling - Interstellar' };
 }
 
+const MISSION_CATEGORIES = [
+  { key: 'hauling', label: 'Hauling', available: true },
+  { key: 'bounty',  label: 'Bounty Hunting', available: false },
+  { key: 'mining',  label: 'Mining',  available: false },
+  { key: 'salvage', label: 'Salvage', available: false },
+  { key: 'security',label: 'Security', available: false },
+];
+
 export default function AddContractModal({ onSave, onClose, commodities, systemsMap }) {
-  const [step, setStep]       = useState(1);
+  const [step, setStep]       = useState(0);
   const [pickups,  setPickups]  = useState([emptyWp()]);
   const [dropoffs, setDropoffs] = useState([emptyWp()]);
   const [cargo,    setCargo]    = useState([{ commodity: '', scu: '', fromLocation: '', toLocation: '' }]);
@@ -57,6 +65,7 @@ export default function AddContractModal({ onSave, onClose, commodities, systems
   const canAdvance = step === 1
     ? hasPickup && hasDropoff
     : cargo.some(c => c.commodity && Number(c.scu) > 0);
+  const totalSteps = 3;
 
   const save = () => onSave({
     type:     type     || 'Hauling - Stellar',
@@ -100,15 +109,51 @@ export default function AddContractModal({ onSave, onClose, commodities, systems
         {/* Header */}
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 6 }}>
           <div style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 20, letterSpacing: '-0.02em' }}>Add Contract</div>
-          <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--muted)', letterSpacing: '0.08em' }}>STEP {step}/2</div>
+          <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--muted)', letterSpacing: '0.08em' }}>STEP {step + 1}/{totalSteps}</div>
         </div>
 
         {/* Progress */}
         <div style={{ display: 'flex', gap: 4, marginBottom: 24 }}>
-          {[1, 2].map(s => (
-            <div key={s} style={{ flex: 1, height: 3, background: step >= s ? '#c41e3a' : 'var(--bg-3)' }} />
+          {[0, 1, 2].map(s => (
+            <div key={s} style={{ flex: 1, height: 3, background: step > s ? '#c41e3a' : step === s ? '#c41e3a' : 'var(--bg-3)' }} />
           ))}
         </div>
+
+        {/* ── STEP 0: Mission Category ── */}
+        {step === 0 && (
+          <div>
+            <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--muted)', letterSpacing: '0.08em', marginBottom: 16, textTransform: 'uppercase' }}>
+              Select Mission Type
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+              {MISSION_CATEGORIES.map(cat => (
+                <button
+                  key={cat.key}
+                  disabled={!cat.available}
+                  onClick={() => cat.available && setStep(1)}
+                  style={{
+                    width: '100%', padding: '16px 20px', textAlign: 'left',
+                    border: `2px solid ${cat.available ? '#c41e3a' : 'var(--bg-3)'}`,
+                    background: cat.available ? 'rgba(196,30,58,0.04)' : 'var(--bg-2)',
+                    cursor: cat.available ? 'pointer' : 'default',
+                    display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                  }}
+                  onMouseEnter={e => { if (cat.available) { e.currentTarget.style.background = '#c41e3a'; e.currentTarget.style.color = '#fff'; } }}
+                  onMouseLeave={e => { if (cat.available) { e.currentTarget.style.background = 'rgba(196,30,58,0.04)'; e.currentTarget.style.color = 'var(--text)'; } }}
+                >
+                  <span style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 14, textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+                    {cat.label}
+                  </span>
+                  {!cat.available && (
+                    <span style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: 'var(--muted)', letterSpacing: '0.1em', textTransform: 'uppercase' }}>
+                      Coming Soon
+                    </span>
+                  )}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
 
         {/* ── STEP 1: Route ── */}
         {step === 1 && (
@@ -247,17 +292,19 @@ export default function AddContractModal({ onSave, onClose, commodities, systems
         {/* Navigation */}
         <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 24, gap: 8 }}>
           <button style={secondaryBtn}
-            onClick={step === 1 ? onClose : () => setStep(1)}
+            onClick={step === 0 ? onClose : () => setStep(s => s - 1)}
             onMouseEnter={e => { e.currentTarget.style.background = '#000'; e.currentTarget.style.color = '#fff'; }}
             onMouseLeave={e => { e.currentTarget.style.background = getComputedStyle(document.documentElement).getPropertyValue('--bg-1').trim(); e.currentTarget.style.color = getComputedStyle(document.documentElement).getPropertyValue('--text').trim(); }}
           >
-            {step === 1 ? 'Cancel' : '← Back'}
+            {step === 0 ? 'Cancel' : '← Back'}
           </button>
-          <button style={primaryBtn(!canAdvance)}
-            onClick={() => canAdvance && (step < 2 ? setStep(2) : save())}
-          >
-            {step < 2 ? 'Continue →' : 'Save Contract'}
-          </button>
+          {step > 0 && (
+            <button style={primaryBtn(!canAdvance)}
+              onClick={() => canAdvance && (step < 2 ? setStep(2) : save())}
+            >
+              {step < 2 ? 'Continue →' : 'Save Contract'}
+            </button>
+          )}
         </div>
       </div>
     </div>

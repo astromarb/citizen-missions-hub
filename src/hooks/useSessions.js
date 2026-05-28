@@ -310,11 +310,19 @@ export function useSessions(enabled = true, userId) {
     return true;
   }, [load]);
 
+  // ── updateContract ─────────────────────────────────────────
+  const updateContract = useCallback(async (contractId, updates) => {
+    const { error } = await supabase.from('contracts').update(updates).eq('id', contractId);
+    if (error) { console.error('updateContract:', error); return false; }
+    await load();
+    return true;
+  }, [load]);
+
   return {
     sessions, loading,
     createSession, createContract, toggleDone, deleteContract,
     setWaypointStatus, castRemovalVote, withdrawRemovalVote, addPlayerToSession,
     startSession, pauseSession, resumeSession, endSession,
-    deleteSession, updateSession,
+    deleteSession, updateSession, updateContract,
   };
 }

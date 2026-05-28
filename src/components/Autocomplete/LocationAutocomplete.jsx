@@ -66,8 +66,8 @@ export default function LocationAutocomplete({ value, onChange, filterSystem, pl
               onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = '#000'; }}
             >
               <span>{name}</span>
-              <span style={{ fontSize: 9, color: 'var(--muted)', letterSpacing: '0.08em', textTransform: 'uppercase', marginLeft: 8, flexShrink: 0 }}>
-                {body || system}
+              <span style={{ fontSize: 9, color: 'var(--muted)', letterSpacing: '0.06em', textTransform: 'uppercase', marginLeft: 8, flexShrink: 0, textAlign: 'right' }}>
+                {system}{body ? ` › ${body}` : ' › Deep Space'}
               </span>
             </div>
           ))}

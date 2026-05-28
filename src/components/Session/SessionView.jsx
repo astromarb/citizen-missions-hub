@@ -213,11 +213,62 @@ function WaypointRow({ waypoint, myProfileId, members, onSetStatus }) {
   );
 }
 
+function PayoutEditor({ contract, onSave }) {
+  const [editing, setEditing] = useState(false);
+  const [val, setVal] = useState(String(contract.payout || ''));
+
+  if (!editing) return (
+    <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+      {contract.payout > 0 && (
+        <span style={{
+          fontFamily: 'var(--font-mono)', fontSize: 11, color: '#2d8659', fontWeight: 700,
+          background: 'rgba(45,134,89,0.08)', border: '1.5px solid #2d8659', padding: '2px 8px',
+        }}>
+          {contract.payout.toLocaleString()} aUEC
+        </span>
+      )}
+      <button
+        onClick={() => { setVal(String(contract.payout || '')); setEditing(true); }}
+        title="Edit payout"
+        style={{
+          background: 'none', border: 'none', cursor: 'pointer',
+          fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--muted)',
+          padding: '2px 4px', textDecoration: 'underline',
+        }}
+      >{contract.payout > 0 ? 'edit' : '+ payout'}</button>
+    </span>
+  );
+
+  return (
+    <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+      <input
+        type="number" min="0" step="1000" autoFocus
+        value={val}
+        onChange={e => setVal(e.target.value)}
+        onKeyDown={e => {
+          if (e.key === 'Enter') { onSave(Number(val) || 0); setEditing(false); }
+          if (e.key === 'Escape') setEditing(false);
+        }}
+        style={{
+          width: 120, padding: '3px 6px',
+          border: '2px solid #2d8659', background: 'var(--bg-1)', color: 'var(--text)',
+          fontFamily: 'var(--font-mono)', fontSize: 11, outline: 'none',
+        }}
+      />
+      <span style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--muted)' }}>aUEC</span>
+      <button onClick={() => { onSave(Number(val) || 0); setEditing(false); }}
+        style={{ background: '#2d8659', border: 'none', color: '#fff', cursor: 'pointer', padding: '3px 8px', fontWeight: 700, fontSize: 11 }}>✓</button>
+      <button onClick={() => setEditing(false)}
+        style={{ background: 'none', border: '1px solid var(--border)', color: 'var(--muted)', cursor: 'pointer', padding: '3px 6px', fontSize: 11 }}>✗</button>
+    </span>
+  );
+}
+
 export default function SessionView({
   session, onBack, onAddContract, onToggleDone, onDeleteContract,
   onSetWaypointStatus, onCastRemovalVote, onWithdrawVote, onAddPlayer,
   onStartSession, onPauseSession, onResumeSession, onEndSession,
-  onDeleteSession, onUpdateSession,
+  onDeleteSession, onUpdateSession, onUpdateContract,
   playerColors, myProfileId, myCallsign, friends,
 }) {
   const [showInvite, setShowInvite] = useState(false);
@@ -518,15 +569,10 @@ export default function SessionView({
                   }}>
                     {contract.system}
                   </span>
-                  {contract.payout > 0 && (
-                    <span style={{
-                      fontFamily: 'var(--font-mono)', fontSize: 11, color: '#2d8659', fontWeight: 700,
-                      background: 'rgba(45,134,89,0.08)', border: '1.5px solid #2d8659',
-                      padding: '2px 8px',
-                    }}>
-                      {contract.payout.toLocaleString()} aUEC
-                    </span>
-                  )}
+                  <PayoutEditor
+                    contract={contract}
+                    onSave={v => onUpdateContract?.(contract.id, { payout: v })}
+                  />
                   {contract.creatorCallsign && (
                     <span style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--muted)' }}>
                       Posted by:{' '}

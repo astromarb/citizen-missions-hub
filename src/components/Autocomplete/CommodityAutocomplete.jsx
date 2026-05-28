@@ -15,7 +15,7 @@ export default function CommodityAutocomplete({ value, onChange, commodities: ex
 
   useEffect(() => { setQ(value || ''); }, [value]);
 
-  const hits = list.filter(c => c.toLowerCase().includes(q.toLowerCase())).slice(0, 8);
+  const hits = list.filter(c => c.toLowerCase().includes(q.toLowerCase()));
 
   useEffect(() => {
     const fn = e => { if (!ref.current?.contains(e.target)) setOpen(false); };
@@ -34,7 +34,7 @@ export default function CommodityAutocomplete({ value, onChange, commodities: ex
         <div style={{
           position: 'absolute', top: 'calc(100% - 2px)', left: 0, right: 0, zIndex: 300,
           background: '#fff', border: '2px solid #000', borderTop: 'none',
-          maxHeight: 200, overflowY: 'auto',
+          maxHeight: 280, overflowY: 'auto',
         }}>
           {hits.map(c => (
             <div key={c}

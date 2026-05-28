@@ -231,7 +231,7 @@ function AppInner() {
     createSession, createContract, toggleDone, deleteContract,
     setWaypointStatus, castRemovalVote, withdrawRemovalVote, addPlayerToSession,
     startSession, pauseSession, resumeSession, endSession,
-    deleteSession, updateSession,
+    deleteSession, updateSession, updateContract,
   } = useSessions(!!authSession, userId);
   const { commodities, systemsMap } = useRefData(!!authSession);
   const { profile, loading: profileLoading, checkCallsign, updateProfile, reload: reloadProfile } = useProfile(userId);
@@ -676,6 +676,7 @@ function AppInner() {
               onEndSession={handleEndSession}
               onDeleteSession={handleDeleteSession}
               onUpdateSession={updateSession}
+              onUpdateContract={updateContract}
               playerColors={playerColors}
               myProfileId={myProfileId}
               myCallsign={myCallsign}
