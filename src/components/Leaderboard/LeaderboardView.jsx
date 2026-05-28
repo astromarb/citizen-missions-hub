@@ -1,5 +1,7 @@
 import { useState } from 'react';
 import { useIsMobile } from '../../hooks/useIsMobile.js';
+import { A } from '../../styles/animations.js';
+import AnimatedNumber from '../shared/AnimatedNumber.jsx';
 
 const rankMedal = (i) => i === 0 ? '#c41e3a' : i === 1 ? '#555' : i === 2 ? '#7a5c00' : 'var(--muted)';
 const fmtSCU  = (n) => `${n.toLocaleString()} SCU`;
@@ -9,14 +11,14 @@ const fmt     = (n) => n.toLocaleString();
 function Board({ title, rows, valueKey, format, myProfileId }) {
   if (rows.length === 0) {
     return (
-      <div style={{ border: '2px solid var(--border)', background: 'var(--bg-1)' }}>
+      <div style={{ border: '2px solid var(--border)', background: 'var(--bg-1)', animation: A.fadeIn() }}>
         <div style={{ background: '#1a1a1a', padding: '10px 16px', fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 12, color: '#fff', textTransform: 'uppercase', letterSpacing: '0.06em' }}>{title}</div>
         <div style={{ padding: '20px 16px', fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--muted)', textAlign: 'center' }}>No data yet.</div>
       </div>
     );
   }
   return (
-    <div style={{ border: '2px solid var(--border)', background: 'var(--bg-1)' }}>
+    <div style={{ border: '2px solid var(--border)', background: 'var(--bg-1)', animation: A.fadeIn() }}>
       <div style={{ background: '#1a1a1a', padding: '10px 16px', fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 12, color: '#fff', textTransform: 'uppercase', letterSpacing: '0.06em' }}>{title}</div>
       {rows.map((p, i) => {
         const isMe = p.id === myProfileId;
@@ -25,6 +27,7 @@ function Board({ title, rows, valueKey, format, myProfileId }) {
             display: 'flex', alignItems: 'center', gap: 12,
             padding: '10px 16px', borderBottom: '1px solid var(--bg-3)',
             background: isMe ? 'rgba(196,30,58,0.04)' : 'transparent',
+            animation: A.stagger(i, 60),
           }}>
             <div style={{ fontFamily: 'var(--font-mono)', fontWeight: 800, fontSize: 13, color: rankMedal(i), width: 22, flexShrink: 0, textAlign: 'center' }}>
               {i === 0 ? '★' : `${i + 1}`}
@@ -33,9 +36,12 @@ function Board({ title, rows, valueKey, format, myProfileId }) {
             <div style={{ fontFamily: 'var(--font-display)', fontWeight: isMe ? 800 : 700, fontSize: 13, color: isMe ? '#c41e3a' : 'var(--text)', textTransform: 'uppercase', letterSpacing: '0.04em', flex: 1 }}>
               {p.callsign}{isMe ? ' ★' : ''}
             </div>
-            <div style={{ fontFamily: 'var(--font-mono)', fontWeight: 700, fontSize: 13, color: i === 0 ? '#c41e3a' : 'var(--text)' }}>
-              {format(p[valueKey])}
-            </div>
+            <AnimatedNumber
+              value={p[valueKey]}
+              format={format}
+              duration={700 + i * 60}
+              style={{ fontFamily: 'var(--font-mono)', fontWeight: 700, fontSize: 13, color: i === 0 ? '#c41e3a' : 'var(--text)' }}
+            />
           </div>
         );
       })}
@@ -55,12 +61,24 @@ function Section({ title, open, onToggle, children }) {
           fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 13,
           textTransform: 'uppercase', letterSpacing: '0.06em', color: 'var(--text)',
           marginBottom: open ? 12 : 0,
+          transition: 'background 0.15s',
         }}
+        onMouseEnter={e => { e.currentTarget.style.background = 'var(--bg-3)'; }}
+        onMouseLeave={e => { e.currentTarget.style.background = 'var(--bg-2)'; }}
       >
         <span>{title}</span>
-        <span style={{ fontFamily: 'var(--font-mono)', fontSize: 14, color: 'var(--muted)', lineHeight: 1 }}>{open ? '▲' : '▼'}</span>
+        <span style={{
+          fontFamily: 'var(--font-mono)', fontSize: 14, color: 'var(--muted)', lineHeight: 1,
+          transition: 'transform 0.2s ease',
+          display: 'inline-block',
+          transform: open ? 'rotate(0deg)' : 'rotate(180deg)',
+        }}>▲</span>
       </button>
-      {open && children}
+      {open && (
+        <div style={{ animation: A.slideDown() }}>
+          {children}
+        </div>
+      )}
     </div>
   );
 }
@@ -112,7 +130,6 @@ export default function LeaderboardView({ sessions, myProfileId, profiles = [], 
     .sort((a, b) => b.auec_balance - a.auec_balance)
     .map(p => ({ id: p.id, callsign: p.callsign, color: p.color || '#8b949e', balance: p.auec_balance }));
 
-  // Secondary tab styles
   const scopeTab = (key, label) => (
     <button
       key={key}
@@ -124,6 +141,7 @@ export default function LeaderboardView({ sessions, myProfileId, profiles = [], 
         cursor: 'pointer', border: 'none', borderBottom: `3px solid ${scope === key ? '#c41e3a' : 'transparent'}`,
         background: 'transparent',
         color: scope === key ? '#c41e3a' : 'var(--muted)',
+        transition: 'color 0.15s',
       }}
     >{label}</button>
   );
@@ -143,11 +161,11 @@ export default function LeaderboardView({ sessions, myProfileId, profiles = [], 
       {/* ── HAULING section ── */}
       <Section title="Hauling" open={haulingOpen} onToggle={() => setHaulingOpen(v => !v)}>
         {players.length === 0 ? (
-          <div style={{ padding: '32px 20px', textAlign: 'center', border: '2px dashed var(--border)', background: 'var(--bg-1)', fontFamily: 'var(--font-mono)', fontSize: 12, color: 'var(--muted)', marginBottom: 16 }}>
+          <div style={{ padding: '32px 20px', textAlign: 'center', border: '2px dashed var(--border)', background: 'var(--bg-1)', fontFamily: 'var(--font-mono)', fontSize: 12, color: 'var(--muted)', marginBottom: 16, animation: A.fadeIn() }}>
             {isFriendsScope ? 'No friends have session data yet.' : 'No session data yet.'}
           </div>
         ) : (
-          <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: 12, marginBottom: 16 }}>
+          <div key={scope} style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: 12, marginBottom: 16 }}>
             <Board title="SCU Hauled"          rows={bySCU}        valueKey="scu"       format={fmtSCU}  myProfileId={myProfileId} />
             <Board title="aUEC Earned"         rows={byPayout}     valueKey="payout"    format={fmtAUEC} myProfileId={myProfileId} />
             <Board title="Sessions Flown"      rows={bySessions}   valueKey="sessions"  format={fmt}     myProfileId={myProfileId} />
@@ -159,11 +177,11 @@ export default function LeaderboardView({ sessions, myProfileId, profiles = [], 
       {/* ── WALLET section ── */}
       <Section title="Wallet" open={walletOpen} onToggle={() => setWalletOpen(v => !v)}>
         {walletRows.length === 0 ? (
-          <div style={{ padding: '32px 20px', textAlign: 'center', border: '2px dashed var(--border)', background: 'var(--bg-1)', fontFamily: 'var(--font-mono)', fontSize: 12, color: 'var(--muted)' }}>
+          <div style={{ padding: '32px 20px', textAlign: 'center', border: '2px dashed var(--border)', background: 'var(--bg-1)', fontFamily: 'var(--font-mono)', fontSize: 12, color: 'var(--muted)', animation: A.fadeIn() }}>
             {isFriendsScope ? 'No friends have verified their wallet yet.' : 'No verified wallets yet.'}
           </div>
         ) : (
-          <div style={{ border: '2px solid var(--border)', background: 'var(--bg-1)' }}>
+          <div key={scope} style={{ border: '2px solid var(--border)', background: 'var(--bg-1)', animation: A.fadeIn() }}>
             <div style={{ background: '#1a1a1a', padding: '10px 16px', display: 'flex', alignItems: 'baseline', gap: 10 }}>
               <div style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 12, color: '#fff', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Verified Balance</div>
               <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: 'rgba(255,255,255,0.35)', letterSpacing: '0.08em' }}>self-reported · {walletRows.length} pilot{walletRows.length !== 1 ? 's' : ''}</div>
@@ -175,6 +193,7 @@ export default function LeaderboardView({ sessions, myProfileId, profiles = [], 
                   display: 'flex', alignItems: 'center', gap: 12,
                   padding: '10px 16px', borderBottom: '1px solid var(--bg-3)',
                   background: isMe ? 'rgba(196,30,58,0.04)' : 'transparent',
+                  animation: A.stagger(i, 60),
                 }}>
                   <div style={{ fontFamily: 'var(--font-mono)', fontWeight: 800, fontSize: 13, color: rankMedal(i), width: 22, flexShrink: 0, textAlign: 'center' }}>
                     {i === 0 ? '★' : `${i + 1}`}
@@ -183,9 +202,12 @@ export default function LeaderboardView({ sessions, myProfileId, profiles = [], 
                   <div style={{ fontFamily: 'var(--font-display)', fontWeight: isMe ? 800 : 700, fontSize: 13, color: isMe ? '#c41e3a' : 'var(--text)', textTransform: 'uppercase', letterSpacing: '0.04em', flex: 1 }}>
                     {p.callsign}{isMe ? ' ★' : ''}
                   </div>
-                  <div style={{ fontFamily: 'var(--font-mono)', fontWeight: 700, fontSize: 13, color: i === 0 ? '#c41e3a' : '#2d8659' }}>
-                    {Number(p.balance).toLocaleString()} aUEC
-                  </div>
+                  <AnimatedNumber
+                    value={Number(p.balance)}
+                    format={(n) => `${n.toLocaleString()} aUEC`}
+                    duration={700 + i * 60}
+                    style={{ fontFamily: 'var(--font-mono)', fontWeight: 700, fontSize: 13, color: i === 0 ? '#c41e3a' : '#2d8659' }}
+                  />
                 </div>
               );
             })}

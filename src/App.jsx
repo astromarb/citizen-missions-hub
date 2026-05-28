@@ -8,6 +8,7 @@ import { useFriends } from '@/hooks/useFriends.js';
 import { useSessionInvites } from '@/hooks/useSessionInvites.js';
 import { useIsMobile } from '@/hooks/useIsMobile.js';
 import { SFX } from '@/hooks/useSound.js';
+import { A } from '@/styles/animations.js';
 import CalendarView from '@/components/Calendar/CalendarView.jsx';
 import SessionView from '@/components/Session/SessionView.jsx';
 import JoinSessionModal from '@/components/Session/JoinSessionModal.jsx';
@@ -71,7 +72,7 @@ function NewSessionModal({ dateKey, onSave, onClose, profiles, friends }) {
       display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 999, padding: 20,
     }}
       onClick={e => { if (e.target === e.currentTarget) { SFX.back(); onClose(); } }}>
-      <div style={{ background: 'var(--bg-1)', border: '2px solid var(--border)', padding: '32px 28px', width: 420, maxWidth: '100%' }}>
+      <div style={{ background: 'var(--bg-1)', border: '2px solid var(--border)', padding: '32px 28px', width: 420, maxWidth: '100%', animation: A.pop() }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 6 }}>
           <div style={{
             fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 22,
@@ -138,6 +139,7 @@ function NewSessionModal({ dateKey, onSave, onClose, profiles, friends }) {
                   position: 'absolute', top: '100%', left: 0, right: 0,
                   border: '2px solid var(--border)', borderTop: 'none',
                   background: 'var(--bg-1)', zIndex: 10, maxHeight: 200, overflowY: 'auto',
+                  animation: A.slideDown(),
                 }}>
                   {filtered.map(f => (
                     <button
@@ -719,39 +721,61 @@ function AppInner() {
             />
           )}
 
-          {activeTab === 'missions'        && <MissionsView sessions={sessions} myProfileId={myProfileId} profile={profile} avatarUrl={avatarUrl} onOpenSession={handleOpenSession} />}
-          {activeTab === 'active-sessions' && <ActiveSessionsView sessions={sessions} myProfileId={myProfileId} onOpenSession={handleOpenSession} />}
-          {activeTab === 'stats'           && <StatsView sessions={sessions} myProfileId={myProfileId} />}
-          {activeTab === 'leaderboard' && <LeaderboardView sessions={sessions} myProfileId={myProfileId} profiles={profiles} friends={friends} />}
+          {activeTab === 'missions' && (
+            <div style={{ animation: A.fadeUp(), flex: 1, minHeight: 0 }}>
+              <MissionsView sessions={sessions} myProfileId={myProfileId} profile={profile} avatarUrl={avatarUrl} onOpenSession={handleOpenSession} />
+            </div>
+          )}
+          {activeTab === 'active-sessions' && (
+            <div style={{ animation: A.fadeUp(), flex: 1, minHeight: 0 }}>
+              <ActiveSessionsView sessions={sessions} myProfileId={myProfileId} onOpenSession={handleOpenSession} />
+            </div>
+          )}
+          {activeTab === 'stats' && (
+            <div style={{ animation: A.fadeUp(), flex: 1, minHeight: 0 }}>
+              <StatsView sessions={sessions} myProfileId={myProfileId} />
+            </div>
+          )}
+          {activeTab === 'leaderboard' && (
+            <div style={{ animation: A.fadeUp(), flex: 1, minHeight: 0 }}>
+              <LeaderboardView sessions={sessions} myProfileId={myProfileId} profiles={profiles} friends={friends} />
+            </div>
+          )}
           {activeTab === 'friends' && !viewingFriend && (
-            <FriendsView
-              friends={friends}
-              pending={pending}
-              sent={sent}
-              sessionInvites={sessionInvites}
-              searchUsers={searchUsers}
-              sendRequest={handleFriendRequest}
-              respond={handleFriendRespond}
-              remove={handleRemoveFriend}
-              onViewProfile={f => { SFX.open(); setViewingFriend(f); }}
-              onRespondToSessionInvite={handleRespondToSessionInvite}
-            />
+            <div style={{ animation: A.fadeUp(), flex: 1, minHeight: 0 }}>
+              <FriendsView
+                friends={friends}
+                pending={pending}
+                sent={sent}
+                sessionInvites={sessionInvites}
+                searchUsers={searchUsers}
+                sendRequest={handleFriendRequest}
+                respond={handleFriendRespond}
+                remove={handleRemoveFriend}
+                onViewProfile={f => { SFX.open(); setViewingFriend(f); }}
+                onRespondToSessionInvite={handleRespondToSessionInvite}
+              />
+            </div>
           )}
           {activeTab === 'friends' && viewingFriend && (
-            <FriendProfileView
-              friend={viewingFriend}
-              sessions={sessions}
-              myProfileId={myProfileId}
-              onBack={() => { SFX.back(); setViewingFriend(null); }}
-              onOpenSession={handleOpenSession}
-            />
+            <div style={{ animation: A.fadeUp(), flex: 1, minHeight: 0 }}>
+              <FriendProfileView
+                friend={viewingFriend}
+                sessions={sessions}
+                myProfileId={myProfileId}
+                onBack={() => { SFX.back(); setViewingFriend(null); }}
+                onOpenSession={handleOpenSession}
+              />
+            </div>
           )}
           {activeTab === 'settings' && profile && (
-            <SettingsView
-              profile={profile}
-              updateProfile={updateProfile}
-              checkCallsign={checkCallsign}
-            />
+            <div style={{ animation: A.fadeUp(), flex: 1, minHeight: 0 }}>
+              <SettingsView
+                profile={profile}
+                updateProfile={updateProfile}
+                checkCallsign={checkCallsign}
+              />
+            </div>
           )}
         </div>
       </div>
@@ -779,7 +803,7 @@ function AppInner() {
       {modal?.type === 'session-picker' && (
         <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 999, padding: 20 }}
           onClick={e => { if (e.target === e.currentTarget) { SFX.back(); setModal(null); } }}>
-          <div style={{ background: 'var(--bg-1)', border: '2px solid var(--border)', padding: '28px 24px', width: 380 }}>
+          <div style={{ background: 'var(--bg-1)', border: '2px solid var(--border)', padding: '28px 24px', width: 380, animation: A.pop() }}>
             <div style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 18, textTransform: 'uppercase', letterSpacing: '-0.01em', marginBottom: 6 }}>
               {new Date(modal.dateKey + 'T12:00:00').toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}
             </div>

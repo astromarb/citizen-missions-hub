@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import TypeBadge from '../shared/TypeBadge.jsx';
 import { keyToLabel } from '../../utils/dateUtils.js';
 import { getContractSize } from '../../utils/contractSize.js';
+import { A } from '../../styles/animations.js';
 
 const wpName = (w) => (typeof w === 'object' ? w.name : w) || '';
 
@@ -561,6 +562,8 @@ export default function SessionView({
                   background: 'var(--bg-1)', border: '2px solid var(--border)',
                   width: 280, zIndex: 100,
                   boxShadow: '6px 6px 0 rgba(0,0,0,0.4)',
+                  animation: A.pop(),
+                  transformOrigin: 'top right',
                 }}>
                   <div style={{ padding: '10px 14px', borderBottom: '2px solid var(--border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                     <span style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.1em', color: 'var(--text)' }}>Session Settings</span>
@@ -715,6 +718,8 @@ export default function SessionView({
                     position: 'absolute', top: 66, left: '50%', transform: 'translateX(-50%)',
                     background: 'var(--bg-1)', border: '2px solid var(--border)', width: 220, zIndex: 50,
                     boxShadow: '4px 4px 0 rgba(0,0,0,0.3)',
+                    animation: A.pop(),
+                    transformOrigin: 'top center',
                   }}>
                     <div style={{ padding: '8px 12px', borderBottom: '1px solid var(--bg-3)', fontFamily: 'var(--font-mono)', fontSize: 9, textTransform: 'uppercase', color: 'var(--muted)', letterSpacing: '0.08em' }}>Add to Session</div>
                     <div style={{ padding: '8px 10px', borderBottom: '1px solid var(--bg-3)' }}>
@@ -1011,7 +1016,7 @@ export default function SessionView({
 
               {/* ── Contract edit panel ── */}
               {contractEditId === contract.id && (
-                <div style={{ border: '2px solid #0066cc', background: 'var(--bg-2)', padding: '12px 14px', marginBottom: 14 }}>
+                <div style={{ border: '2px solid #0066cc', background: 'var(--bg-2)', padding: '12px 14px', marginBottom: 14, animation: A.slideDown() }}>
                   <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: '#0066cc', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: 10, fontWeight: 700 }}>Edit Contract</div>
 
                   {editPanel.pickups.length > 0 && (
