@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
+import { Analytics } from '@vercel/analytics/react';
 import { supabase } from '@/lib/supabase.js';
 import { useSessions } from '@/hooks/useSessions.js';
 import { useRefData } from '@/hooks/useRefData.js';
@@ -840,6 +841,7 @@ export default function App() {
   return (
     <ToastProvider>
       <AppInner />
+      <Analytics />
     </ToastProvider>
   );
 }
