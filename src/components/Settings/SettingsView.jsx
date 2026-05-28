@@ -1,6 +1,7 @@
 import { useState, useRef } from 'react';
 import { supabase } from '@/lib/supabase.js';
 import LandingZoneBadge from '../shared/LandingZoneBadge.jsx';
+import { PRESET_BADGES, MAX_BADGES } from '../../data/badges.js';
 
 const SWATCH_COLORS = [
   '#378ADD', '#1D9E75', '#7F77DD', '#D85A30',
@@ -27,6 +28,9 @@ function SavedBadge({ visible }) {
 }
 
 export default function SettingsView({ profile, updateProfile, checkCallsign }) {
+  const [badges, setBadges] = useState(profile?.badges || []);
+  const [badgesSaved, setBadgesSaved] = useState(false);
+
   const [color, setColor] = useState(profile?.color || '#378ADD');
   const [hexInput, setHexInput] = useState(profile?.color || '#378ADD');
   const [colorSaved, setColorSaved] = useState(false);
@@ -54,6 +58,21 @@ export default function SettingsView({ profile, updateProfile, checkCallsign }) 
   const auecFileRef = useRef(null);
 
   const flash = (setter) => { setter(true); setTimeout(() => setter(false), 2000); };
+
+  const toggleBadge = (id) => {
+    setBadges(prev => {
+      if (prev.includes(id)) return prev.filter(b => b !== id);
+      if (prev.length >= MAX_BADGES) return prev;
+      return [...prev, id];
+    });
+  };
+
+  const saveBadges = async () => {
+    setSaving(true);
+    await updateProfile({ badges });
+    setSaving(false);
+    flash(setBadgesSaved);
+  };
 
   const saveRsiHandle = async () => {
     if (!rsiHandle.trim()) return;
@@ -224,6 +243,37 @@ export default function SettingsView({ profile, updateProfile, checkCallsign }) 
         <div style={{ display: 'flex', alignItems: 'center' }}>
           {saveBtn(saveRegion, !region)}
           <SavedBadge visible={regionSaved} />
+        </div>
+      </div>
+
+      {/* ── Pilot Badges ── */}
+      <div style={{ border: '2px solid #000', background: '#fff', padding: '20px', marginBottom: 16 }}>
+        {sectionTitle('Pilot Badges')}
+        <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--muted)', marginBottom: 14, lineHeight: 1.6 }}>
+          Pick up to {MAX_BADGES} badges to display on your profile.
+        </div>
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginBottom: 14 }}>
+          {PRESET_BADGES.map(b => {
+            const active = badges.includes(b.id);
+            const maxed = !active && badges.length >= MAX_BADGES;
+            return (
+              <button key={b.id} onClick={() => toggleBadge(b.id)} disabled={maxed}
+                style={{
+                  padding: '6px 12px', cursor: maxed ? 'default' : 'pointer',
+                  border: `2px solid ${active ? '#c41e3a' : '#ccc'}`,
+                  background: active ? 'rgba(196,30,58,0.07)' : '#fff',
+                  fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 11,
+                  textTransform: 'uppercase', letterSpacing: '0.06em',
+                  color: active ? '#c41e3a' : maxed ? '#bbb' : '#000',
+                  opacity: maxed ? 0.5 : 1,
+                }}
+              >{b.icon} {b.label}</button>
+            );
+          })}
+        </div>
+        <div style={{ display: 'flex', alignItems: 'center' }}>
+          {saveBtn(saveBadges, false)}
+          <SavedBadge visible={badgesSaved} />
         </div>
       </div>
 

@@ -2,6 +2,7 @@ import { useIsMobile } from '../../hooks/useIsMobile.js';
 import LandingZoneBadge from '../shared/LandingZoneBadge.jsx';
 import { typeBg } from '../../data/contractTypes.js';
 import { getContractSize } from '../../utils/contractSize.js';
+import { PRESET_BADGES } from '../../data/badges.js';
 
 const DAY_COLORS = [
   { bg: '#e8db7d', text: '#000' }, // Sunday
@@ -223,6 +224,9 @@ export default function FriendProfileView({ friend, sessions, myProfileId, onBac
   const color = friend.color || '#8b949e';
   const homeRegion = friend.home_region || null;
   const avatarUrl = friend.avatar_url || null;
+  const friendBadges = (friend.badges || [])
+    .map(id => PRESET_BADGES.find(b => b.id === id))
+    .filter(Boolean);
 
   const statsRows = [
     ['Sessions', friendSessions.length.toLocaleString()],
@@ -286,6 +290,20 @@ export default function FriendProfileView({ friend, sessions, myProfileId, onBac
               </div>
               {homeRegion && <LandingZoneBadge region={homeRegion} size="md" />}
               <div style={{ width: '100%', height: 3, background: color }} />
+            </div>
+          )}
+
+          {/* Pilot badges */}
+          {friendBadges.length > 0 && (
+            <div style={{ padding: isMobile ? '8px 14px' : '10px 16px', borderBottom: '1px solid var(--bg-2)', display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+              {friendBadges.map(b => (
+                <span key={b.id} style={{
+                  fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 9,
+                  padding: '3px 8px', border: '1.5px solid var(--border)',
+                  background: 'var(--bg-2)', color: 'var(--text)',
+                  textTransform: 'uppercase', letterSpacing: '0.08em', whiteSpace: 'nowrap',
+                }}>{b.icon} {b.label}</span>
+              ))}
             </div>
           )}
 

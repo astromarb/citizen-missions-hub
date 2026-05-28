@@ -64,27 +64,25 @@ function SessionTimer({ session, onStart, onPause, onResume, onEnd }) {
           padding: '8px 16px', cursor: 'pointer',
           fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 11,
           textTransform: 'uppercase', letterSpacing: '0.04em',
-        }}>⏸ Pause</button>
+        }}>⏸</button>
       )}
       {isStarted && !isEnded && isPaused && (
         <button onClick={onResume} style={{
           background: '#0066cc', border: '2px solid #000', color: '#fff',
-          padding: '8px 16px', cursor: 'pointer',
-          fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 11,
-          textTransform: 'uppercase', letterSpacing: '0.04em',
-        }}>▶ Resume</button>
+          padding: '8px 14px', cursor: 'pointer',
+          fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 14,
+        }}>▶</button>
       )}
       {isStarted && !isEnded && (
         <button onClick={onEnd}
           style={{
             background: 'transparent', border: '2px solid rgba(255,255,255,0.3)', color: 'rgba(255,255,255,0.6)',
-            padding: '8px 14px', cursor: 'pointer',
-            fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 11,
-            textTransform: 'uppercase', letterSpacing: '0.04em',
+            padding: '8px 12px', cursor: 'pointer',
+            fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 14,
           }}
           onMouseEnter={e => { e.currentTarget.style.borderColor = '#c41e3a'; e.currentTarget.style.color = '#c41e3a'; }}
           onMouseLeave={e => { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.3)'; e.currentTarget.style.color = 'rgba(255,255,255,0.6)'; }}
-        >■ End</button>
+        >■</button>
       )}
     </div>
   );
@@ -498,7 +496,7 @@ export default function SessionView({
               }}
               onMouseEnter={e => { e.currentTarget.style.background = '#a01830'; }}
               onMouseLeave={e => { e.currentTarget.style.background = '#c41e3a'; }}
-            >+ Add Contract</button>
+            >+ Contract</button>
           )}
 
           {isSessionMember && (
@@ -627,13 +625,13 @@ export default function SessionView({
       <div style={{ background: '#777', flex: 1, padding: 24, display: 'flex', flexDirection: 'column', gap: 20 }}>
 
         {/* ── Mission Briefing card ── */}
-        <div style={{ background: 'var(--bg-1)', border: '2px solid var(--border)', padding: '24px 28px', textAlign: 'center' }}>
+        <div style={{ background: 'var(--bg-1)', border: '2px solid var(--border)', padding: '14px 20px', textAlign: 'center' }}>
           <div style={{
-            fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 12,
-            letterSpacing: '0.18em', textTransform: 'uppercase', color: 'var(--muted)', marginBottom: 6,
+            fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 10,
+            letterSpacing: '0.18em', textTransform: 'uppercase', color: 'var(--muted)', marginBottom: 4,
           }}>Mission Briefing</div>
 
-          <div style={{ fontFamily: 'var(--font-sans)', fontSize: 12, color: 'var(--muted)', marginBottom: 20, lineHeight: 1.6 }}>
+          <div style={{ fontFamily: 'var(--font-sans)', fontSize: 11, color: 'var(--muted)', marginBottom: 12, lineHeight: 1.5 }}>
             {label} · {memberCount} pilot{memberCount !== 1 ? 's' : ''} · {session.contracts.length} run{session.contracts.length !== 1 ? 's' : ''}
             {session.createdAt && (
               <span> · Created {new Date(session.createdAt).toLocaleString(undefined, { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })}</span>
@@ -641,7 +639,7 @@ export default function SessionView({
           </div>
 
           {/* Confirmed pilots + pending invitees */}
-          <div style={{ display: 'flex', justifyContent: 'center', gap: 32, flexWrap: 'wrap', marginBottom: 16 }}>
+          <div style={{ display: 'flex', justifyContent: 'center', gap: 20, flexWrap: 'wrap', marginBottom: 10 }}>
             {members.map(m => <PlayerSeat key={m.id} member={m} />)}
             {pendingInvites.map(p => <PlayerSeat key={p.id} member={p} pending={true} />)}
           </div>
@@ -701,14 +699,14 @@ export default function SessionView({
           )}
 
           {/* Total aUEC */}
-          <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'baseline', gap: 8, marginBottom: 16 }}>
-            <span style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '0.1em' }}>Earned today</span>
-            <span style={{ fontFamily: 'var(--font-mono)', fontSize: 16, fontWeight: 700, color: totalPayout > 0 ? '#2d8659' : 'var(--muted)' }}>
+          <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'baseline', gap: 6, marginBottom: 10 }}>
+            <span style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '0.1em' }}>Earned today</span>
+            <span style={{ fontFamily: 'var(--font-mono)', fontSize: 14, fontWeight: 700, color: totalPayout > 0 ? '#2d8659' : 'var(--muted)' }}>
               {totalPayout.toLocaleString()} aUEC
             </span>
           </div>
 
-          <div style={{ borderTop: '1px solid var(--bg-3)', paddingTop: 12, marginTop: 4, fontFamily: 'var(--font-sans)', fontSize: 12, fontStyle: 'italic', color: 'var(--muted)' }}>
+          <div style={{ borderTop: '1px solid var(--bg-3)', paddingTop: 8, marginTop: 2, fontFamily: 'var(--font-sans)', fontSize: 11, fontStyle: 'italic', color: 'var(--muted)' }}>
             {isSessionMember
               ? 'Any crew member can add contracts. You may only remove your own — others require a >50% crew vote.'
               : 'You are viewing this session as a non-member. All data is read-only.'}
@@ -735,12 +733,13 @@ export default function SessionView({
 
           return (
             <div key={contract.id} style={{
-              background: 'var(--bg-1)', border: '2px solid var(--border)', padding: '18px 20px',
-              opacity: contract.done ? 0.6 : 1,
+              background: 'var(--bg-1)',
+              border: `2px solid ${contract.done ? '#2d8659' : 'var(--border)'}`,
+              padding: contract.done ? '8px 14px' : '18px 20px',
             }}>
 
               {/* ── Contract header ── */}
-              <div style={{ display: 'flex', alignItems: 'flex-start', gap: 12, marginBottom: 14, flexWrap: 'wrap' }}>
+              <div style={{ display: 'flex', alignItems: 'flex-start', gap: 12, marginBottom: contract.done ? 0 : 14, flexWrap: 'wrap' }}>
 
                 {/* Left: type + size badge, edit payout link below */}
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
@@ -824,6 +823,7 @@ export default function SessionView({
                 </div>
               </div>
 
+              {!contract.done && <>
               <div style={{ height: 1, background: 'var(--bg-3)', marginBottom: 14 }} />
 
               {/* ── Pickups ── */}
@@ -984,6 +984,7 @@ export default function SessionView({
                   )}
                 </div>
               )}
+              </>}
             </div>
           );
         })}
