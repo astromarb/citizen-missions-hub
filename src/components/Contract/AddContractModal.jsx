@@ -266,16 +266,11 @@ export default function AddContractModal({ onSave, onClose, commodities, systems
             </button>
 
             {/* Summary */}
-            <div style={{ marginTop: 20, padding: '14px', background: 'var(--bg-2)', border: '2px solid #000' }}>
-              <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--muted)', marginBottom: 8 }}>Route Summary</div>
-              <div style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 14, marginBottom: 4 }}>
+            <div style={{ marginTop: 20, padding: '12px 14px', background: 'var(--bg-2)', border: '2px solid #000' }}>
+              <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--muted)', marginBottom: 6 }}>Route Summary</div>
+              <div style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 14, marginBottom: 8 }}>
                 <span style={{ color: '#c41e3a' }}>{type || 'Hauling'}</span>
                 {system && <span style={{ color: 'var(--muted)', fontWeight: 400 }}> · {system}</span>}
-              </div>
-              <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--muted)', marginBottom: 8 }}>
-                {pickups.filter(p => p.name).map(p => p.name).join(', ')}
-                <span style={{ margin: '0 6px' }}>→</span>
-                {dropoffs.filter(d => d.name).map(d => d.name).join(', ')}
               </div>
               <div style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 18, color: '#c41e3a', letterSpacing: '-0.02em' }}>
                 {totalSCU.toLocaleString()} SCU
@@ -300,7 +295,21 @@ export default function AddContractModal({ onSave, onClose, commodities, systems
           </button>
           {step > 0 && (
             <button style={primaryBtn(!canAdvance)}
-              onClick={() => canAdvance && (step < 2 ? setStep(2) : save())}
+              onClick={() => {
+                if (!canAdvance) return;
+                if (step < 2) {
+                  // Pre-seed cargo rows: one per pickup/dropoff slot (whichever is more)
+                  const filled = Math.max(
+                    pickups.filter(p => p.name?.trim()).length,
+                    dropoffs.filter(d => d.name?.trim()).length,
+                    1,
+                  );
+                  setCargo(Array.from({ length: filled }, () => ({ commodity: '', scu: '', fromLocation: '', toLocation: '' })));
+                  setStep(2);
+                } else {
+                  save();
+                }
+              }}
             >
               {step < 2 ? 'Continue →' : 'Save Contract'}
             </button>
