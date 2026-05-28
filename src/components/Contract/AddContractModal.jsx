@@ -19,24 +19,38 @@ function deriveRoute(pickups, dropoffs, systemsMap) {
     return null;
   };
 
-  const pSystems = pickups.map(p => sysFor(p.name)).filter(Boolean);
-  const dSystems = dropoffs.map(d => sysFor(d.name)).filter(Boolean);
+  const fp = pickups.filter(p => p.name?.trim());
+  const fd = dropoffs.filter(d => d.name?.trim());
+  const pSystems = fp.map(p => sysFor(p.name)).filter(Boolean);
+  const dSystems = fd.map(d => sysFor(d.name)).filter(Boolean);
   const allSystems = [...new Set([...pSystems, ...dSystems])];
 
   if (allSystems.length === 0) return { system: null, type: null };
 
-  if (allSystems.length === 1) {
-    const named = [...pickups, ...dropoffs].filter(l => l.name?.trim());
-    const bodies = named.map(l => l.body).filter(Boolean);
-    if (bodies.length === named.length && named.length > 0 && new Set(bodies).size === 1) {
-      return { system: allSystems[0], type: 'Hauling - Local' };
-    }
-    return { system: allSystems[0], type: 'Hauling - Stellar' };
+  // Direct: exactly 1 pickup + 1 dropoff (regardless of distance)
+  if (fp.length === 1 && fd.length === 1) {
+    const sys = allSystems.length > 1
+      ? `${pSystems[0] || allSystems[0]} → ${dSystems[0] || allSystems[1]}`
+      : allSystems[0];
+    return { system: sys, type: 'Hauling - Direct' };
   }
 
-  const from = pSystems[0] || allSystems[0];
-  const to   = dSystems.find(s => s !== from) || allSystems.find(s => s !== from) || allSystems[1];
-  return { system: `${from} → ${to}`, type: 'Hauling - Interstellar' };
+  // Multiple stops — check systems first
+  if (allSystems.length > 1) {
+    const from = pSystems[0] || allSystems[0];
+    const to   = dSystems.find(s => s !== from) || allSystems.find(s => s !== from) || allSystems[1];
+    return { system: `${from} → ${to}`, type: 'Hauling - Interstellar' };
+  }
+
+  // Same system — check if all locations share one body (Planetary)
+  const allLocs = [...fp, ...fd];
+  const bodies  = allLocs.map(l => l.body).filter(Boolean);
+  if (bodies.length === allLocs.length && new Set(bodies).size === 1) {
+    return { system: allSystems[0], type: 'Hauling - Planetary' };
+  }
+
+  // Same system, different bodies → Solar
+  return { system: allSystems[0], type: 'Hauling - Solar' };
 }
 
 const MISSION_CATEGORIES = [

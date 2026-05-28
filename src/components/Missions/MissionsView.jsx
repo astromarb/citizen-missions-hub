@@ -1,5 +1,7 @@
 import { useState } from 'react';
 import { useIsMobile } from '../../hooks/useIsMobile.js';
+import LandingZoneBadge from '../shared/LandingZoneBadge.jsx';
+import { typeBg } from '../../data/contractTypes.js';
 
 // M  T  W  Th  F  Sa  Su  (JS getDay: 0=Sun)
 const DAY_COLORS = [
@@ -177,9 +179,6 @@ function SessionDebrief({ session, myProfileId, onOpenSession }) {
           </div>
           {session.contracts.map(c => {
             const cSCU = c.cargo.reduce((t, ci) => t + Number(ci.scu || 0), 0);
-            const badgeBg = c.type === 'Hauling - Stellar' ? '#0066cc'
-              : c.type === 'Hauling - Local' ? '#E8731A'
-              : '#c41e3a';
             return (
               <div key={c.id} style={{
                 display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap',
@@ -188,7 +187,7 @@ function SessionDebrief({ session, myProfileId, onOpenSession }) {
                 border: `1px solid ${c.done ? '#2d8659' : 'var(--bg-3)'}`,
               }}>
                 <span style={{
-                  background: badgeBg,
+                  background: typeBg(c.type),
                   color: '#fff', border: '2px solid var(--border)',
                   padding: '3px 8px',
                   fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 10,
@@ -271,8 +270,8 @@ export default function MissionsView({ sessions, myProfileId, profile, avatarUrl
               )}
               <div style={{ flex: 1, minWidth: 0 }}>
                 <div style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 15, color: '#fff', textTransform: 'uppercase', letterSpacing: '0.04em', lineHeight: 1.1 }}>{callsign}</div>
-                {homeRegion && <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: 'rgba(255,255,255,0.4)', letterSpacing: '0.1em', textTransform: 'uppercase', marginTop: 4 }}>{homeRegion}</div>}
               </div>
+              {homeRegion && <LandingZoneBadge region={homeRegion} size="sm" />}
               <div style={{ width: 4, alignSelf: 'stretch', background: color, flexShrink: 0 }} />
             </div>
           ) : (
@@ -287,8 +286,8 @@ export default function MissionsView({ sessions, myProfileId, profile, avatarUrl
               )}
               <div style={{ textAlign: 'center' }}>
                 <div style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 16, color: '#fff', textTransform: 'uppercase', letterSpacing: '0.04em', lineHeight: 1 }}>{callsign}</div>
-                {homeRegion && <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: 'rgba(255,255,255,0.4)', letterSpacing: '0.1em', textTransform: 'uppercase', marginTop: 4 }}>{homeRegion}</div>}
               </div>
+              {homeRegion && <LandingZoneBadge region={homeRegion} size="md" />}
               <div style={{ width: '100%', height: 3, background: color }} />
             </div>
           )}

@@ -1,5 +1,6 @@
 import { useIsMobile } from '../../hooks/useIsMobile.js';
 import LandingZoneBadge from '../shared/LandingZoneBadge.jsx';
+import { typeBg } from '../../data/contractTypes.js';
 
 function formatDuration(ms) {
   if (!ms || ms <= 0) return '—';
@@ -142,7 +143,6 @@ function SessionDebrief({ session, myProfileId, onOpenSession }) {
           <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, letterSpacing: '0.12em', textTransform: 'uppercase', color: 'var(--muted)', marginBottom: 12 }}>Contract Breakdown</div>
           {allContracts.map(c => {
             const cSCU = c.cargo.reduce((t, ci) => t + Number(ci.scu || 0), 0);
-            const isStellar = c.type === 'Hauling - Stellar';
             return (
               <div key={c.id} style={{
                 display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap',
@@ -151,7 +151,7 @@ function SessionDebrief({ session, myProfileId, onOpenSession }) {
                 border: `1px solid ${c.done ? '#2d8659' : 'var(--bg-3)'}`,
               }}>
                 <span style={{
-                  background: isStellar ? '#0066cc' : '#c41e3a',
+                  background: typeBg(c.type),
                   color: '#fff', border: '2px solid var(--border)',
                   padding: '3px 8px',
                   fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 10,

@@ -12,10 +12,24 @@ export default function StatsView({ sessions, myProfileId }) {
   const topComm = Object.entries(commMap).sort((a, b) => b[1] - a[1]).slice(0, 8);
   const maxCommSCU = topComm[0]?.[1] || 1;
 
-  // Contract type split
-  const stellar = allContracts.filter(c => c.type === 'Hauling - Stellar').length;
-  const inter   = allContracts.filter(c => c.type === 'Hauling - Interstellar').length;
-  const total   = allContracts.length || 1;
+  // Contract type split (normalise legacy types)
+  const normaliseType = (t) => {
+    if (t === 'Hauling - Stellar') return 'Hauling - Solar';
+    if (t === 'Hauling - Local')   return 'Hauling - Planetary';
+    return t;
+  };
+  const typeCounts = {};
+  allContracts.forEach(c => {
+    const t = normaliseType(c.type);
+    typeCounts[t] = (typeCounts[t] || 0) + 1;
+  });
+  const total = allContracts.length || 1;
+  const TYPE_ROWS = [
+    ['Direct',        'Hauling - Direct',       '#6750a4'],
+    ['Interstellar',  'Hauling - Interstellar',  '#0066cc'],
+    ['Solar',         'Hauling - Solar',         '#e07028'],
+    ['Planetary',     'Hauling - Planetary',     '#2e7d32'],
+  ];
 
   // Top haul partners — count sessions shared with each co-pilot
   const partnerSessions = {};
@@ -91,19 +105,23 @@ export default function StatsView({ sessions, myProfileId }) {
           {/* ── Contract types ── */}
           <div style={{ border: '2px solid var(--border)', padding: '16px', background: 'var(--bg-1)' }}>
             {section('Contract Types')}
-            {[['Stellar', stellar, '#185FA5'], ['Interstellar', inter, '#0F6E56']].map(([label, count, color]) => (
-              <div key={label} style={{ marginBottom: 10 }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 3 }}>
-                  <span style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 12, color }}>{label}</span>
-                  <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--muted)' }}>
-                    {count} ({Math.round(count / total * 100)}%)
-                  </span>
+            {TYPE_ROWS.map(([label, key, color]) => {
+              const count = typeCounts[key] || 0;
+              if (count === 0) return null;
+              return (
+                <div key={label} style={{ marginBottom: 10 }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 3 }}>
+                    <span style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 12, color }}>{label}</span>
+                    <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--muted)' }}>
+                      {count} ({Math.round(count / total * 100)}%)
+                    </span>
+                  </div>
+                  <div style={{ height: 4, background: 'var(--bg-3)' }}>
+                    <div style={{ height: '100%', width: `${count / total * 100}%`, background: color }} />
+                  </div>
                 </div>
-                <div style={{ height: 4, background: 'var(--bg-3)' }}>
-                  <div style={{ height: '100%', width: `${count / total * 100}%`, background: color }} />
-                </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
 
           {/* ── Top haul partners ── */}

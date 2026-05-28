@@ -1,18 +1,13 @@
-const STYLES = {
-  'Hauling - Stellar':      { bg: '#0066cc', color: '#fff' },
-  'Hauling - Interstellar': { bg: '#c41e3a', color: '#fff' },
-  'Hauling - Local':        { bg: '#E8731A', color: '#fff' },
-};
+import { typeBg, typeColor } from '../../data/contractTypes.js';
 
 export default function TypeBadge({ type }) {
-  const s = STYLES[type] ?? { bg: '#555', color: '#fff', border: '#555' };
   return (
     <span style={{
       display: 'inline-block',
       padding: '4px 10px',
-      background: s.bg,
-      border: `2px solid #000`,
-      color: s.color,
+      background: typeBg(type),
+      border: '2px solid #000',
+      color: typeColor(type),
       fontFamily: 'var(--font-display)',
       fontWeight: 700,
       fontSize: 11,
