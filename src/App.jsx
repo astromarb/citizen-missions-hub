@@ -648,6 +648,7 @@ function AppInner() {
                 ) : (
                   <SessionManageList
                     sessions={sessions}
+                    myProfileId={myProfileId}
                     onDelete={handleDeleteSession}
                     onUpdate={updateSession}
                     onOpen={id => { setManageMode(false); handleOpenSession(id); }}

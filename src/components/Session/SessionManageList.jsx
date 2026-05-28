@@ -144,25 +144,27 @@ function SessionRow({ session, onDelete, onUpdate, onOpen }) {
   );
 }
 
-export default function SessionManageList({ sessions, onDelete, onUpdate, onOpen, onNewSession }) {
-  const sorted = Object.values(sessions).sort((a, b) => new Date(b.date) - new Date(a.date));
+export default function SessionManageList({ sessions, myProfileId, onDelete, onUpdate, onOpen, onNewSession }) {
+  const mine = Object.values(sessions)
+    .filter(s => s.createdBy === myProfileId)
+    .sort((a, b) => new Date(b.date) - new Date(a.date));
   const [filter, setFilter] = useState('');
 
   const filtered = filter.trim()
-    ? sorted.filter(s =>
+    ? mine.filter(s =>
         s.date.includes(filter) ||
         s.members?.some(m => m.callsign?.toLowerCase().includes(filter.toLowerCase()))
       )
-    : sorted;
+    : mine;
 
   return (
     <div style={{ padding: '16px 20px', flex: 1 }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 16, flexWrap: 'wrap' }}>
         <div style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 18, letterSpacing: '-0.01em', textTransform: 'uppercase' }}>
-          All Sessions
+          My Sessions
         </div>
         <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--muted)', letterSpacing: '0.06em' }}>
-          {sorted.length} total
+          {mine.length} total
         </div>
         <input
           value={filter}
@@ -178,7 +180,7 @@ export default function SessionManageList({ sessions, onDelete, onUpdate, onOpen
 
       {filtered.length === 0 && (
         <div style={{ textAlign: 'center', padding: '48px 20px', border: '2px dashed var(--border)', background: 'var(--bg-1)', color: 'var(--muted)', fontFamily: 'var(--font-mono)', fontSize: 12 }}>
-          {filter ? 'No sessions match.' : 'No sessions yet.'}
+          {filter ? 'No sessions match.' : 'You haven\'t created any sessions yet.'}
         </div>
       )}
 
