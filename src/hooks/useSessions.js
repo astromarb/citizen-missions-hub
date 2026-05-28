@@ -339,6 +339,42 @@ export function useSessions(enabled = true, userId) {
     return true;
   }, [load]);
 
+  // ── leaveSession ───────────────────────────────────────────
+  const leaveSession = useCallback(async (sessionId) => {
+    if (!userId) return;
+    const sess = Object.values(sessions).find(s => s.id === sessionId);
+    if (!sess) return;
+
+    const members = sess.members || [];
+    const isCreator = sess.createdBy === userId;
+    const otherMembers = members.filter(m => m.id !== userId);
+
+    if (isCreator && otherMembers.length > 0) {
+      await supabase.from('sessions').update({ created_by: otherMembers[0].id }).eq('id', sessionId);
+    }
+
+    await supabase.from('session_players').delete()
+      .eq('session_id', sessionId)
+      .eq('profile_id', userId);
+
+    if (otherMembers.length === 0) {
+      await supabase.from('sessions').delete().eq('id', sessionId);
+      setSessions(prev => { const n = { ...prev }; delete n[sessionId]; return n; });
+      return 'deleted';
+    }
+
+    await load();
+    return 'left';
+  }, [userId, sessions, load]);
+
+  // ── removePlayerFromSession ────────────────────────────────
+  const removePlayerFromSession = useCallback(async (sessionId, profileId) => {
+    await supabase.from('session_players').delete()
+      .eq('session_id', sessionId)
+      .eq('profile_id', profileId);
+    await load();
+  }, [load]);
+
   return {
     sessions, loading,
     createSession, createContract, toggleDone, deleteContract,
@@ -346,5 +382,6 @@ export function useSessions(enabled = true, userId) {
     startSession, pauseSession, resumeSession, endSession,
     deleteSession, updateSession, updateContract,
     updateWaypoint, updateCargoItem,
+    leaveSession, removePlayerFromSession,
   };
 }

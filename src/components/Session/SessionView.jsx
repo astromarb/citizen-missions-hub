@@ -228,25 +228,6 @@ function WaypointRow({ waypoint, myProfileId, members, onSetStatus, canEdit, kin
           <div style={{ display: 'flex', gap: 12 }}>
             {isPickup ? (
               <>
-                {/* LOADING */}
-                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 3 }}>
-                  <span style={{ fontFamily: 'var(--font-mono)', fontSize: 8, color: '#aaa', height: 11, lineHeight: '11px', textAlign: 'center' }}>
-                    {countFor('loading') > 0 ? `(${countFor('loading')})` : ''}
-                  </span>
-                  <button
-                    onClick={() => onSetStatus(waypoint.id, myCompletion?.status === 'loading' ? null : 'loading')}
-                    title="Mark loading"
-                    style={{
-                      width: 28, height: 28, cursor: 'pointer',
-                      border: `2px solid ${myCompletion?.status === 'loading' ? '#9c59d1' : '#ccc'}`,
-                      background: myCompletion?.status === 'loading' ? '#9c59d1' : 'transparent',
-                      color: myCompletion?.status === 'loading' ? '#fff' : '#bbb',
-                      fontWeight: 700, fontSize: 14,
-                      display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    }}
-                  >↓</button>
-                  <span style={{ fontFamily: 'var(--font-mono)', fontSize: 7, color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '0.06em', whiteSpace: 'nowrap' }}>LOADING</span>
-                </div>
                 {/* EN ROUTE */}
                 <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 3 }}>
                   <span style={{ fontFamily: 'var(--font-mono)', fontSize: 8, color: '#aaa', height: 11, lineHeight: '11px', textAlign: 'center' }}>
@@ -265,6 +246,25 @@ function WaypointRow({ waypoint, myProfileId, members, onSetStatus, canEdit, kin
                     }}
                   >→</button>
                   <span style={{ fontFamily: 'var(--font-mono)', fontSize: 7, color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '0.06em', whiteSpace: 'nowrap' }}>EN ROUTE</span>
+                </div>
+                {/* LOADING */}
+                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 3 }}>
+                  <span style={{ fontFamily: 'var(--font-mono)', fontSize: 8, color: '#aaa', height: 11, lineHeight: '11px', textAlign: 'center' }}>
+                    {countFor('loading') > 0 ? `(${countFor('loading')})` : ''}
+                  </span>
+                  <button
+                    onClick={() => onSetStatus(waypoint.id, myCompletion?.status === 'loading' ? null : 'loading')}
+                    title="Mark loading"
+                    style={{
+                      width: 28, height: 28, cursor: 'pointer',
+                      border: `2px solid ${myCompletion?.status === 'loading' ? '#9c59d1' : '#ccc'}`,
+                      background: myCompletion?.status === 'loading' ? '#9c59d1' : 'transparent',
+                      color: myCompletion?.status === 'loading' ? '#fff' : '#bbb',
+                      fontWeight: 700, fontSize: 14,
+                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    }}
+                  >↓</button>
+                  <span style={{ fontFamily: 'var(--font-mono)', fontSize: 7, color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '0.06em', whiteSpace: 'nowrap' }}>LOADING</span>
                 </div>
                 {/* PICKED UP */}
                 <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 3 }}>
@@ -362,12 +362,13 @@ export default function SessionView({
   onUpdateWaypoint, onUpdateCargoItem,
   commodities, systemsMap,
   playerColors, myProfileId, myCallsign, friends,
-  onCopyInviteLink,
+  onCopyInviteLink, onLeaveSession, onRemovePlayer,
 }) {
   const [showInvite, setShowInvite]       = useState(false);
   const [inviteQuery, setInviteQuery]     = useState('');
   const [confirmDelete, setConfirmDelete] = useState(false);
-  const [editingDate, setEditingDate]     = useState(false);
+  const [showEditPanel, setShowEditPanel] = useState(false);
+  const [confirmLeave, setConfirmLeave]   = useState(false);
   const [newDate, setNewDate]             = useState(session.date);
   const [dateError, setDateError]         = useState(null);
   const [editingPayoutId, setEditingPayoutId]   = useState(null);
@@ -485,30 +486,105 @@ export default function SessionView({
             >+ Add Contract</button>
           )}
 
-          {isSessionMember && editingDate ? (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 4, alignItems: 'flex-end' }}>
-              <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
-                <input type="date" value={newDate} onChange={e => { setNewDate(e.target.value); setDateError(null); }}
-                  style={{ padding: '6px 10px', border: `2px solid ${dateError ? '#c41e3a' : '#000'}`, background: '#fff', fontFamily: 'var(--font-mono)', fontSize: 12, outline: 'none' }} />
-                <button onClick={async () => {
-                  setDateError(null);
-                  const ok = await onUpdateSession?.(session.id, { date: newDate });
-                  if (ok === false) setDateError('Could not save — try a different date.');
-                  else setEditingDate(false);
+          {isSessionMember && (
+            <div style={{ position: 'relative' }}>
+              <button
+                onClick={() => { setShowEditPanel(v => !v); setConfirmLeave(false); setDateError(null); }}
+                style={{
+                  padding: '8px 12px', background: showEditPanel ? 'rgba(255,255,255,0.12)' : 'transparent',
+                  border: '2px solid rgba(255,255,255,0.25)', color: 'rgba(255,255,255,0.7)', cursor: 'pointer',
+                  fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 11,
+                  textTransform: 'uppercase', letterSpacing: '0.04em',
                 }}
-                  style={{ padding: '6px 12px', background: '#2d8659', border: '2px solid #000', color: '#fff', cursor: 'pointer', fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 11 }}>Save</button>
-                <button onClick={() => { setEditingDate(false); setNewDate(session.date); setDateError(null); }}
-                  style={{ padding: '6px 12px', background: 'transparent', border: '2px solid rgba(255,255,255,0.3)', color: 'rgba(255,255,255,0.6)', cursor: 'pointer', fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 11 }}>Cancel</button>
-              </div>
-              {dateError && <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: '#ff6b6b' }}>{dateError}</div>}
+                onMouseEnter={e => { e.currentTarget.style.color = '#fff'; e.currentTarget.style.borderColor = 'rgba(255,255,255,0.6)'; }}
+                onMouseLeave={e => { e.currentTarget.style.color = 'rgba(255,255,255,0.7)'; e.currentTarget.style.borderColor = 'rgba(255,255,255,0.25)'; }}
+              >EDIT</button>
+
+              {showEditPanel && (
+                <div style={{
+                  position: 'absolute', top: 44, right: 0,
+                  background: 'var(--bg-1)', border: '2px solid var(--border)',
+                  width: 280, zIndex: 100,
+                  boxShadow: '6px 6px 0 rgba(0,0,0,0.4)',
+                }}>
+                  <div style={{ padding: '10px 14px', borderBottom: '2px solid var(--border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <span style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.1em', color: 'var(--text)' }}>Session Settings</span>
+                    <button onClick={() => { setShowEditPanel(false); setConfirmLeave(false); setDateError(null); }}
+                      style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--muted)', fontSize: 16, lineHeight: 1, padding: '0 2px' }}>×</button>
+                  </div>
+
+                  {isSessionCreator && (
+                    <div style={{ padding: '12px 14px', borderBottom: '1px solid var(--bg-3)' }}>
+                      <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: 8 }}>Change Date</div>
+                      <div style={{ display: 'flex', gap: 6, alignItems: 'center', flexWrap: 'wrap' }}>
+                        <input type="date" value={newDate} onChange={e => { setNewDate(e.target.value); setDateError(null); }}
+                          style={{ flex: 1, minWidth: 120, padding: '5px 8px', border: `2px solid ${dateError ? '#c41e3a' : 'var(--border)'}`, background: 'var(--bg-2)', color: 'var(--text)', fontFamily: 'var(--font-mono)', fontSize: 11, outline: 'none' }} />
+                        <button onClick={async () => {
+                          setDateError(null);
+                          const ok = await onUpdateSession?.(session.id, { date: newDate });
+                          if (ok === false) setDateError('Could not save');
+                          else setShowEditPanel(false);
+                        }}
+                          style={{ padding: '5px 10px', background: '#2d8659', border: '2px solid #2d8659', color: '#fff', cursor: 'pointer', fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 10 }}>Save</button>
+                      </div>
+                      {dateError && <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: '#ff6b6b', marginTop: 5 }}>{dateError}</div>}
+                    </div>
+                  )}
+
+                  {isSessionCreator && (
+                    <div style={{ padding: '12px 14px', borderBottom: '1px solid var(--bg-3)' }}>
+                      <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: 8 }}>Crew</div>
+                      {members.map(m => (
+                        <div key={m.id} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '5px 0', borderBottom: '1px solid var(--bg-2)' }}>
+                          <div style={{ width: 18, height: 18, borderRadius: '50%', background: m.color || '#8b949e', flexShrink: 0, border: '2px solid var(--border)' }} />
+                          <span style={{ flex: 1, fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.04em', color: m.id === myProfileId ? '#c41e3a' : 'var(--text)' }}>
+                            {m.callsign}{m.id === myProfileId ? ' (you)' : ''}{m.id === session.createdBy ? ' ★' : ''}
+                          </span>
+                          {m.id !== myProfileId && (
+                            <button onClick={() => onRemovePlayer?.(session.id, m.id)} title={`Remove ${m.callsign}`}
+                              style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#c41e3a', fontSize: 14, fontWeight: 700, lineHeight: 1, padding: '0 2px' }}>×</button>
+                          )}
+                        </div>
+                      ))}
+                      <button onClick={() => { setShowEditPanel(false); setShowInvite(true); }}
+                        style={{ marginTop: 8, width: '100%', padding: '6px', border: '2px dashed var(--border)', background: 'transparent', cursor: 'pointer', fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 10, textTransform: 'uppercase', letterSpacing: '0.08em', color: 'var(--muted)' }}>
+                        + Invite Pilot
+                      </button>
+                    </div>
+                  )}
+
+                  <div style={{ padding: '12px 14px' }}>
+                    {!confirmLeave ? (
+                      <button onClick={() => setConfirmLeave(true)}
+                        style={{ width: '100%', padding: '8px', border: '2px solid rgba(196,30,58,0.5)', background: 'transparent', color: '#c41e3a', cursor: 'pointer', fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.06em' }}>
+                        Leave Session
+                      </button>
+                    ) : (
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                        <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--muted)', lineHeight: 1.4 }}>
+                          {isSessionCreator && members.length > 1
+                            ? 'Ownership will transfer to the next pilot.'
+                            : isSessionCreator
+                            ? 'You are the last member — the session will be deleted.'
+                            : 'You will be removed from this session.'}
+                        </div>
+                        <div style={{ display: 'flex', gap: 6 }}>
+                          <button onClick={async () => { setConfirmLeave(false); setShowEditPanel(false); await onLeaveSession?.(session.id); }}
+                            style={{ flex: 1, padding: '7px', background: '#c41e3a', border: '2px solid #c41e3a', color: '#fff', cursor: 'pointer', fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 11, textTransform: 'uppercase' }}>
+                            Confirm
+                          </button>
+                          <button onClick={() => setConfirmLeave(false)}
+                            style={{ flex: 1, padding: '7px', background: 'transparent', border: '2px solid var(--border)', color: 'var(--muted)', cursor: 'pointer', fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 11 }}>
+                            Cancel
+                          </button>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
             </div>
-          ) : isSessionMember ? (
-            <button onClick={() => setEditingDate(true)}
-              style={{ padding: '8px 12px', background: 'transparent', border: '2px solid rgba(255,255,255,0.25)', color: 'rgba(255,255,255,0.5)', cursor: 'pointer', fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.04em' }}
-              onMouseEnter={e => { e.currentTarget.style.color = '#fff'; e.currentTarget.style.borderColor = 'rgba(255,255,255,0.5)'; }}
-              onMouseLeave={e => { e.currentTarget.style.color = 'rgba(255,255,255,0.5)'; e.currentTarget.style.borderColor = 'rgba(255,255,255,0.25)'; }}
-            >Edit Date</button>
-          ) : null}
+          )}
 
           {isSessionMember && (!confirmDelete ? (
             <button onClick={() => setConfirmDelete(true)}

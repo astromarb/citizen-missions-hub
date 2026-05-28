@@ -232,6 +232,7 @@ function AppInner() {
     startSession, pauseSession, resumeSession, endSession,
     deleteSession, updateSession, updateContract,
     updateWaypoint, updateCargoItem,
+    leaveSession, removePlayerFromSession,
   } = useSessions(!!authSession, userId);
   const { commodities, systemsMap } = useRefData(!!authSession);
   const { profile, loading: profileLoading, checkCallsign, updateProfile, reload: reloadProfile } = useProfile(userId);
@@ -369,6 +370,19 @@ function AppInner() {
     } else {
       showToast('Could not join session', 'error');
     }
+  };
+
+  const handleLeaveSession = async (sessionId) => {
+    await leaveSession(sessionId);
+    closeSession();
+    showToast('You left the session', 'info');
+    SFX.back();
+  };
+
+  const handleRemovePlayer = async (sessionId, profileId) => {
+    await removePlayerFromSession(sessionId, profileId);
+    showToast('Pilot removed from session', 'info');
+    SFX.boop();
   };
 
   const handleStartSession  = (sessionId) => { startSession(sessionId);  SFX.open(); showToast('Session started', 'success'); };
@@ -677,6 +691,8 @@ function AppInner() {
               onUpdateContract={updateContract}
               onUpdateWaypoint={updateWaypoint}
               onUpdateCargoItem={updateCargoItem}
+              onLeaveSession={handleLeaveSession}
+              onRemovePlayer={handleRemovePlayer}
               commodities={commodities}
               systemsMap={systemsMap}
               playerColors={playerColors}

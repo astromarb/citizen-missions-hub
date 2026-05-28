@@ -3,6 +3,18 @@ import LandingZoneBadge from '../shared/LandingZoneBadge.jsx';
 import { typeBg } from '../../data/contractTypes.js';
 import { getContractSize } from '../../utils/contractSize.js';
 
+const DAY_COLORS = [
+  { bg: '#e8db7d', text: '#000' }, // Sunday
+  { bg: '#19535f', text: '#fff' }, // Monday
+  { bg: '#0b7a75', text: '#fff' }, // Tuesday
+  { bg: '#d7c9aa', text: '#000' }, // Wednesday
+  { bg: '#7b2d26', text: '#fff' }, // Thursday
+  { bg: '#f0f3f5', text: '#000' }, // Friday
+  { bg: '#c0d684', text: '#000' }, // Saturday
+];
+
+const FOREST_GREEN = '#2e7d32';
+
 function formatDuration(ms) {
   if (!ms || ms <= 0) return '—';
   const s = Math.floor(ms / 1000);
@@ -26,44 +38,84 @@ function SessionDebrief({ session, myProfileId, onOpenSession }) {
   const memberCount = session.members?.length || 1;
   const payoutPerPilot = memberCount > 0 ? Math.floor(totalPayout / memberCount) : 0;
   const durationMs = sessionDurationMs(session);
-  const allContracts = session.contracts;
-
 
   const d = new Date(session.date + 'T12:00:00');
+  const { bg: headerBg, text: headerText } = DAY_COLORS[d.getDay()];
+  const isDark = headerText === '#fff';
+  const mutedColor = isDark ? 'rgba(255,255,255,0.65)' : 'rgba(0,0,0,0.55)';
+
   const dateLabel = d.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' });
+  const statusText = session.endedAt ? 'COMPLETE' : session.startedAt ? 'IN PROGRESS' : null;
 
   return (
     <div style={{ border: '2px solid var(--border)', background: 'var(--bg-1)', marginBottom: 20 }}>
 
-      {/* Session header */}
-      <div style={{ background: '#1a1a1a', padding: '14px 20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 10 }}>
+      {/* Day-colored header */}
+      <div style={{
+        background: headerBg, padding: '14px 20px',
+        display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 10,
+      }}>
         <div>
-          <div style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 16, color: '#fff', textTransform: 'uppercase', letterSpacing: '-0.01em' }}>{dateLabel}</div>
-          <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'rgba(255,255,255,0.4)', marginTop: 3, letterSpacing: '0.06em' }}>
+          <div style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 16, color: headerText, textTransform: 'uppercase', letterSpacing: '-0.01em' }}>
+            {dateLabel}
+          </div>
+          <div style={{ fontFamily: 'var(--font-mono)', fontSize: 12, color: mutedColor, marginTop: 3, letterSpacing: '0.06em' }}>
             {session.contracts.length} contract{session.contracts.length !== 1 ? 's' : ''}
-            {durationMs ? ` · ⏱ ${formatDuration(durationMs)}` : ''}
-            {session.endedAt ? ' · COMPLETE' : session.startedAt ? ' · IN PROGRESS' : ''}
           </div>
         </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 20 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+            {durationMs ? (
+              <span style={{ fontFamily: 'var(--font-mono)', fontWeight: 800, fontSize: 22, color: mutedColor, letterSpacing: '0.02em' }}>
+                ⏱ {formatDuration(durationMs)}
+              </span>
+            ) : null}
+            {statusText && (
+              <span style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 22, color: headerText, letterSpacing: '0.04em' }}>
+                {statusText}
+              </span>
+            )}
+          </div>
           {onOpenSession && (
             <button onClick={() => onOpenSession(session.id)}
               style={{
                 padding: '7px 16px', cursor: 'pointer',
                 fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 11,
                 textTransform: 'uppercase', letterSpacing: '0.06em',
-                border: '2px solid rgba(255,255,255,0.3)', background: 'transparent', color: 'rgba(255,255,255,0.7)',
+                border: `2px solid ${isDark ? 'rgba(255,255,255,0.3)' : 'rgba(0,0,0,0.3)'}`,
+                background: 'transparent',
+                color: isDark ? 'rgba(255,255,255,0.7)' : 'rgba(0,0,0,0.7)',
               }}
               onMouseEnter={e => { e.currentTarget.style.background = '#c41e3a'; e.currentTarget.style.borderColor = '#c41e3a'; e.currentTarget.style.color = '#fff'; }}
-              onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.borderColor = 'rgba(255,255,255,0.3)'; e.currentTarget.style.color = 'rgba(255,255,255,0.7)'; }}
+              onMouseLeave={e => {
+                e.currentTarget.style.background = 'transparent';
+                e.currentTarget.style.borderColor = isDark ? 'rgba(255,255,255,0.3)' : 'rgba(0,0,0,0.3)';
+                e.currentTarget.style.color = isDark ? 'rgba(255,255,255,0.7)' : 'rgba(0,0,0,0.7)';
+              }}
             >Open →</button>
           )}
-          {[['TOTAL SCU', totalSCU.toLocaleString()], ['PAYOUT', `${totalPayout.toLocaleString()} aUEC`], ['PER PILOT', `${payoutPerPilot.toLocaleString()} aUEC`]].map(([l, v]) => (
-            <div key={l} style={{ textAlign: 'center' }}>
-              <div style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 16, color: '#c41e3a', lineHeight: 1 }}>{v}</div>
-              <div style={{ fontFamily: 'var(--font-mono)', fontSize: 8, color: 'rgba(255,255,255,0.3)', letterSpacing: '0.1em', textTransform: 'uppercase', marginTop: 3 }}>{l}</div>
-            </div>
-          ))}
+        </div>
+      </div>
+
+      {/* Stats row */}
+      <div style={{ padding: '14px 20px', borderBottom: '1px solid var(--bg-3)', display: 'flex', alignItems: 'center', gap: 32, flexWrap: 'wrap' }}>
+        <div>
+          <div style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 18, color: '#c41e3a', lineHeight: 1 }}>
+            {totalSCU.toLocaleString()}
+          </div>
+          <div style={{ fontFamily: 'var(--font-mono)', fontSize: 8, color: '#c41e3a', letterSpacing: '0.1em', textTransform: 'uppercase', marginTop: 3 }}>TOTAL SCU</div>
+        </div>
+        <div>
+          <div style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 18, color: FOREST_GREEN, lineHeight: 1 }}>
+            {totalPayout.toLocaleString()} aUEC
+          </div>
+          <div style={{ fontFamily: 'var(--font-mono)', fontSize: 8, color: FOREST_GREEN, letterSpacing: '0.1em', textTransform: 'uppercase', marginTop: 3 }}>PAYOUT</div>
+        </div>
+        <div>
+          <div style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 18, color: FOREST_GREEN, lineHeight: 1, textDecoration: 'underline', textDecorationColor: '#000', textUnderlineOffset: '3px' }}>
+            {payoutPerPilot.toLocaleString()} aUEC
+          </div>
+          <div style={{ fontFamily: 'var(--font-mono)', fontSize: 8, color: FOREST_GREEN, letterSpacing: '0.1em', textTransform: 'uppercase', marginTop: 3 }}>PER PILOT</div>
         </div>
       </div>
 
@@ -71,8 +123,7 @@ function SessionDebrief({ session, myProfileId, onOpenSession }) {
       {session.members?.length > 0 && (
         <div style={{ padding: '16px 20px', borderBottom: '1px solid var(--bg-3)' }}>
           <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, letterSpacing: '0.12em', textTransform: 'uppercase', color: 'var(--muted)', marginBottom: 12 }}>Crew Performance</div>
-          <div style={{ overflowX: 'auto' }}>
-            <table style={{ width: '100%', borderCollapse: 'collapse', fontFamily: 'var(--font-display)', fontSize: 12 }}>
+          <table style={{ width: '100%', borderCollapse: 'collapse', fontFamily: 'var(--font-display)', fontSize: 12 }}>
               <thead>
                 <tr style={{ borderBottom: '2px solid var(--border)' }}>
                   {['Pilot', 'Payout Share'].map(h => (
@@ -93,7 +144,7 @@ function SessionDebrief({ session, myProfileId, onOpenSession }) {
                           </span>
                         </div>
                       </td>
-                      <td style={{ padding: '10px', fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 13, color: '#2d8659' }}>
+                      <td style={{ padding: '10px', fontWeight: 700, fontSize: 13, color: FOREST_GREEN }}>
                         {payoutPerPilot > 0 ? `${payoutPerPilot.toLocaleString()} aUEC` : '—'}
                       </td>
                     </tr>
@@ -101,15 +152,14 @@ function SessionDebrief({ session, myProfileId, onOpenSession }) {
                 })}
               </tbody>
             </table>
-          </div>
         </div>
       )}
 
       {/* Contract breakdown */}
-      {allContracts.length > 0 && (
+      {session.contracts.length > 0 && (
         <div style={{ padding: '16px 20px' }}>
           <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, letterSpacing: '0.12em', textTransform: 'uppercase', color: 'var(--muted)', marginBottom: 12 }}>Contract Breakdown</div>
-          {allContracts.map(c => {
+          {session.contracts.map(c => {
             const cSCU = c.cargo.reduce((t, ci) => t + Number(ci.scu || 0), 0);
             const sz = getContractSize(cSCU);
             return (
@@ -145,7 +195,7 @@ function SessionDebrief({ session, myProfileId, onOpenSession }) {
         </div>
       )}
 
-      {allContracts.length === 0 && (
+      {session.contracts.length === 0 && (
         <div style={{ padding: '24px 20px', textAlign: 'center', color: 'var(--muted)', fontFamily: 'var(--font-mono)', fontSize: 12 }}>No contracts logged.</div>
       )}
     </div>
