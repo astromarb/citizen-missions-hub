@@ -9,25 +9,57 @@ const fmtAUEC = (n) => n > 0 ? `${n.toLocaleString()} aUEC` : '—';
 const fmt     = (n) => n.toLocaleString();
 
 function Board({ title, rows, valueKey, format, myProfileId }) {
-  if (rows.length === 0) {
-    return (
-      <div style={{ border: '2px solid var(--border)', background: 'var(--bg-1)', animation: A.fadeIn() }}>
-        <div style={{ background: '#1a1a1a', padding: '10px 16px', fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 12, color: '#fff', textTransform: 'uppercase', letterSpacing: '0.06em' }}>{title}</div>
-        <div style={{ padding: '20px 16px', fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--muted)', textAlign: 'center' }}>No data yet.</div>
-      </div>
-    );
-  }
+  const [open, setOpen] = useState(false);
+  const top5 = rows.slice(0, 5);
+
   return (
-    <div style={{ border: '2px solid var(--border)', background: 'var(--bg-1)', animation: A.fadeIn() }}>
-      <div style={{ background: '#1a1a1a', padding: '10px 16px', fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 12, color: '#fff', textTransform: 'uppercase', letterSpacing: '0.06em' }}>{title}</div>
-      {rows.map((p, i) => {
+    <div style={{ border: '2px solid var(--border)', background: 'var(--bg-1)', overflow: 'hidden', animation: A.fadeIn() }}>
+
+      {/* Clickable header */}
+      <button
+        onClick={() => setOpen(v => !v)}
+        style={{
+          width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+          padding: '10px 16px', border: 'none', cursor: 'pointer',
+          background: open ? '#222' : '#1a1a1a',
+          fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 12,
+          color: '#fff', textTransform: 'uppercase', letterSpacing: '0.06em',
+          transition: 'background 0.15s',
+        }}
+        onMouseEnter={e => { e.currentTarget.style.background = '#2a2a2a'; }}
+        onMouseLeave={e => { e.currentTarget.style.background = open ? '#222' : '#1a1a1a'; }}
+      >
+        <span>{title}</span>
+        <span style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+          {rows.length > 0 && (
+            <span style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: 'rgba(255,255,255,0.4)', letterSpacing: '0.08em' }}>
+              TOP {Math.min(rows.length, 5)}
+            </span>
+          )}
+          <span style={{
+            fontFamily: 'var(--font-mono)', fontSize: 11, color: open ? '#c41e3a' : 'rgba(255,255,255,0.45)',
+            display: 'inline-block', transition: 'transform 0.2s ease, color 0.15s',
+            transform: open ? 'rotate(0deg)' : 'rotate(180deg)',
+          }}>▲</span>
+        </span>
+      </button>
+
+      {/* Empty state */}
+      {open && rows.length === 0 && (
+        <div style={{ padding: '20px 16px', fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--muted)', textAlign: 'center', animation: A.fadeIn() }}>
+          No data yet.
+        </div>
+      )}
+
+      {/* Sequential row reveal — each slides out from behind the one above */}
+      {open && top5.map((p, i) => {
         const isMe = p.id === myProfileId;
         return (
           <div key={p.id} style={{
             display: 'flex', alignItems: 'center', gap: 12,
             padding: '10px 16px', borderBottom: '1px solid var(--bg-3)',
             background: isMe ? 'rgba(196,30,58,0.04)' : 'transparent',
-            animation: A.stagger(i, 60),
+            animation: A.rowOut(i),
           }}>
             <div style={{ fontFamily: 'var(--font-mono)', fontWeight: 800, fontSize: 13, color: rankMedal(i), width: 22, flexShrink: 0, textAlign: 'center' }}>
               {i === 0 ? '★' : `${i + 1}`}
@@ -39,7 +71,7 @@ function Board({ title, rows, valueKey, format, myProfileId }) {
             <AnimatedNumber
               value={p[valueKey]}
               format={format}
-              duration={700 + i * 60}
+              duration={500 + i * 80}
               style={{ fontFamily: 'var(--font-mono)', fontWeight: 700, fontSize: 13, color: i === 0 ? '#c41e3a' : 'var(--text)' }}
             />
           </div>
@@ -79,6 +111,76 @@ function Section({ title, open, onToggle, children }) {
           {children}
         </div>
       )}
+    </div>
+  );
+}
+
+function WalletBoard({ rows, myProfileId, emptyMsg }) {
+  const [open, setOpen] = useState(false);
+  const top5 = rows.slice(0, 5);
+
+  return (
+    <div style={{ border: '2px solid var(--border)', background: 'var(--bg-1)', overflow: 'hidden', animation: A.fadeIn() }}>
+      <button
+        onClick={() => setOpen(v => !v)}
+        style={{
+          width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+          padding: '10px 16px', border: 'none', cursor: 'pointer',
+          background: open ? '#222' : '#1a1a1a',
+          transition: 'background 0.15s',
+        }}
+        onMouseEnter={e => { e.currentTarget.style.background = '#2a2a2a'; }}
+        onMouseLeave={e => { e.currentTarget.style.background = open ? '#222' : '#1a1a1a'; }}
+      >
+        <div style={{ display: 'flex', alignItems: 'baseline', gap: 10 }}>
+          <div style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 12, color: '#fff', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Verified Balance</div>
+          <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: 'rgba(255,255,255,0.35)', letterSpacing: '0.08em' }}>self-reported · {rows.length} pilot{rows.length !== 1 ? 's' : ''}</div>
+        </div>
+        <span style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+          {rows.length > 0 && (
+            <span style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: 'rgba(255,255,255,0.4)', letterSpacing: '0.08em' }}>
+              TOP {Math.min(rows.length, 5)}
+            </span>
+          )}
+          <span style={{
+            fontFamily: 'var(--font-mono)', fontSize: 11, color: open ? '#c41e3a' : 'rgba(255,255,255,0.45)',
+            display: 'inline-block', transition: 'transform 0.2s ease, color 0.15s',
+            transform: open ? 'rotate(0deg)' : 'rotate(180deg)',
+          }}>▲</span>
+        </span>
+      </button>
+
+      {open && rows.length === 0 && (
+        <div style={{ padding: '20px 16px', fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--muted)', textAlign: 'center', animation: A.fadeIn() }}>
+          {emptyMsg}
+        </div>
+      )}
+
+      {open && top5.map((p, i) => {
+        const isMe = p.id === myProfileId;
+        return (
+          <div key={p.id} style={{
+            display: 'flex', alignItems: 'center', gap: 12,
+            padding: '10px 16px', borderBottom: '1px solid var(--bg-3)',
+            background: isMe ? 'rgba(196,30,58,0.04)' : 'transparent',
+            animation: A.rowOut(i),
+          }}>
+            <div style={{ fontFamily: 'var(--font-mono)', fontWeight: 800, fontSize: 13, color: rankMedal(i), width: 22, flexShrink: 0, textAlign: 'center' }}>
+              {i === 0 ? '★' : `${i + 1}`}
+            </div>
+            <div style={{ width: 12, height: 12, borderRadius: '50%', background: p.color, flexShrink: 0, border: '2px solid var(--border)' }} />
+            <div style={{ fontFamily: 'var(--font-display)', fontWeight: isMe ? 800 : 700, fontSize: 13, color: isMe ? '#c41e3a' : 'var(--text)', textTransform: 'uppercase', letterSpacing: '0.04em', flex: 1 }}>
+              {p.callsign}{isMe ? ' ★' : ''}
+            </div>
+            <AnimatedNumber
+              value={Number(p.balance)}
+              format={(n) => `${n.toLocaleString()} aUEC`}
+              duration={500 + i * 80}
+              style={{ fontFamily: 'var(--font-mono)', fontWeight: 700, fontSize: 13, color: i === 0 ? '#c41e3a' : '#2d8659' }}
+            />
+          </div>
+        );
+      })}
     </div>
   );
 }
@@ -176,43 +278,7 @@ export default function LeaderboardView({ sessions, myProfileId, profiles = [], 
 
       {/* ── WALLET section ── */}
       <Section title="Wallet" open={walletOpen} onToggle={() => setWalletOpen(v => !v)}>
-        {walletRows.length === 0 ? (
-          <div style={{ padding: '32px 20px', textAlign: 'center', border: '2px dashed var(--border)', background: 'var(--bg-1)', fontFamily: 'var(--font-mono)', fontSize: 12, color: 'var(--muted)', animation: A.fadeIn() }}>
-            {isFriendsScope ? 'No friends have verified their wallet yet.' : 'No verified wallets yet.'}
-          </div>
-        ) : (
-          <div key={scope} style={{ border: '2px solid var(--border)', background: 'var(--bg-1)', animation: A.fadeIn() }}>
-            <div style={{ background: '#1a1a1a', padding: '10px 16px', display: 'flex', alignItems: 'baseline', gap: 10 }}>
-              <div style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 12, color: '#fff', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Verified Balance</div>
-              <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: 'rgba(255,255,255,0.35)', letterSpacing: '0.08em' }}>self-reported · {walletRows.length} pilot{walletRows.length !== 1 ? 's' : ''}</div>
-            </div>
-            {walletRows.map((p, i) => {
-              const isMe = p.id === myProfileId;
-              return (
-                <div key={p.id} style={{
-                  display: 'flex', alignItems: 'center', gap: 12,
-                  padding: '10px 16px', borderBottom: '1px solid var(--bg-3)',
-                  background: isMe ? 'rgba(196,30,58,0.04)' : 'transparent',
-                  animation: A.stagger(i, 60),
-                }}>
-                  <div style={{ fontFamily: 'var(--font-mono)', fontWeight: 800, fontSize: 13, color: rankMedal(i), width: 22, flexShrink: 0, textAlign: 'center' }}>
-                    {i === 0 ? '★' : `${i + 1}`}
-                  </div>
-                  <div style={{ width: 12, height: 12, borderRadius: '50%', background: p.color, flexShrink: 0, border: '2px solid var(--border)' }} />
-                  <div style={{ fontFamily: 'var(--font-display)', fontWeight: isMe ? 800 : 700, fontSize: 13, color: isMe ? '#c41e3a' : 'var(--text)', textTransform: 'uppercase', letterSpacing: '0.04em', flex: 1 }}>
-                    {p.callsign}{isMe ? ' ★' : ''}
-                  </div>
-                  <AnimatedNumber
-                    value={Number(p.balance)}
-                    format={(n) => `${n.toLocaleString()} aUEC`}
-                    duration={700 + i * 60}
-                    style={{ fontFamily: 'var(--font-mono)', fontWeight: 700, fontSize: 13, color: i === 0 ? '#c41e3a' : '#2d8659' }}
-                  />
-                </div>
-              );
-            })}
-          </div>
-        )}
+        <WalletBoard key={scope} rows={walletRows} myProfileId={myProfileId} emptyMsg={isFriendsScope ? 'No friends have verified their wallet yet.' : 'No verified wallets yet.'} />
       </Section>
 
     </div>
