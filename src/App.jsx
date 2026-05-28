@@ -241,10 +241,14 @@ function AppInner() {
   const [joinToken, setJoinToken] = useState(() => new URLSearchParams(window.location.search).get('join'));
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setAuthSession(session);
-      setAuthLoading(false);
-    });
+    supabase.auth.getSession()
+      .then(({ data: { session } }) => {
+        setAuthSession(session);
+        setAuthLoading(false);
+      })
+      .catch(() => {
+        setAuthLoading(false);
+      });
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       setAuthSession(session);
