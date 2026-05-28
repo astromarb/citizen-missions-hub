@@ -10,7 +10,7 @@ function SessionTimer({ session, onStart, onPause, onResume, onEnd }) {
 
   useEffect(() => {
     if (!session.startedAt || session.endedAt) return;
-    if (session.pausedAt) return; // paused, no tick
+    if (session.pausedAt) return;
     const id = setInterval(() => setNow(Date.now()), 1000);
     return () => clearInterval(id);
   }, [session.startedAt, session.pausedAt, session.endedAt]);
@@ -138,11 +138,13 @@ function WaypointRow({ waypoint, myProfileId, members, onSetStatus, canEdit, kin
   (members || []).forEach(m => { memberMap[m.id] = m; });
 
   const statusIcon = (status) => {
+    if (status === 'en_route')  return '→';
     if (status === 'picked_up') return '🟠';
     if (status === 'done')      return '✅';
     return '❌';
   };
   const statusColor = (status) => {
+    if (status === 'en_route')  return '#0066cc';
     if (status === 'picked_up') return '#ff9800';
     if (status === 'done')      return '#2d8659';
     return '#c41e3a';
@@ -180,24 +182,43 @@ function WaypointRow({ waypoint, myProfileId, members, onSetStatus, canEdit, kin
         {myProfileId && canEdit && (
           <div style={{ display: 'flex', gap: 12 }}>
             {isPickup ? (
-              /* Pickup rows: PICKED UP only */
-              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 3 }}>
-                <button
-                  onClick={() => onSetStatus(waypoint.id, myCompletion?.status === 'picked_up' ? null : 'picked_up')}
-                  title="Mark picked up"
-                  style={{
-                    width: 28, height: 28, borderRadius: '50%', cursor: 'pointer',
-                    border: `2px solid ${myCompletion?.status === 'picked_up' ? '#ff9800' : '#ccc'}`,
-                    background: myCompletion?.status === 'picked_up' ? '#ff9800' : 'transparent',
-                    color: myCompletion?.status === 'picked_up' ? '#fff' : '#bbb',
-                    fontWeight: 700, fontSize: 12,
-                    display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  }}
-                >●</button>
-                <span style={{ fontFamily: 'var(--font-mono)', fontSize: 7, color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '0.06em', whiteSpace: 'nowrap' }}>PICKED UP</span>
-              </div>
+              <>
+                {/* EN ROUTE — left of PICKED UP */}
+                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 3 }}>
+                  <button
+                    onClick={() => onSetStatus(waypoint.id, myCompletion?.status === 'en_route' ? null : 'en_route')}
+                    title="Mark en route"
+                    style={{
+                      width: 28, height: 28, cursor: 'pointer',
+                      border: `2px solid ${myCompletion?.status === 'en_route' ? '#0066cc' : '#ccc'}`,
+                      background: myCompletion?.status === 'en_route' ? '#0066cc' : 'transparent',
+                      color: myCompletion?.status === 'en_route' ? '#fff' : '#bbb',
+                      fontWeight: 700, fontSize: 15,
+                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    }}
+                  >→</button>
+                  <span style={{ fontFamily: 'var(--font-mono)', fontSize: 7, color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '0.06em', whiteSpace: 'nowrap' }}>EN ROUTE</span>
+                </div>
+
+                {/* PICKED UP circle */}
+                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 3 }}>
+                  <button
+                    onClick={() => onSetStatus(waypoint.id, myCompletion?.status === 'picked_up' ? null : 'picked_up')}
+                    title="Mark picked up"
+                    style={{
+                      width: 28, height: 28, borderRadius: '50%', cursor: 'pointer',
+                      border: `2px solid ${myCompletion?.status === 'picked_up' ? '#ff9800' : '#ccc'}`,
+                      background: myCompletion?.status === 'picked_up' ? '#ff9800' : 'transparent',
+                      color: myCompletion?.status === 'picked_up' ? '#fff' : '#bbb',
+                      fontWeight: 700, fontSize: 12,
+                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    }}
+                  >●</button>
+                  <span style={{ fontFamily: 'var(--font-mono)', fontSize: 7, color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '0.06em', whiteSpace: 'nowrap' }}>PICKED UP</span>
+                </div>
+              </>
             ) : (
-              /* Dropoff rows: DELIVERED and LOST */
+              /* Dropoff rows: DELIVERED + LOST */
               <>
                 <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 3 }}>
                   <button
@@ -238,59 +259,6 @@ function WaypointRow({ waypoint, myProfileId, members, onSetStatus, canEdit, kin
   );
 }
 
-function PayoutEditor({ contract, onSave, canEdit }) {
-  const [editing, setEditing] = useState(false);
-  const [val, setVal] = useState(String(contract.payout || ''));
-
-  if (!editing) return (
-    <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
-      {contract.payout > 0 && (
-        <span style={{
-          fontFamily: 'var(--font-mono)', fontSize: 11, color: '#2d8659', fontWeight: 700,
-          background: 'rgba(45,134,89,0.08)', border: '1.5px solid #2d8659', padding: '2px 8px',
-        }}>
-          {contract.payout.toLocaleString()} aUEC
-        </span>
-      )}
-      {canEdit && (
-        <button
-          onClick={() => { setVal(String(contract.payout || '')); setEditing(true); }}
-          title="Edit payout"
-          style={{
-            background: 'none', border: 'none', cursor: 'pointer',
-            fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--muted)',
-            padding: '2px 4px', textDecoration: 'underline',
-          }}
-        >{contract.payout > 0 ? 'edit' : '+ payout'}</button>
-      )}
-    </span>
-  );
-
-  return (
-    <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
-      <input
-        type="number" min="0" step="1000" autoFocus
-        value={val}
-        onChange={e => setVal(e.target.value)}
-        onKeyDown={e => {
-          if (e.key === 'Enter') { onSave(Number(val) || 0); setEditing(false); }
-          if (e.key === 'Escape') setEditing(false);
-        }}
-        style={{
-          width: 120, padding: '3px 6px',
-          border: '2px solid #2d8659', background: 'var(--bg-1)', color: 'var(--text)',
-          fontFamily: 'var(--font-mono)', fontSize: 11, outline: 'none',
-        }}
-      />
-      <span style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--muted)' }}>aUEC</span>
-      <button onClick={() => { onSave(Number(val) || 0); setEditing(false); }}
-        style={{ background: '#2d8659', border: 'none', color: '#fff', cursor: 'pointer', padding: '3px 8px', fontWeight: 700, fontSize: 11 }}>✓</button>
-      <button onClick={() => setEditing(false)}
-        style={{ background: 'none', border: '1px solid var(--border)', color: 'var(--muted)', cursor: 'pointer', padding: '3px 6px', fontSize: 11 }}>✗</button>
-    </span>
-  );
-}
-
 export default function SessionView({
   session, onBack, onAddContract, onToggleDone, onDeleteContract,
   onSetWaypointStatus, onCastRemovalVote, onWithdrawVote, onAddPlayer,
@@ -304,19 +272,21 @@ export default function SessionView({
   const [editingDate, setEditingDate] = useState(false);
   const [newDate, setNewDate] = useState(session.date);
   const [dateError, setDateError] = useState(null);
+  const [editingPayoutId, setEditingPayoutId] = useState(null);
+  const [editingPayoutVal, setEditingPayoutVal] = useState('');
+
   const label = keyToLabel(session.date);
   const totalSCU = session.contracts.reduce((t, c) => t + c.cargo.reduce((s, x) => s + Number(x.scu || 0), 0), 0);
+  const totalPayout = session.contracts.reduce((t, c) => t + (c.payout || 0), 0);
 
   const memberCount = session.members?.length || session.players?.length || 0;
   const threshold = Math.ceil(memberCount / 2 + 0.01);
   const members = session.members || [];
   const isSessionMember = !!myProfileId && members.some(m => m.id === myProfileId);
+  const creator = members.find(m => m.id === session.createdBy);
 
   const sessionMemberIds = new Set(members.map(m => m.id));
   const invitableFriends = (friends || []).filter(f => !sessionMemberIds.has(f.id));
-
-  const topMembers = members.slice(0, Math.ceil(members.length / 2));
-  const bottomMembers = members.slice(Math.ceil(members.length / 2));
 
   const sectionLbl = {
     fontFamily: 'var(--font-display)',
@@ -395,7 +365,6 @@ export default function SessionView({
             >+ Add Contract</button>
           )}
 
-          {/* Edit date inline — members only */}
           {isSessionMember && editingDate ? (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 4, alignItems: 'flex-end' }}>
               <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
@@ -425,7 +394,6 @@ export default function SessionView({
             >Edit Date</button>
           ) : null}
 
-          {/* Delete session — members only */}
           {isSessionMember && (!confirmDelete ? (
             <button onClick={() => setConfirmDelete(true)}
               style={{ padding: '8px 12px', background: 'transparent', border: '2px solid rgba(196,30,58,0.4)', color: 'rgba(196,30,58,0.6)', cursor: 'pointer', fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.04em' }}
@@ -448,7 +416,7 @@ export default function SessionView({
         </div>
       </div>
 
-      {/* ── Grey content area ── */}
+      {/* ── Content area ── */}
       <div style={{
         background: '#777',
         flex: 1,
@@ -477,34 +445,38 @@ export default function SessionView({
             {label} · {memberCount} pilot{memberCount !== 1 ? 's' : ''} · {session.contracts.length} run{session.contracts.length !== 1 ? 's' : ''}
           </div>
 
-          {/* Pilots row */}
-          <div style={{ display: 'flex', justifyContent: 'center', gap: 32, flexWrap: 'wrap', marginBottom: 20 }}>
-            {topMembers.map(m => <PlayerSeat key={m.id} member={m} />)}
+          {/* All pilots in one flat row */}
+          <div style={{ display: 'flex', justifyContent: 'center', gap: 32, flexWrap: 'wrap', marginBottom: 16 }}>
+            {members.map(m => <PlayerSeat key={m.id} member={m} />)}
           </div>
 
-          {(bottomMembers.length > 0 || isSessionMember) && (
-            <div style={{ display: 'flex', justifyContent: 'center', gap: 32, flexWrap: 'wrap', marginBottom: 20, alignItems: 'flex-start' }}>
-              {bottomMembers.map(m => <PlayerSeat key={m.id} member={m} />)}
+          {/* Creator name + inline invite button */}
+          {isSessionMember && (
+            <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 14, marginBottom: 14, flexWrap: 'wrap' }}>
+              {creator && (
+                <span style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--muted)' }}>
+                  Session by{' '}
+                  <span style={{
+                    fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 11,
+                    color: creator.color || 'var(--text)', textTransform: 'uppercase',
+                  }}>{creator.callsign}</span>
+                </span>
+              )}
 
-              {/* Invite button — members only */}
-              {isSessionMember && <div style={{ position: 'relative', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8 }}>
+              <div style={{ position: 'relative' }}>
                 <button
                   onClick={() => setShowInvite(v => !v)}
                   style={{
-                    width: 50, height: 50, borderRadius: '50%',
-                    border: '2px dashed var(--border)', background: 'transparent',
-                    cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    fontSize: 22, color: 'var(--text)', fontWeight: 700,
+                    padding: '4px 12px', border: '2px dashed var(--border)',
+                    background: 'transparent', cursor: 'pointer',
+                    fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 10,
+                    textTransform: 'uppercase', letterSpacing: '0.08em', color: 'var(--text)',
                   }}
-                >+</button>
-                <div style={{
-                  fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 11,
-                  textTransform: 'uppercase', letterSpacing: '0.08em', color: 'var(--muted)',
-                }}>Invite</div>
+                >+ Invite Pilot</button>
 
                 {showInvite && (
                   <div style={{
-                    position: 'absolute', top: 62, left: '50%', transform: 'translateX(-50%)',
+                    position: 'absolute', top: 34, left: '50%', transform: 'translateX(-50%)',
                     background: 'var(--bg-1)', border: '2px solid var(--border)', width: 220, zIndex: 50,
                     boxShadow: '4px 4px 0 rgba(0,0,0,0.3)',
                   }}>
@@ -564,9 +536,26 @@ export default function SessionView({
                       }}>Close</button>
                   </div>
                 )}
-              </div>}
+              </div>
             </div>
           )}
+
+          {/* Total aUEC earned this session */}
+          <div style={{
+            display: 'flex', justifyContent: 'center', alignItems: 'baseline', gap: 8,
+            marginBottom: 16,
+          }}>
+            <span style={{
+              fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--muted)',
+              textTransform: 'uppercase', letterSpacing: '0.1em',
+            }}>Earned today</span>
+            <span style={{
+              fontFamily: 'var(--font-mono)', fontSize: 16, fontWeight: 700,
+              color: totalPayout > 0 ? '#2d8659' : 'var(--muted)',
+            }}>
+              {totalPayout.toLocaleString()} aUEC
+            </span>
+          </div>
 
           <div style={{
             borderTop: '1px solid var(--bg-3)', paddingTop: 12, marginTop: 4,
@@ -593,6 +582,9 @@ export default function SessionView({
           const isMine = contract.creatorId === myProfileId;
           const myVoted = contract.removalVotes?.includes(myProfileId);
           const voteCount = contract.removalVotes?.length || 0;
+          const isEditingPayout = editingPayoutId === contract.id;
+          const cSCU = contract.cargo.reduce((t, c) => t + Number(c.scu || 0), 0);
+          const sz = getContractSize(cSCU);
 
           return (
             <div key={contract.id} style={{
@@ -601,35 +593,42 @@ export default function SessionView({
               padding: '18px 20px',
               opacity: contract.done ? 0.6 : 1,
             }}>
+
               {/* ── Contract header ── */}
               <div style={{ display: 'flex', alignItems: 'flex-start', gap: 12, marginBottom: 14, flexWrap: 'wrap' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 12, flex: 1, flexWrap: 'wrap' }}>
-                  <TypeBadge type={contract.type} />
-                  {(() => {
-                    const cSCU = contract.cargo.reduce((t, c) => t + Number(c.scu || 0), 0);
-                    const sz = getContractSize(cSCU);
-                    return (
-                      <span title={sz.tip} style={{
-                        background: sz.bg, color: '#fff', padding: '2px 7px',
-                        fontFamily: 'var(--font-mono)', fontSize: 10, fontWeight: 700, letterSpacing: '0.08em',
-                        border: '2px solid rgba(0,0,0,0.15)',
-                      }}>{sz.label}</span>
-                    );
-                  })()}
+
+                {/* Left column: type badge + size badge, edit payout link below */}
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                    <TypeBadge type={contract.type} />
+                    <span title={sz.tip} style={{
+                      fontFamily: 'var(--font-display)', fontSize: 15, fontWeight: 800,
+                      color: 'var(--text)', textDecoration: 'underline', letterSpacing: '0.02em',
+                    }}>{'{ '}{sz.label}{' }'}</span>
+                  </div>
+                  {isSessionMember && !isEditingPayout && (
+                    <button
+                      onClick={() => { setEditingPayoutVal(String(contract.payout || '')); setEditingPayoutId(contract.id); }}
+                      style={{
+                        background: 'none', border: 'none', cursor: 'pointer',
+                        fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--muted)',
+                        padding: 0, textDecoration: 'underline', textAlign: 'left',
+                      }}
+                    >{contract.payout > 0 ? 'edit payout' : '+ payout'}</button>
+                  )}
+                </div>
+
+                {/* Middle: system + creator */}
+                <div style={{ flex: 1, display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
                   <span style={{
                     fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 12,
                     color: 'var(--text)', letterSpacing: '0.06em', textTransform: 'uppercase',
                   }}>
                     {contract.system}
                   </span>
-                  <PayoutEditor
-                    contract={contract}
-                    onSave={v => onUpdateContract?.(contract.id, { payout: v })}
-                    canEdit={isSessionMember}
-                  />
                   {contract.creatorCallsign && (
                     <span style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--muted)' }}>
-                      Posted by:{' '}
+                      by{' '}
                       <span style={{
                         fontFamily: 'var(--font-display)', fontWeight: 700,
                         color: contract.creatorColor || 'var(--text)', fontSize: 11,
@@ -640,26 +639,63 @@ export default function SessionView({
                   )}
                 </div>
 
-                {/* Done checkbox — members only; read-only indicator for viewers */}
-                <div style={{ display: 'flex', alignItems: 'center', gap: 5, flexShrink: 0 }}>
-                  {isSessionMember && (
-                    <span style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '0.08em' }}>Done?</span>
+                {/* Right: payout + Done? */}
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexShrink: 0 }}>
+                  {/* Payout display or editing form */}
+                  {isEditingPayout ? (
+                    <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+                      <input
+                        type="number" min="0" step="1000" autoFocus
+                        value={editingPayoutVal}
+                        onChange={e => setEditingPayoutVal(e.target.value)}
+                        onKeyDown={e => {
+                          if (e.key === 'Enter') { onUpdateContract?.(contract.id, { payout: Number(editingPayoutVal) || 0 }); setEditingPayoutId(null); }
+                          if (e.key === 'Escape') setEditingPayoutId(null);
+                        }}
+                        style={{
+                          width: 110, padding: '3px 6px',
+                          border: '2px solid #2d8659', background: 'var(--bg-1)', color: 'var(--text)',
+                          fontFamily: 'var(--font-mono)', fontSize: 12, outline: 'none',
+                        }}
+                      />
+                      <span style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--muted)' }}>aUEC</span>
+                      <button onClick={() => { onUpdateContract?.(contract.id, { payout: Number(editingPayoutVal) || 0 }); setEditingPayoutId(null); }}
+                        style={{ background: '#2d8659', border: 'none', color: '#fff', cursor: 'pointer', padding: '3px 8px', fontWeight: 700, fontSize: 11 }}>✓</button>
+                      <button onClick={() => setEditingPayoutId(null)}
+                        style={{ background: 'none', border: '1px solid var(--border)', color: 'var(--muted)', cursor: 'pointer', padding: '3px 6px', fontSize: 11 }}>✗</button>
+                    </span>
+                  ) : (
+                    contract.payout > 0 && (
+                      <span style={{
+                        fontFamily: 'var(--font-mono)', fontSize: 14, color: '#2d8659', fontWeight: 700,
+                        background: 'rgba(45,134,89,0.08)', border: '1.5px solid #2d8659', padding: '2px 8px',
+                      }}>
+                        {contract.payout.toLocaleString()} aUEC
+                      </span>
+                    )
                   )}
-                  <button
-                    onClick={() => isSessionMember && onToggleDone(session.id, contract.id)}
-                    title={contract.done ? 'Complete' : 'Pending'}
-                    style={{
-                      width: 24, height: 24,
-                      border: `2px solid ${contract.done ? '#2d8659' : '#000'}`,
-                      background: contract.done ? '#2d8659' : 'transparent',
-                      cursor: isSessionMember ? 'pointer' : 'default',
-                      display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    }}
-                  >
-                    {contract.done && (
-                      <span style={{ fontSize: 12, color: '#fff', fontWeight: 800 }}>✓</span>
+
+                  {/* Done? checkbox */}
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 5, flexShrink: 0 }}>
+                    {isSessionMember && (
+                      <span style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '0.08em' }}>Done?</span>
                     )}
-                  </button>
+                    <button
+                      onClick={() => isSessionMember && onToggleDone(session.id, contract.id)}
+                      title={contract.done ? 'Complete' : 'Pending'}
+                      style={{
+                        width: 24, height: 24,
+                        border: `2px solid ${contract.done ? '#2d8659' : '#000'}`,
+                        background: contract.done ? '#2d8659' : 'transparent',
+                        cursor: isSessionMember ? 'pointer' : 'default',
+                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      }}
+                    >
+                      {contract.done && (
+                        <span style={{ fontSize: 12, color: '#fff', fontWeight: 800 }}>✓</span>
+                      )}
+                    </button>
+                  </div>
                 </div>
               </div>
 
