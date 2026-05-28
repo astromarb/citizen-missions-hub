@@ -264,85 +264,88 @@ export default function FriendProfileView({ friend, sessions, myProfileId, onBac
         >← Back to Crew</button>
 
         {/* Profile card */}
-        <div style={{ border: '2px solid var(--border)', background: 'var(--bg-1)' }}>
-          {isMobile ? (
-            /* Mobile: horizontal header */
-            <div style={{ background: '#1a1a1a', padding: '14px 16px', display: 'flex', alignItems: 'center', gap: 12 }}>
-              {avatarUrl ? (
-                <img src={avatarUrl} alt={callsign}
-                  style={{ width: 58, height: 58, borderRadius: '50%', border: `3px solid ${color}`, objectFit: 'cover', flexShrink: 0 }} />
-              ) : (
-                <div style={{ width: 58, height: 58, borderRadius: '50%', background: color, border: `3px solid ${color}`, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                  <span style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 22, color: '#fff' }}>{callsign[0]?.toUpperCase()}</span>
-                </div>
-              )}
-              <div style={{ flex: 1, minWidth: 0 }}>
-                <div style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 17, color: '#fff', textTransform: 'uppercase', letterSpacing: '0.04em', lineHeight: 1.1 }}>{callsign}</div>
-              </div>
-              <div style={{ display: 'flex', gap: 4, flexShrink: 0 }}>
-                {displayBadges.map(id => renderBadge(id, 'xs'))}
-              </div>
-              <div style={{ width: 4, alignSelf: 'stretch', background: color, flexShrink: 0 }} />
-            </div>
-          ) : (
-            /* Desktop: vertical header */
-            <div style={{ background: '#1a1a1a', padding: '24px 18px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 14 }}>
-              {avatarUrl ? (
-                <img src={avatarUrl} alt={callsign}
-                  style={{ width: 90, height: 90, borderRadius: '50%', border: `4px solid ${color}`, objectFit: 'cover' }} />
-              ) : (
-                <div style={{ width: 90, height: 90, borderRadius: '50%', background: color, border: `4px solid ${color}`, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                  <span style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 35, color: '#fff' }}>{callsign[0]?.toUpperCase()}</span>
-                </div>
-              )}
-              <div style={{ textAlign: 'center' }}>
-                <div style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 20, color: '#fff', textTransform: 'uppercase', letterSpacing: '0.04em', lineHeight: 1 }}>{callsign}</div>
-              </div>
-              <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap', justifyContent: 'center' }}>
-                {displayBadges.map(id => renderBadge(id, 'sm'))}
-              </div>
-              <div style={{ width: '100%', height: 4, background: color }} />
-            </div>
-          )}
+        <div style={{ border: '2px solid var(--border)', background: 'var(--bg-1)', display: isMobile ? 'block' : 'flex', overflow: 'hidden' }}>
 
-          {/* Career stats */}
-          <div style={{ padding: isMobile ? '10px 14px' : '18px 20px' }}>
-            <div style={{ fontFamily: 'var(--font-mono)', fontSize: isMobile ? 8 : 10, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'var(--muted)', marginBottom: 8 }}>Career Stats</div>
-            {isMobile ? (
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px 16px' }}>
-                {statsRows.map(([label, val]) => (
-                  <div key={label}>
-                    <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: 'var(--muted)', letterSpacing: '0.04em' }}>{label}</div>
-                    <div style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 14, color: 'var(--text)', letterSpacing: '-0.01em' }}>{val}</div>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              statsRows.map(([label, val]) => (
-                <div key={label} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', padding: '9px 0', borderBottom: '1px solid var(--bg-2)' }}>
-                  <span style={{ fontFamily: 'var(--font-mono)', fontSize: 12, color: 'var(--muted)', letterSpacing: '0.04em' }}>{label}</span>
-                  <span style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 16, color: 'var(--text)', letterSpacing: '-0.01em' }}>{val}</span>
-                </div>
-              ))
-            )}
-          </div>
-
-          {/* ── Profile banner panel — flush with card bottom ── */}
+          {/* ── Banner strip — left side, desktop only ── */}
           {!isMobile && friend?.banner_panel && getBanner(friend.banner_panel) && (
-            <div style={{ position: 'relative' }}>
+            <div style={{
+              width: 70, flexShrink: 0, position: 'relative',
+              backgroundImage: `url(${getBanner(friend.banner_panel).src})`,
+              backgroundSize: 'cover', backgroundPosition: 'center',
+              backgroundColor: getBanner(friend.banner_panel).fallbackBg,
+            }}>
               <div style={{
-                width: '100%', aspectRatio: '1',
-                backgroundImage: `url(${getBanner(friend.banner_panel).src})`,
-                backgroundSize: 'cover', backgroundPosition: 'center',
-                backgroundColor: getBanner(friend.banner_panel).fallbackBg,
-              }} />
-              <div style={{
-                position: 'absolute', top: 0, left: 0, right: 0, height: '40%',
-                background: 'linear-gradient(to bottom, var(--bg-1), transparent)',
+                position: 'absolute', top: 0, right: 0, bottom: 0, width: '55%',
+                background: 'linear-gradient(to right, transparent, var(--bg-1))',
                 pointerEvents: 'none',
               }} />
             </div>
           )}
+
+          {/* ── Profile content ── */}
+          <div style={{ flex: 1, minWidth: 0 }}>
+            {isMobile ? (
+              /* Mobile: horizontal header */
+              <div style={{ background: '#1a1a1a', padding: '14px 16px', display: 'flex', alignItems: 'center', gap: 12 }}>
+                {avatarUrl ? (
+                  <img src={avatarUrl} alt={callsign}
+                    style={{ width: 58, height: 58, borderRadius: '50%', border: `3px solid ${color}`, objectFit: 'cover', flexShrink: 0 }} />
+                ) : (
+                  <div style={{ width: 58, height: 58, borderRadius: '50%', background: color, border: `3px solid ${color}`, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                    <span style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 22, color: '#fff' }}>{callsign[0]?.toUpperCase()}</span>
+                  </div>
+                )}
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 17, color: '#fff', textTransform: 'uppercase', letterSpacing: '0.04em', lineHeight: 1.1 }}>{callsign}</div>
+                </div>
+                <div style={{ display: 'flex', gap: 4, flexShrink: 0 }}>
+                  {displayBadges.map(id => renderBadge(id, 'xs'))}
+                </div>
+                <div style={{ width: 4, alignSelf: 'stretch', background: color, flexShrink: 0 }} />
+              </div>
+            ) : (
+              /* Desktop: vertical header */
+              <div style={{ background: '#1a1a1a', padding: '24px 14px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 14 }}>
+                {avatarUrl ? (
+                  <img src={avatarUrl} alt={callsign}
+                    style={{ width: 90, height: 90, borderRadius: '50%', border: `4px solid ${color}`, objectFit: 'cover' }} />
+                ) : (
+                  <div style={{ width: 90, height: 90, borderRadius: '50%', background: color, border: `4px solid ${color}`, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    <span style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 35, color: '#fff' }}>{callsign[0]?.toUpperCase()}</span>
+                  </div>
+                )}
+                <div style={{ textAlign: 'center' }}>
+                  <div style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 20, color: '#fff', textTransform: 'uppercase', letterSpacing: '0.04em', lineHeight: 1 }}>{callsign}</div>
+                </div>
+                <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap', justifyContent: 'center' }}>
+                  {displayBadges.map(id => renderBadge(id, 'sm'))}
+                </div>
+                <div style={{ width: '100%', height: 4, background: color }} />
+              </div>
+            )}
+
+            {/* Career stats */}
+            <div style={{ padding: isMobile ? '10px 14px' : '14px 16px' }}>
+              <div style={{ fontFamily: 'var(--font-mono)', fontSize: isMobile ? 8 : 10, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'var(--muted)', marginBottom: 8 }}>Career Stats</div>
+              {isMobile ? (
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px 16px' }}>
+                  {statsRows.map(([label, val]) => (
+                    <div key={label}>
+                      <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: 'var(--muted)', letterSpacing: '0.04em' }}>{label}</div>
+                      <div style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 14, color: 'var(--text)', letterSpacing: '-0.01em' }}>{val}</div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                statsRows.map(([label, val]) => (
+                  <div key={label} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', padding: '8px 0', borderBottom: '1px solid var(--bg-2)' }}>
+                    <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--muted)', letterSpacing: '0.04em' }}>{label}</span>
+                    <span style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 14, color: 'var(--text)', letterSpacing: '-0.01em' }}>{val}</span>
+                  </div>
+                ))
+              )}
+            </div>
+          </div>
         </div>
       </div>
 
