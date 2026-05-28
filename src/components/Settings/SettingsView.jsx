@@ -1,7 +1,8 @@
 import { useState, useRef, useEffect } from 'react';
 import { supabase } from '@/lib/supabase.js';
 import LandingZoneBadge, { AlphaBadge } from '../shared/LandingZoneBadge.jsx';
-import { BANNERS, getBanner } from '../../data/profileBanners.js';
+import { getBanner } from '../../data/profileBanners.js';
+import { useBanners } from '../../hooks/useBanners.js';
 
 // ── Color palette ─────────────────────────────────────────────────────────────
 const COLOR_ROWS = [
@@ -100,6 +101,7 @@ export default function SettingsView({ profile, updateProfile, checkCallsign }) 
   const [bannerPanel, setBannerPanel] = useState(profile?.banner_panel || null);
   const [bannerSaved, setBannerSaved] = useState(false);
   const [bannerError, setBannerError] = useState(null);
+  const { sets: bannerSets, loading: bannersLoading } = useBanners();
 
   // ── RSI handle ──────────────────────────────────────────────────────────────
   const [rsiHandle,      setRsiHandle]      = useState(profile?.rsi_handle || '');
@@ -475,83 +477,105 @@ export default function SettingsView({ profile, updateProfile, checkCallsign }) 
       {/* ── Profile Banner ────────────────────────────────────────────────────── */}
       <div style={{ border: '2px solid #000', background: '#fff', padding: '20px', marginBottom: 16 }}>
         {sectionTitle('Profile Banner')}
-        <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--muted)', marginBottom: 16, lineHeight: 1.6 }}>
-          Select a panel displayed beneath your pilot profile card.
-        </div>
 
-        <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', marginBottom: 16 }}>
-          {/* No banner option */}
+        {/* None option */}
+        <div style={{ marginBottom: 20 }}>
           <button
             onClick={() => setBannerPanel(null)}
             style={{
-              width: 100, height: 100, flexShrink: 0,
+              width: 88, height: 88, flexShrink: 0,
               border: `2px solid ${bannerPanel === null ? '#c41e3a' : '#ccc'}`,
               background: bannerPanel === null ? 'rgba(196,30,58,0.04)' : '#fafafa',
-              cursor: 'pointer', display: 'flex', flexDirection: 'column',
-              alignItems: 'center', justifyContent: 'center', gap: 6,
-              position: 'relative',
+              cursor: 'pointer', display: 'inline-flex', flexDirection: 'column',
+              alignItems: 'center', justifyContent: 'center', gap: 4,
+              position: 'relative', verticalAlign: 'top',
             }}
           >
-            <span style={{ fontSize: 22, color: '#ccc' }}>✕</span>
-            <span style={{ fontFamily: 'var(--font-mono)', fontSize: 8, color: bannerPanel === null ? '#c41e3a' : '#999', textTransform: 'uppercase', letterSpacing: '0.08em' }}>None</span>
+            <span style={{ fontSize: 20, color: '#bbb' }}>✕</span>
             {bannerPanel === null && (
               <div style={{ position: 'absolute', top: -4, right: -4, width: 16, height: 16, borderRadius: '50%', background: '#c41e3a', border: '2px solid #fff', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                 <span style={{ color: '#fff', fontSize: 8, lineHeight: 1 }}>✓</span>
               </div>
             )}
           </button>
-
-          {BANNERS.map(b => {
-            const selected = bannerPanel === b.id;
-            return (
-              <button
-                key={b.id}
-                onClick={() => setBannerPanel(b.id)}
-                style={{
-                  width: 100, height: 100, flexShrink: 0, padding: 0,
-                  border: `2px solid ${selected ? '#c41e3a' : '#ccc'}`,
-                  cursor: 'pointer', position: 'relative', overflow: 'hidden',
-                  outline: 'none',
-                }}
-              >
-                <div style={{
-                  width: '100%', height: '100%',
-                  backgroundImage: `url(${b.src})`,
-                  backgroundSize: 'cover',
-                  backgroundPosition: 'center',
-                  backgroundColor: b.fallbackBg,
-                }} />
-                {/* Label overlay */}
-                <div style={{
-                  position: 'absolute', bottom: 0, left: 0, right: 0,
-                  background: 'rgba(0,0,0,0.6)', padding: '4px 5px',
-                }}>
-                  <span style={{ fontFamily: 'var(--font-mono)', fontSize: 7, color: '#fff', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
-                    {b.label}
-                  </span>
-                </div>
-                {selected && (
-                  <div style={{ position: 'absolute', top: -4, right: -4, width: 16, height: 16, borderRadius: '50%', background: '#c41e3a', border: '2px solid #fff', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                    <span style={{ color: '#fff', fontSize: 8, lineHeight: 1 }}>✓</span>
-                  </div>
-                )}
-              </button>
-            );
-          })}
         </div>
+
+        {/* Loading */}
+        {bannersLoading && (
+          <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--muted)', marginBottom: 16 }}>Loading banners…</div>
+        )}
+
+        {/* Banner sets */}
+        {!bannersLoading && bannerSets.map(set => (
+          <div key={set.name} style={{ marginBottom: 22 }}>
+            <div style={{
+              fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 10,
+              letterSpacing: '0.14em', textTransform: 'uppercase', color: '#888',
+              marginBottom: 10, borderBottom: '1px solid #e8e8e8', paddingBottom: 6,
+            }}>
+              {set.name}
+            </div>
+            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+              {set.banners.map(b => {
+                const selected = bannerPanel === b.id;
+                return (
+                  <button
+                    key={b.id}
+                    onClick={() => setBannerPanel(b.id)}
+                    style={{
+                      width: 88, height: 88, padding: 0, flexShrink: 0,
+                      border: `2px solid ${selected ? '#c41e3a' : 'transparent'}`,
+                      cursor: 'pointer', position: 'relative', overflow: 'hidden',
+                      outline: 'none', background: '#111',
+                      boxShadow: selected ? '0 0 0 1px #c41e3a' : 'none',
+                    }}
+                  >
+                    {/* Image */}
+                    <div style={{
+                      position: 'absolute', inset: 0,
+                      backgroundImage: `url(${b.src})`,
+                      backgroundSize: 'cover', backgroundPosition: 'center',
+                    }} />
+                    {/* Edge vignette — all four sides fade to dark */}
+                    <div style={{
+                      position: 'absolute', inset: 0, pointerEvents: 'none',
+                      background: 'radial-gradient(ellipse at center, transparent 38%, rgba(0,0,0,0.55) 100%)',
+                    }} />
+                    {/* Selected checkmark */}
+                    {selected && (
+                      <div style={{ position: 'absolute', top: -4, right: -4, width: 16, height: 16, borderRadius: '50%', background: '#c41e3a', border: '2px solid #fff', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 2 }}>
+                        <span style={{ color: '#fff', fontSize: 8, lineHeight: 1 }}>✓</span>
+                      </div>
+                    )}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        ))}
+
+        {/* Empty state */}
+        {!bannersLoading && bannerSets.length === 0 && (
+          <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--muted)', marginBottom: 16 }}>
+            No banners in storage yet. Upload images to the images bucket to create sets.
+          </div>
+        )}
 
         {/* Preview */}
         {bannerPanel && getBanner(bannerPanel) && (
           <div style={{ marginBottom: 14 }}>
-            <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: 6 }}>Preview</div>
-            <div style={{
-              width: 180, height: 180,
-              backgroundImage: `url(${getBanner(bannerPanel).src})`,
-              backgroundSize: 'cover',
-              backgroundPosition: 'center',
-              backgroundColor: getBanner(bannerPanel).fallbackBg,
-              border: '2px solid #ccc',
-            }} />
+            <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: 8 }}>Preview</div>
+            <div style={{ width: 180, height: 180, position: 'relative', overflow: 'hidden', border: '2px solid #ccc', background: '#111' }}>
+              <div style={{
+                position: 'absolute', inset: 0,
+                backgroundImage: `url(${getBanner(bannerPanel).src})`,
+                backgroundSize: 'cover', backgroundPosition: 'center',
+              }} />
+              <div style={{
+                position: 'absolute', inset: 0, pointerEvents: 'none',
+                background: 'radial-gradient(ellipse at center, transparent 38%, rgba(0,0,0,0.55) 100%)',
+              }} />
+            </div>
           </div>
         )}
 

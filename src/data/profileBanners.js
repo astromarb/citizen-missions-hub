@@ -1,11 +1,13 @@
 import { supabase } from '../lib/supabase.js';
 
-const url = (file) => supabase.storage.from('images').getPublicUrl(file).data.publicUrl;
-
-export const BANNERS = [
-  { id: 'asteroid',   label: 'Asteroid Mining Base', src: url('asteroid.png'),   fallbackBg: '#0d1020', textColor: '#fff' },
-  { id: 'ice-world',  label: 'Ice World',            src: url('ice-world.png'),  fallbackBg: '#0e1e2e', textColor: '#fff' },
-  { id: 'cloud-city', label: 'Cloud City',           src: url('cloud-city.png'), fallbackBg: '#1c1408', textColor: '#fff' },
-];
-
-export const getBanner = (id) => BANNERS.find(b => b.id === id) ?? null;
+// Returns a banner descriptor for any filename stored in the images bucket.
+// profile.banner_panel now stores the raw filename (e.g. "alpha-1.png").
+export const getBanner = (filename) => {
+  if (!filename) return null;
+  return {
+    id:         filename,
+    src:        supabase.storage.from('images').getPublicUrl(filename).data.publicUrl,
+    fallbackBg: '#0a0a0a',
+    textColor:  '#fff',
+  };
+};
