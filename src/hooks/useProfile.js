@@ -38,11 +38,14 @@ export function useProfile(userId) {
 
   const updateProfile = useCallback(async (updates) => {
     if (!userId) return { error: new Error('No user') };
-    // Upsert the changes, then reload the full profile so React state
-    // always reflects the actual DB row (avoids silent partial-update bugs).
+    // UPDATE (not upsert) — the trigger always creates the profile row on
+    // first sign-in, so a plain update is correct and avoids the NOT NULL
+    // callsign violation that upsert hits when RLS hides the existing row
+    // from the conflict check.
     const { error } = await supabase
       .from('profiles')
-      .upsert({ id: userId, ...updates }, { onConflict: 'id' });
+      .update(updates)
+      .eq('id', userId);
     if (error) {
       console.error('updateProfile:', error);
       return { error };
