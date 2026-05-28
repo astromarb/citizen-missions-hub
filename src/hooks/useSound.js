@@ -1,16 +1,34 @@
+// Volumes tuned relative to each other: tab switches are subtle background
+// feedback; interaction sounds (boop, open, plus) are slightly louder;
+// halt is most prominent since it signals an error.
+const SOUND_VOL = {
+  'missions-switch':        0.28,
+  'calendar-switch':        0.28,
+  'stats-switch':           0.28,
+  'leaderboards-switch':    0.28,
+  'friends-switch':         0.28,
+  'settings-switch':        0.28,
+  'active-sessions-switch': 0.28,
+  'entry-boop':             0.38,
+  'login-open':             0.36,
+  'login-plus':             0.36,
+  'back-tap':               0.32,
+  'halt-screetch':          0.42,
+};
+
 const _cache = {};
 
-function _get(name) {
-  if (!_cache[name]) {
-    const a = new Audio(`/sounds/${name}.wav`);
-    a.preload = 'auto';
-    _cache[name] = a;
-  }
-  return _cache[name];
-}
+// Pre-create every Audio element at module load so first play has no fetch delay.
+Object.keys(SOUND_VOL).forEach(name => {
+  const a = new Audio(`/sounds/${name}.wav`);
+  a.preload = 'auto';
+  a.volume  = SOUND_VOL[name];
+  _cache[name] = a;
+});
 
 function _play(name) {
-  const a = _get(name);
+  const a = _cache[name];
+  if (!a) return;
   a.currentTime = 0;
   a.play().catch(() => {});
 }
@@ -26,10 +44,10 @@ const TAB_SOUNDS = {
 };
 
 export const SFX = {
-  back:  () => _play('back-tap'),
-  boop:  () => _play('entry-boop'),
-  open:  () => _play('login-open'),
-  plus:  () => _play('login-plus'),
-  halt:  () => _play('halt-screetch'),
-  tab:   (id) => _play(TAB_SOUNDS[id] || 'entry-boop'),
+  back: () => _play('back-tap'),
+  boop: () => _play('entry-boop'),
+  open: () => _play('login-open'),
+  plus: () => _play('login-plus'),
+  halt: () => _play('halt-screetch'),
+  tab:  (id) => _play(TAB_SOUNDS[id] || 'entry-boop'),
 };

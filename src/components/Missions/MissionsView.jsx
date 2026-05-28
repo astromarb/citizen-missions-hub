@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useIsMobile } from '../../hooks/useIsMobile.js';
+// SessionDebrief also calls useIsMobile directly so it can adapt card internals
 import LandingZoneBadge, { AlphaBadge } from '../shared/LandingZoneBadge.jsx';
 import { typeBg } from '../../data/contractTypes.js';
 import { getContractSize } from '../../utils/contractSize.js';
@@ -35,6 +36,7 @@ function sessionDurationMs(session) {
 }
 
 function SessionDebrief({ session, myProfileId, onOpenSession }) {
+  const isMobile = useIsMobile();
   const totalSCU = session.contracts.reduce((t, c) =>
     t + c.cargo.reduce((s, ci) => s + Number(ci.scu || 0), 0), 0);
   const totalPayout = session.contracts.reduce((t, c) => t + (c.payout || 0), 0);
@@ -96,18 +98,18 @@ function SessionDebrief({ session, myProfileId, onOpenSession }) {
       </div>
 
       {/* ── Stats row: SCU left (red), payouts right-justified (green) ── */}
-      <div style={{ padding: '14px 20px', borderBottom: '1px solid var(--bg-3)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+      <div style={{ padding: '14px 20px', borderBottom: '1px solid var(--bg-3)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '8px 16px' }}>
         <div>
-          <div style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 18, color: '#c41e3a', lineHeight: 1 }}>
+          <div style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: isMobile ? 16 : 18, color: '#c41e3a', lineHeight: 1 }}>
             {totalSCU.toLocaleString()}
           </div>
           <div style={{ fontFamily: 'var(--font-mono)', fontSize: 8, color: '#c41e3a', letterSpacing: '0.1em', textTransform: 'uppercase', marginTop: 3 }}>
             TOTAL SCU
           </div>
         </div>
-        <div style={{ display: 'flex', gap: 20, textAlign: 'right' }}>
+        <div style={{ display: 'flex', gap: isMobile ? 12 : 20, textAlign: 'right' }}>
           <div>
-            <div style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 18, color: FOREST_GREEN, lineHeight: 1 }}>
+            <div style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: isMobile ? 14 : 18, color: FOREST_GREEN, lineHeight: 1 }}>
               {totalPayout.toLocaleString()} aUEC
             </div>
             <div style={{ fontFamily: 'var(--font-mono)', fontSize: 8, color: FOREST_GREEN, letterSpacing: '0.1em', textTransform: 'uppercase', marginTop: 3 }}>
@@ -115,7 +117,7 @@ function SessionDebrief({ session, myProfileId, onOpenSession }) {
             </div>
           </div>
           <div>
-            <div style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 18, color: FOREST_GREEN, lineHeight: 1, textDecoration: 'underline', textDecorationColor: '#000', textUnderlineOffset: '3px' }}>
+            <div style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: isMobile ? 14 : 18, color: FOREST_GREEN, lineHeight: 1, textDecoration: 'underline', textDecorationColor: '#000', textUnderlineOffset: '3px' }}>
               {payoutPerPilot.toLocaleString()} aUEC
             </div>
             <div style={{ fontFamily: 'var(--font-mono)', fontSize: 8, color: FOREST_GREEN, letterSpacing: '0.1em', textTransform: 'uppercase', marginTop: 3 }}>
@@ -179,7 +181,8 @@ function SessionDebrief({ session, myProfileId, onOpenSession }) {
             const sz = getContractSize(cSCU);
             return (
               <div key={c.id} style={{
-                display: 'flex', alignItems: 'center', gap: 10,
+                display: 'flex', alignItems: 'center', gap: 8,
+                flexWrap: isMobile ? 'wrap' : 'nowrap',
                 padding: '10px 12px', marginBottom: 6,
                 background: c.done ? 'rgba(45,134,89,0.05)' : 'var(--bg-2)',
                 border: `1px solid ${c.done ? '#2d8659' : 'var(--bg-3)'}`,
@@ -197,14 +200,17 @@ function SessionDebrief({ session, myProfileId, onOpenSession }) {
                 <span style={{ color: 'var(--border)', fontSize: 13, flexShrink: 0 }}>|</span>
                 <span style={{
                   fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 12, textTransform: 'uppercase',
-                  letterSpacing: '0.04em', flex: 1, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis',
-                  whiteSpace: 'nowrap', color: 'var(--text)',
+                  letterSpacing: '0.04em', flex: 1, minWidth: isMobile ? '60px' : 0,
+                  overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', color: 'var(--text)',
                 }}>{c.system}</span>
-                <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--muted)', fontWeight: 600, flexShrink: 0, whiteSpace: 'nowrap' }}>{cSCU.toLocaleString()} SCU</span>
-                {c.payout > 0 && (
-                  <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: '#2d8659', fontWeight: 700, flexShrink: 0, whiteSpace: 'nowrap' }}>{c.payout.toLocaleString()} aUEC</span>
-                )}
-                <span style={{ fontSize: 14, flexShrink: 0 }}>{c.done ? '✅' : '⬜'}</span>
+                {/* Payout + checkbox grouped so they always wrap together, never split */}
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0, marginLeft: isMobile ? 'auto' : 0 }}>
+                  <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--muted)', fontWeight: 600, whiteSpace: 'nowrap' }}>{cSCU.toLocaleString()} SCU</span>
+                  {c.payout > 0 && (
+                    <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: '#2d8659', fontWeight: 700, whiteSpace: 'nowrap' }}>{c.payout.toLocaleString()} aUEC</span>
+                  )}
+                  <span style={{ fontSize: 14 }}>{c.done ? '✅' : '⬜'}</span>
+                </div>
               </div>
             );
           })}
