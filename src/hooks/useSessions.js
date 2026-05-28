@@ -57,7 +57,7 @@ export function useSessions(enabled = true, userId) {
         .from('sessions')
         .select(`
           *,
-          session_players ( profiles ( id, callsign, color, avatar_url, home_region, badges ) ),
+          session_players ( profiles ( id, callsign, color, avatar_url, home_region ) ),
           session_invites ( id, invitee_id, status,
             invitee:profiles!invitee_id ( id, callsign, color, avatar_url )
           ),

@@ -10,7 +10,7 @@ export function useProfile(userId) {
     try {
       const { data, error } = await supabase
         .from('profiles')
-        .select('id, callsign, color, avatar_url, home_region, onboarding_complete, auec_balance, auec_balance_verified_at, rsi_handle, badges')
+        .select('id, callsign, color, avatar_url, home_region, onboarding_complete, auec_balance, auec_balance_verified_at, rsi_handle')
         .eq('id', userId)
         .single();
       if (!error && data) setProfile(data);
@@ -40,7 +40,7 @@ export function useProfile(userId) {
     const { data, error } = await supabase
       .from('profiles')
       .upsert({ id: userId, ...updates }, { onConflict: 'id' })
-      .select('id, callsign, color, avatar_url, home_region, onboarding_complete, auec_balance, auec_balance_verified_at, rsi_handle, badges')
+      .select('id, callsign, color, avatar_url, home_region, onboarding_complete, auec_balance, auec_balance_verified_at, rsi_handle')
       .single();
     if (!error && data) setProfile(data);
     return { error };
