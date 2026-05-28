@@ -579,8 +579,8 @@ function AppInner() {
       </div>
 
       {/* ── Content ── */}
-      <div style={{ flex: 1, overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
-        <div style={{ maxWidth: isMobile ? '100%' : 900, width: '100%', margin: '0 auto', flex: 1, display: 'flex', flexDirection: 'column' }}>
+      <div style={{ flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column' }}>
+        <div style={{ maxWidth: isMobile ? '100%' : 1400, width: '100%', margin: '0 auto', flex: 1, display: 'flex', flexDirection: 'column' }}>
 
           {/* Calendar tab */}
           {activeTab === 'calendar' && view === 'calendar' && (
