@@ -1,4 +1,4 @@
-export default function StatsView({ sessions }) {
+export default function StatsView({ sessions, myProfileId }) {
   const allSessions = Object.values(sessions);
   const allContracts = allSessions.flatMap(s => s.contracts);
   const totalSCU = allContracts.reduce((t, c) => t + c.cargo.reduce((s, ci) => s + Number(ci.scu || 0), 0), 0);
@@ -17,13 +17,21 @@ export default function StatsView({ sessions }) {
   const inter   = allContracts.filter(c => c.type === 'Hauling - Interstellar').length;
   const total   = allContracts.length || 1;
 
-  // Per-player SCU ranking
-  const playerMap = {};
-  allSessions.forEach(s => s.players.forEach(p => {
-    if (!playerMap[p]) playerMap[p] = 0;
-    playerMap[p] += s.contracts.reduce((t, c) => t + c.cargo.reduce((s, ci) => s + Number(ci.scu || 0), 0), 0);
-  }));
-  const topPlayers = Object.entries(playerMap).sort((a, b) => b[1] - a[1]);
+  // Top haul partners — count sessions shared with each co-pilot
+  const partnerSessions = {};
+  const partnerProfiles = {};
+  allSessions.forEach(s => {
+    if (!s.members?.some(m => m.id === myProfileId)) return;
+    s.members.forEach(m => {
+      if (m.id === myProfileId) return;
+      partnerSessions[m.id] = (partnerSessions[m.id] || 0) + 1;
+      if (!partnerProfiles[m.id]) partnerProfiles[m.id] = m;
+    });
+  });
+  const topPartners = Object.entries(partnerSessions)
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 3)
+    .map(([id, count]) => ({ ...partnerProfiles[id], count }));
 
   const section = (title) => (
     <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, letterSpacing: '0.12em', textTransform: 'uppercase', color: 'var(--muted)', marginBottom: 10 }}>
@@ -98,27 +106,30 @@ export default function StatsView({ sessions }) {
             ))}
           </div>
 
-          {/* ── Pilot leaderboard ── */}
-          {topPlayers.length > 0 && (
-            <div style={{ border: '2px solid var(--border)', padding: '16px', background: 'var(--bg-1)', flex: 1 }}>
-              {section('Pilot SCU Ranking')}
-              {topPlayers.map(([callsign, scu], i) => (
-                <div key={callsign} style={{
-                  display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-                  padding: '10px 12px', marginBottom: 6,
-                  background: i === 0 ? 'rgba(196,30,58,0.05)' : 'var(--bg-2)',
-                  border: i === 0 ? '1px solid #c41e3a' : '1px solid var(--bg-3)',
-                }}>
-                  <span style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 13, color: 'var(--text)', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
-                    {i + 1}. {callsign}
-                  </span>
-                  <span style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 13, color: '#c41e3a' }}>
-                    {scu.toLocaleString()} SCU
-                  </span>
-                </div>
-              ))}
-            </div>
-          )}
+          {/* ── Top haul partners ── */}
+          <div style={{ border: '2px solid var(--border)', padding: '16px', background: 'var(--bg-1)', flex: 1 }}>
+            {section('Top Haul Partners')}
+            {topPartners.length === 0 ? (
+              <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--muted)', padding: '12px 0' }}>
+                No co-pilots logged yet.
+              </div>
+            ) : topPartners.map((p, i) => (
+              <div key={p.id} style={{
+                display: 'flex', alignItems: 'center', gap: 10,
+                padding: '10px 12px', marginBottom: 6,
+                background: i === 0 ? 'rgba(46,125,50,0.06)' : 'var(--bg-2)',
+                border: i === 0 ? '1px solid #2e7d32' : '1px solid var(--bg-3)',
+              }}>
+                <div style={{ width: 20, height: 20, borderRadius: '50%', background: p.color || '#8b949e', border: '2px solid var(--border)', flexShrink: 0 }} />
+                <span style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 13, color: 'var(--text)', textTransform: 'uppercase', letterSpacing: '0.04em', flex: 1 }}>
+                  {i + 1}. {p.callsign}
+                </span>
+                <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: '#2e7d32', fontWeight: 700 }}>
+                  {p.count} session{p.count !== 1 ? 's' : ''}
+                </span>
+              </div>
+            ))}
+          </div>
         </div>
       </div>
     </div>

@@ -1,5 +1,6 @@
 import { useState, useRef } from 'react';
 import { supabase } from '@/lib/supabase.js';
+import LandingZoneBadge from '../shared/LandingZoneBadge.jsx';
 
 const SWATCH_COLORS = [
   '#378ADD', '#1D9E75', '#7F77DD', '#D85A30',
@@ -212,6 +213,14 @@ export default function SettingsView({ profile, updateProfile, checkCallsign }) 
             </button>
           ))}
         </div>
+        {region && (
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 14 }}>
+            <LandingZoneBadge region={region} size="lg" />
+            <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--muted)' }}>
+              Your landing zone badge — visible on your profile
+            </div>
+          </div>
+        )}
         <div style={{ display: 'flex', alignItems: 'center' }}>
           {saveBtn(saveRegion, !region)}
           <SavedBadge visible={regionSaved} />

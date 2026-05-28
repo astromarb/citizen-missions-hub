@@ -685,7 +685,7 @@ function AppInner() {
           )}
 
           {activeTab === 'missions'    && <MissionsView sessions={sessions} myProfileId={myProfileId} profile={profile} avatarUrl={avatarUrl} onOpenSession={handleOpenSession} />}
-          {activeTab === 'stats'       && <StatsView sessions={sessions} />}
+          {activeTab === 'stats'       && <StatsView sessions={sessions} myProfileId={myProfileId} />}
           {activeTab === 'leaderboard' && <LeaderboardView sessions={sessions} myProfileId={myProfileId} profiles={profiles} />}
           {activeTab === 'friends' && !viewingFriend && (
             <FriendsView
