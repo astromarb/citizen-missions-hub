@@ -62,7 +62,7 @@ export function useSessions(enabled = true, userId) {
             id, kind, location_name, body, sort_order,
             waypoint_completions ( profile_id, status )
           ),
-          cargo_items ( id, commodity, scu )
+          cargo_items ( id, commodity, scu, from_location, to_location )
         )
       `)
       .order('date', { ascending: false });

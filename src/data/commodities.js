@@ -6,5 +6,5 @@ export const COMMODITIES = [
   "Construction Materials","Copper","Corundum","Diamond","Distilled Spirits",
   "Dynaflex","E'tam","Fluorine","Foam","Fresh Food","Gold","Laranite",
   "Medical Supplies","Processed Food","Quantanium","Recycled Material Composite",
-  "Scrap","Steel","Stims","Titanium","Tungsten","Waste","WiDoW",
+  "Scrap","Ship Ammunition","Steel","Stims","Titanium","Tungsten","Waste","WiDoW",
 ];
