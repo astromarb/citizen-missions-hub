@@ -193,17 +193,18 @@ function WaypointRow({ waypoint, myProfileId, members, onSetStatus, canEdit, kin
       </div>
 
       <div style={{ display: 'flex', gap: 4, alignItems: 'center', flexWrap: 'wrap' }}>
-        {otherCompletions.map(c => {
+        {(waypoint.completions || []).map(c => {
           const m = memberMap[c.profileId];
-          const label = m?.callsign || c.profileId.slice(0, 6);
-          const col = m?.color || '#888';
-          const borderCol = statusColor(c.status);
+          if (!m) return null;
+          const col = m.color || '#888';
           return (
             <span key={c.profileId} style={{
-              fontFamily: 'var(--font-mono)', fontSize: 10, padding: '2px 7px',
-              border: `1.5px solid ${borderCol}`, color: borderCol, fontWeight: 600,
+              fontFamily: 'var(--font-display)', fontSize: 9, fontWeight: 700,
+              background: col, color: '#000',
+              padding: '2px 7px', letterSpacing: '0.06em', textTransform: 'uppercase',
+              border: `2px solid ${col}`, whiteSpace: 'nowrap',
             }}>
-              <span style={{ color: col }}>■</span> {label} {statusIcon(c.status)}
+              {m.callsign}
             </span>
           );
         })}
@@ -599,7 +600,7 @@ export default function SessionView({
           </div>
         )}
 
-        {session.contracts.map(contract => {
+        {[...session.contracts].sort((a, b) => (a.done === b.done ? 0 : a.done ? 1 : -1)).map(contract => {
           const isMine    = contract.creatorId === myProfileId;
           const myVoted   = contract.removalVotes?.includes(myProfileId);
           const voteCount = contract.removalVotes?.length || 0;
@@ -782,19 +783,19 @@ export default function SessionView({
                           </div>
                         ) : (
                           /* ── Normal cargo pill ── */
-                          <div style={{ padding: '6px 12px', background: 'transparent', border: '2px solid #555', display: 'flex', flexDirection: 'column', gap: 2 }}>
-                            <div style={{ display: 'flex', alignItems: 'baseline', gap: 4 }}>
+                          <div style={{ padding: '8px 10px', background: 'transparent', border: '2px solid #555', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4, minWidth: 80 }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
                               <span style={{ fontFamily: 'var(--font-display)', fontSize: 11, fontWeight: 700, color: 'var(--text)', letterSpacing: '0.04em', textDecoration: 'underline' }}>
                                 {c.commodity}
-                              </span>
-                              <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, fontWeight: 700, color: 'var(--muted)' }}>
-                                · {c.scu} SCU
                               </span>
                               {isSessionCreator && c.id && (
                                 <button onClick={() => startCargoEdit(c)} title="Edit cargo"
                                   style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '0 2px', color: 'var(--muted)', fontSize: 10, fontFamily: 'var(--font-mono)', lineHeight: 1 }}>✎</button>
                               )}
                             </div>
+                            <span style={{ fontFamily: 'var(--font-mono)', fontSize: 17, fontWeight: 700, color: 'var(--muted)', lineHeight: 1 }}>
+                              {c.scu} SCU
+                            </span>
                           </div>
                         )}
                       </div>
