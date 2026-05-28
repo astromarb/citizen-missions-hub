@@ -129,7 +129,7 @@ function PlayerSeat({ member }) {
   );
 }
 
-function WaypointRow({ waypoint, myProfileId, members, onSetStatus }) {
+function WaypointRow({ waypoint, myProfileId, members, onSetStatus, canEdit }) {
   const myCompletion = waypoint.completions?.find(c => c.profileId === myProfileId);
   const otherCompletions = (waypoint.completions || []).filter(c => c.profileId !== myProfileId);
 
@@ -166,7 +166,7 @@ function WaypointRow({ waypoint, myProfileId, members, onSetStatus }) {
           );
         })}
 
-        {myProfileId && (
+        {myProfileId && canEdit && (
           <div style={{ display: 'flex', gap: 12 }}>
             {/* Orange circle — Picked Up */}
             <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 3 }}>
@@ -223,7 +223,7 @@ function WaypointRow({ waypoint, myProfileId, members, onSetStatus }) {
   );
 }
 
-function PayoutEditor({ contract, onSave }) {
+function PayoutEditor({ contract, onSave, canEdit }) {
   const [editing, setEditing] = useState(false);
   const [val, setVal] = useState(String(contract.payout || ''));
 
@@ -237,15 +237,17 @@ function PayoutEditor({ contract, onSave }) {
           {contract.payout.toLocaleString()} aUEC
         </span>
       )}
-      <button
-        onClick={() => { setVal(String(contract.payout || '')); setEditing(true); }}
-        title="Edit payout"
-        style={{
-          background: 'none', border: 'none', cursor: 'pointer',
-          fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--muted)',
-          padding: '2px 4px', textDecoration: 'underline',
-        }}
-      >{contract.payout > 0 ? 'edit' : '+ payout'}</button>
+      {canEdit && (
+        <button
+          onClick={() => { setVal(String(contract.payout || '')); setEditing(true); }}
+          title="Edit payout"
+          style={{
+            background: 'none', border: 'none', cursor: 'pointer',
+            fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--muted)',
+            padding: '2px 4px', textDecoration: 'underline',
+          }}
+        >{contract.payout > 0 ? 'edit' : '+ payout'}</button>
+      )}
     </span>
   );
 
@@ -293,6 +295,7 @@ export default function SessionView({
   const memberCount = session.members?.length || session.players?.length || 0;
   const threshold = Math.ceil(memberCount / 2 + 0.01);
   const members = session.members || [];
+  const isSessionMember = !!myProfileId && members.some(m => m.id === myProfileId);
 
   const sessionMemberIds = new Set(members.map(m => m.id));
   const invitableFriends = (friends || []).filter(f => !sessionMemberIds.has(f.id));
@@ -347,26 +350,38 @@ export default function SessionView({
         </div>
 
         <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
-          <SessionTimer
-            session={session}
-            onStart={() => onStartSession?.(session.id)}
-            onPause={() => onPauseSession?.(session.id)}
-            onResume={() => onResumeSession?.(session.id)}
-            onEnd={() => onEndSession?.(session.id)}
-          />
-          <button onClick={onAddContract}
-            style={{
-              background: '#c41e3a', border: '2px solid #000', color: '#fff',
-              padding: '10px 20px', cursor: 'pointer',
-              fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 12,
-              letterSpacing: '0.08em', textTransform: 'uppercase',
-            }}
-            onMouseEnter={e => { e.currentTarget.style.background = '#a01830'; }}
-            onMouseLeave={e => { e.currentTarget.style.background = '#c41e3a'; }}
-          >+ Add Contract</button>
+          {!isSessionMember && (
+            <span style={{
+              fontFamily: 'var(--font-mono)', fontSize: 10, fontWeight: 700,
+              letterSpacing: '0.12em', textTransform: 'uppercase',
+              background: 'rgba(0,0,0,0.35)', border: '1.5px solid rgba(255,255,255,0.25)',
+              color: 'rgba(255,255,255,0.7)', padding: '4px 10px',
+            }}>VIEW ONLY</span>
+          )}
+          {isSessionMember && (
+            <SessionTimer
+              session={session}
+              onStart={() => onStartSession?.(session.id)}
+              onPause={() => onPauseSession?.(session.id)}
+              onResume={() => onResumeSession?.(session.id)}
+              onEnd={() => onEndSession?.(session.id)}
+            />
+          )}
+          {isSessionMember && (
+            <button onClick={onAddContract}
+              style={{
+                background: '#c41e3a', border: '2px solid #000', color: '#fff',
+                padding: '10px 20px', cursor: 'pointer',
+                fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 12,
+                letterSpacing: '0.08em', textTransform: 'uppercase',
+              }}
+              onMouseEnter={e => { e.currentTarget.style.background = '#a01830'; }}
+              onMouseLeave={e => { e.currentTarget.style.background = '#c41e3a'; }}
+            >+ Add Contract</button>
+          )}
 
-          {/* Edit date inline */}
-          {editingDate ? (
+          {/* Edit date inline — members only */}
+          {isSessionMember && editingDate ? (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 4, alignItems: 'flex-end' }}>
               <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
                 <input type="date" value={newDate} onChange={e => { setNewDate(e.target.value); setDateError(null); }}
@@ -387,16 +402,16 @@ export default function SessionView({
               </div>
               {dateError && <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: '#ff6b6b' }}>{dateError}</div>}
             </div>
-          ) : (
+          ) : isSessionMember ? (
             <button onClick={() => setEditingDate(true)}
               style={{ padding: '8px 12px', background: 'transparent', border: '2px solid rgba(255,255,255,0.25)', color: 'rgba(255,255,255,0.5)', cursor: 'pointer', fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.04em' }}
               onMouseEnter={e => { e.currentTarget.style.color = '#fff'; e.currentTarget.style.borderColor = 'rgba(255,255,255,0.5)'; }}
               onMouseLeave={e => { e.currentTarget.style.color = 'rgba(255,255,255,0.5)'; e.currentTarget.style.borderColor = 'rgba(255,255,255,0.25)'; }}
             >Edit Date</button>
-          )}
+          ) : null}
 
-          {/* Delete session */}
-          {!confirmDelete ? (
+          {/* Delete session — members only */}
+          {isSessionMember && (!confirmDelete ? (
             <button onClick={() => setConfirmDelete(true)}
               style={{ padding: '8px 12px', background: 'transparent', border: '2px solid rgba(196,30,58,0.4)', color: 'rgba(196,30,58,0.6)', cursor: 'pointer', fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.04em' }}
               onMouseEnter={e => { e.currentTarget.style.color = '#c41e3a'; e.currentTarget.style.borderColor = '#c41e3a'; }}
@@ -414,7 +429,7 @@ export default function SessionView({
                 Cancel
               </button>
             </div>
-          )}
+          ))}
         </div>
       </div>
 
@@ -452,12 +467,12 @@ export default function SessionView({
             {topMembers.map(m => <PlayerSeat key={m.id} member={m} />)}
           </div>
 
-          {(bottomMembers.length > 0 || true) && (
+          {(bottomMembers.length > 0 || isSessionMember) && (
             <div style={{ display: 'flex', justifyContent: 'center', gap: 32, flexWrap: 'wrap', marginBottom: 20, alignItems: 'flex-start' }}>
               {bottomMembers.map(m => <PlayerSeat key={m.id} member={m} />)}
 
-              {/* Invite button */}
-              <div style={{ position: 'relative', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8 }}>
+              {/* Invite button — members only */}
+              {isSessionMember && <div style={{ position: 'relative', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8 }}>
                 <button
                   onClick={() => setShowInvite(v => !v)}
                   style={{
@@ -534,7 +549,7 @@ export default function SessionView({
                       }}>Close</button>
                   </div>
                 )}
-              </div>
+              </div>}
             </div>
           )}
 
@@ -542,7 +557,9 @@ export default function SessionView({
             borderTop: '1px solid var(--bg-3)', paddingTop: 12, marginTop: 4,
             fontFamily: 'var(--font-sans)', fontSize: 12, fontStyle: 'italic', color: 'var(--muted)',
           }}>
-            Any crew member can add contracts. You may only remove your own — others require a &gt;50% crew vote.
+            {isSessionMember
+              ? 'Any crew member can add contracts. You may only remove your own — others require a >50% crew vote.'
+              : 'You are viewing this session as a non-member. All data is read-only.'}
           </div>
         </div>
 
@@ -593,6 +610,7 @@ export default function SessionView({
                   <PayoutEditor
                     contract={contract}
                     onSave={v => onUpdateContract?.(contract.id, { payout: v })}
+                    canEdit={isSessionMember}
                   />
                   {contract.creatorCallsign && (
                     <span style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--muted)' }}>
@@ -607,17 +625,19 @@ export default function SessionView({
                   )}
                 </div>
 
-                {/* Done checkbox */}
+                {/* Done checkbox — members only; read-only indicator for viewers */}
                 <div style={{ display: 'flex', alignItems: 'center', gap: 5, flexShrink: 0 }}>
-                  <span style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '0.08em' }}>Done?</span>
+                  {isSessionMember && (
+                    <span style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '0.08em' }}>Done?</span>
+                  )}
                   <button
-                    onClick={() => onToggleDone(session.id, contract.id)}
-                    title={contract.done ? 'Mark active' : 'Mark complete'}
+                    onClick={() => isSessionMember && onToggleDone(session.id, contract.id)}
+                    title={contract.done ? 'Complete' : 'Pending'}
                     style={{
                       width: 24, height: 24,
                       border: `2px solid ${contract.done ? '#2d8659' : '#000'}`,
                       background: contract.done ? '#2d8659' : 'transparent',
-                      cursor: 'pointer',
+                      cursor: isSessionMember ? 'pointer' : 'default',
                       display: 'flex', alignItems: 'center', justifyContent: 'center',
                     }}
                   >
@@ -641,6 +661,7 @@ export default function SessionView({
                       myProfileId={myProfileId}
                       members={members}
                       onSetStatus={onSetWaypointStatus || (() => {})}
+                      canEdit={isSessionMember}
                     />
                   ))}
                 </div>
@@ -657,6 +678,7 @@ export default function SessionView({
                       myProfileId={myProfileId}
                       members={members}
                       onSetStatus={onSetWaypointStatus || (() => {})}
+                      canEdit={isSessionMember}
                     />
                   ))}
                 </div>
@@ -701,7 +723,7 @@ export default function SessionView({
               )}
 
               {/* ── Footer ── */}
-              <div style={{
+              {isSessionMember && <div style={{
                 borderTop: '1px solid var(--bg-3)',
                 paddingTop: 12,
                 display: 'flex',
@@ -748,7 +770,7 @@ export default function SessionView({
                     </div>
                   </div>
                 )}
-              </div>
+              </div>}
             </div>
           );
         })}
