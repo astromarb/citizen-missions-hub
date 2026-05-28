@@ -52,7 +52,7 @@ function SessionDebrief({ session, myProfileId, onOpenSession }) {
   const statusText = session.endedAt ? 'COMPLETE' : session.startedAt ? 'IN PROGRESS' : null;
 
   return (
-    <div style={{ border: '2px solid var(--border)', background: 'var(--bg-1)', marginBottom: 20 }}>
+    <div style={{ border: '2px solid var(--border)', background: 'var(--bg-1)' }}>
 
       {/* ── Day-colored header ── */}
       <div style={{
@@ -272,21 +272,21 @@ export default function MissionsView({ sessions, myProfileId, profile, avatarUrl
     <div style={{ padding: isMobile ? 12 : 20, display: 'flex', flexDirection: isMobile ? 'column' : 'row', gap: isMobile ? 16 : 24, alignItems: 'flex-start' }}>
 
       {/* ── Profile card ── */}
-      <div style={{ width: isMobile ? '100%' : 220, flexShrink: 0, position: isMobile ? 'static' : 'sticky', top: 20 }}>
+      <div style={{ width: isMobile ? '100%' : 330, flexShrink: 0, position: isMobile ? 'static' : 'sticky', top: 20 }}>
         <div style={{ border: '2px solid var(--border)', background: 'var(--bg-1)', marginBottom: isMobile ? 0 : 16 }}>
 
           {isMobile ? (
-            <div style={{ background: '#1a1a1a', padding: '14px 16px', display: 'flex', alignItems: 'center', gap: 14 }}>
+            <div style={{ background: '#1a1a1a', padding: '16px 18px', display: 'flex', alignItems: 'center', gap: 14 }}>
               {avatarUrl ? (
                 <img src={avatarUrl} alt={callsign}
-                  style={{ width: 52, height: 52, borderRadius: '50%', border: `3px solid ${color}`, objectFit: 'cover', flexShrink: 0 }} />
+                  style={{ width: 66, height: 66, borderRadius: '50%', border: `4px solid ${color}`, objectFit: 'cover', flexShrink: 0 }} />
               ) : (
-                <div style={{ width: 52, height: 52, borderRadius: '50%', background: color, border: `3px solid ${color}`, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                  <span style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 20, color: '#fff' }}>{callsign[0]?.toUpperCase()}</span>
+                <div style={{ width: 66, height: 66, borderRadius: '50%', background: color, border: `4px solid ${color}`, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                  <span style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 26, color: '#fff' }}>{callsign[0]?.toUpperCase()}</span>
                 </div>
               )}
               <div style={{ flex: 1, minWidth: 0 }}>
-                <div style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 15, color: '#fff', textTransform: 'uppercase', letterSpacing: '0.04em', lineHeight: 1.1 }}>{callsign}</div>
+                <div style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 18, color: '#fff', textTransform: 'uppercase', letterSpacing: '0.04em', lineHeight: 1.1 }}>{callsign}</div>
               </div>
               <div style={{ display: 'flex', flexDirection: 'row', gap: 4, flexWrap: 'wrap', alignItems: 'center' }}>
                 {displayBadges.map(id => renderBadge(id, 'xs'))}
@@ -294,27 +294,27 @@ export default function MissionsView({ sessions, myProfileId, profile, avatarUrl
               <div style={{ width: 4, alignSelf: 'stretch', background: color, flexShrink: 0 }} />
             </div>
           ) : (
-            <div style={{ background: '#1a1a1a', padding: '20px 16px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 12 }}>
+            <div style={{ background: '#1a1a1a', padding: '28px 22px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 16 }}>
               {avatarUrl ? (
                 <img src={avatarUrl} alt={callsign}
-                  style={{ width: 72, height: 72, borderRadius: '50%', border: `3px solid ${color}`, objectFit: 'cover' }} />
+                  style={{ width: 108, height: 108, borderRadius: '50%', border: `4px solid ${color}`, objectFit: 'cover' }} />
               ) : (
-                <div style={{ width: 72, height: 72, borderRadius: '50%', background: color, border: `3px solid ${color}`, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                  <span style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 28, color: '#fff' }}>{callsign[0]?.toUpperCase()}</span>
+                <div style={{ width: 108, height: 108, borderRadius: '50%', background: color, border: `4px solid ${color}`, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  <span style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 42, color: '#fff' }}>{callsign[0]?.toUpperCase()}</span>
                 </div>
               )}
               <div style={{ textAlign: 'center' }}>
-                <div style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 16, color: '#fff', textTransform: 'uppercase', letterSpacing: '0.04em', lineHeight: 1 }}>{callsign}</div>
+                <div style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 22, color: '#fff', textTransform: 'uppercase', letterSpacing: '0.04em', lineHeight: 1 }}>{callsign}</div>
               </div>
               <div style={{ display: 'flex', flexDirection: 'row', gap: 4, flexWrap: 'wrap', justifyContent: 'center' }}>
-                {displayBadges.map(id => renderBadge(id, 'xs'))}
+                {displayBadges.map(id => renderBadge(id, 'sm'))}
               </div>
-              <div style={{ width: '100%', height: 3, background: color }} />
+              <div style={{ width: '100%', height: 5, background: color }} />
             </div>
           )}
 
-          <div style={{ padding: isMobile ? '10px 14px' : '14px 16px' }}>
-            <div style={{ fontFamily: 'var(--font-mono)', fontSize: 8, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'var(--muted)', marginBottom: 8 }}>Career Stats</div>
+          <div style={{ padding: isMobile ? '10px 14px' : '18px 20px' }}>
+            <div style={{ fontFamily: 'var(--font-mono)', fontSize: isMobile ? 8 : 10, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'var(--muted)', marginBottom: 8 }}>Career Stats</div>
             {isMobile ? (
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px 16px' }}>
                 {statsRows.map(([label, val]) => (
@@ -326,9 +326,9 @@ export default function MissionsView({ sessions, myProfileId, profile, avatarUrl
               </div>
             ) : (
               statsRows.map(([label, val]) => (
-                <div key={label} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', padding: '7px 0', borderBottom: '1px solid var(--bg-2)' }}>
-                  <span style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--muted)', letterSpacing: '0.04em' }}>{label}</span>
-                  <span style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 13, color: 'var(--text)', letterSpacing: '-0.01em' }}>{val}</span>
+                <div key={label} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', padding: '9px 0', borderBottom: '1px solid var(--bg-2)' }}>
+                  <span style={{ fontFamily: 'var(--font-mono)', fontSize: 12, color: 'var(--muted)', letterSpacing: '0.04em' }}>{label}</span>
+                  <span style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 16, color: 'var(--text)', letterSpacing: '-0.01em' }}>{val}</span>
                 </div>
               ))
             )}
@@ -336,12 +336,19 @@ export default function MissionsView({ sessions, myProfileId, profile, avatarUrl
 
           {/* ── Profile banner panel — flush with card bottom ── */}
           {!isMobile && profile?.banner_panel && getBanner(profile.banner_panel) && (
-            <div style={{
-              width: '100%', aspectRatio: '1',
-              backgroundImage: `url(${getBanner(profile.banner_panel).src})`,
-              backgroundSize: 'cover', backgroundPosition: 'center',
-              backgroundColor: getBanner(profile.banner_panel).fallbackBg,
-            }} />
+            <div style={{ position: 'relative' }}>
+              <div style={{
+                width: '100%', aspectRatio: '1',
+                backgroundImage: `url(${getBanner(profile.banner_panel).src})`,
+                backgroundSize: 'cover', backgroundPosition: 'center',
+                backgroundColor: getBanner(profile.banner_panel).fallbackBg,
+              }} />
+              <div style={{
+                position: 'absolute', top: 0, left: 0, right: 0, height: '40%',
+                background: 'linear-gradient(to bottom, var(--bg-1), transparent)',
+                pointerEvents: 'none',
+              }} />
+            </div>
           )}
         </div>
       </div>
@@ -362,8 +369,14 @@ export default function MissionsView({ sessions, myProfileId, profile, avatarUrl
               Join a session from the Calendar tab to see your mission history here.
             </div>
           </div>
+        ) : isMobile ? (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+            {mySessions.map(s => <SessionDebrief key={s.id} session={s} myProfileId={myProfileId} onOpenSession={onOpenSession} />)}
+          </div>
         ) : (
-          mySessions.map(s => <SessionDebrief key={s.id} session={s} myProfileId={myProfileId} onOpenSession={onOpenSession} />)
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: 16 }}>
+            {mySessions.map(s => <SessionDebrief key={s.id} session={s} myProfileId={myProfileId} onOpenSession={onOpenSession} />)}
+          </div>
         )}
       </div>
     </div>
