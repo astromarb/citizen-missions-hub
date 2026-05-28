@@ -1,3 +1,5 @@
+import { useState } from 'react';
+
 const BADGES = {
   'Area 18': {
     bg: '#0b1f0b', accent: '#5dd65d', label: 'AREA18',
@@ -52,26 +54,72 @@ const AlphaIcon = ({ c, s }) => (
   </svg>
 );
 
+function BadgeTooltip({ text, children }) {
+  const [visible, setVisible] = useState(false);
+  return (
+    <div
+      style={{ position: 'relative', display: 'inline-flex' }}
+      onMouseEnter={() => setVisible(true)}
+      onMouseLeave={() => setVisible(false)}
+    >
+      {children}
+      {visible && (
+        <div style={{
+          position: 'absolute',
+          bottom: 'calc(100% + 8px)',
+          left: '50%',
+          transform: 'translateX(-50%)',
+          background: '#1a1a1a',
+          color: '#f0f0f0',
+          fontFamily: 'var(--font-mono)',
+          fontSize: 11,
+          padding: '6px 10px',
+          whiteSpace: 'nowrap',
+          zIndex: 9999,
+          pointerEvents: 'none',
+          border: '1px solid #444',
+          lineHeight: 1.4,
+        }}>
+          {text}
+          <div style={{
+            position: 'absolute',
+            top: '100%',
+            left: '50%',
+            transform: 'translateX(-50%)',
+            borderLeft: '5px solid transparent',
+            borderRight: '5px solid transparent',
+            borderTop: '5px solid #1a1a1a',
+          }} />
+        </div>
+      )}
+    </div>
+  );
+}
+
 export function AlphaBadge({ size = 'md' }) {
-  const w     = size === 'sm' ? 44  : size === 'lg' ? 68  : 54;
+  const dim    = size === 'sm' ? 44  : size === 'lg' ? 68  : 54;
   const iconSz = size === 'sm' ? 14  : size === 'lg' ? 22  : 18;
-  const textSz = size === 'sm' ? 6   : size === 'lg' ? 9   : 7;
+  const textSz = size === 'sm' ? 10  : size === 'lg' ? 15  : 12;
   const pad    = size === 'sm' ? '5px 4px 4px' : size === 'lg' ? '10px 8px 8px' : '8px 6px 6px';
   return (
-    <div style={{
-      width: w, background: '#100d00',
-      border: `1.5px solid ${ALPHA_ACCENT}44`,
-      display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
-      padding: pad, gap: size === 'sm' ? 2 : 4,
-      boxShadow: `0 0 10px ${ALPHA_ACCENT}1a`,
-    }}>
-      <AlphaIcon c={ALPHA_ACCENT} s={iconSz} />
-      <span style={{
-        fontFamily: 'var(--font-mono)', fontSize: textSz, color: ALPHA_ACCENT,
-        letterSpacing: '0.08em', textAlign: 'center', lineHeight: 1.15,
-        textTransform: 'uppercase', fontWeight: 700,
-      }}>ALPHA</span>
-    </div>
+    <BadgeTooltip text="Been around since the very beginning.">
+      <div style={{
+        width: dim, height: dim, background: '#100d00',
+        border: `1.5px solid ${ALPHA_ACCENT}44`,
+        display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+        padding: pad, gap: size === 'sm' ? 2 : 4,
+        boxShadow: `0 0 10px ${ALPHA_ACCENT}1a`,
+        boxSizing: 'border-box',
+        flexShrink: 0,
+      }}>
+        <AlphaIcon c={ALPHA_ACCENT} s={iconSz} />
+        <span style={{
+          fontFamily: 'var(--font-mono)', fontSize: textSz, color: ALPHA_ACCENT,
+          letterSpacing: '0.04em', textAlign: 'center', lineHeight: 1,
+          fontWeight: 700,
+        }}>α</span>
+      </div>
+    </BadgeTooltip>
   );
 }
 
@@ -79,40 +127,44 @@ export default function LandingZoneBadge({ region, size = 'md' }) {
   const cfg = BADGES[region];
   if (!cfg) return null;
 
-  const w       = size === 'sm' ? 44  : size === 'lg' ? 68  : 54;
-  const iconSz  = size === 'sm' ? 14  : size === 'lg' ? 22  : 18;
-  const textSz  = size === 'sm' ? 6   : size === 'lg' ? 9   : 7;
-  const pad     = size === 'sm' ? '5px 4px 4px' : size === 'lg' ? '10px 8px 8px' : '8px 6px 6px';
+  const dim    = size === 'sm' ? 44  : size === 'lg' ? 68  : 54;
+  const iconSz = size === 'sm' ? 14  : size === 'lg' ? 22  : 18;
+  const textSz = size === 'sm' ? 6   : size === 'lg' ? 9   : 7;
+  const pad    = size === 'sm' ? '5px 4px 4px' : size === 'lg' ? '10px 8px 8px' : '8px 6px 6px';
 
   const { Icon } = cfg;
 
   return (
-    <div style={{
-      width: w,
-      background: cfg.bg,
-      border: `1.5px solid ${cfg.accent}44`,
-      display: 'flex',
-      flexDirection: 'column',
-      alignItems: 'center',
-      justifyContent: 'center',
-      padding: pad,
-      gap: size === 'sm' ? 2 : 4,
-      boxShadow: `0 0 10px ${cfg.accent}1a`,
-    }}>
-      <Icon c={cfg.accent} s={iconSz} />
-      <span style={{
-        fontFamily: 'var(--font-mono)',
-        fontSize: textSz,
-        color: cfg.accent,
-        letterSpacing: '0.08em',
-        textAlign: 'center',
-        lineHeight: 1.15,
-        textTransform: 'uppercase',
-        fontWeight: 700,
-        whiteSpace: 'pre-line',
+    <BadgeTooltip text={`This user's primary residence is ${region}.`}>
+      <div style={{
+        width: dim, height: dim,
+        background: cfg.bg,
+        border: `1.5px solid ${cfg.accent}44`,
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        justifyContent: 'center',
+        padding: pad,
+        gap: size === 'sm' ? 2 : 4,
+        boxShadow: `0 0 10px ${cfg.accent}1a`,
+        boxSizing: 'border-box',
+        flexShrink: 0,
       }}>
-        {cfg.label}
-      </span>
-    </div>
+        <Icon c={cfg.accent} s={iconSz} />
+        <span style={{
+          fontFamily: 'var(--font-mono)',
+          fontSize: textSz,
+          color: cfg.accent,
+          letterSpacing: '0.08em',
+          textAlign: 'center',
+          lineHeight: 1.15,
+          textTransform: 'uppercase',
+          fontWeight: 700,
+          whiteSpace: 'pre-line',
+        }}>
+          {cfg.label}
+        </span>
+      </div>
+    </BadgeTooltip>
   );
 }
