@@ -1,4 +1,5 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
+import { useIsMobile } from '../../hooks/useIsMobile.js';
 
 const SWATCH_COLORS = [
   '#378ADD', '#1D9E75', '#7F77DD', '#D85A30',
@@ -16,6 +17,7 @@ const REGIONS = [
 const callsignRegex = /^[a-zA-Z0-9_-]{2,20}$/;
 
 export default function OnboardingFlow({ profile, updateProfile, checkCallsign, onComplete }) {
+  const isMobile = useIsMobile();
   const [step, setStep] = useState(1);
   const [callsign, setCallsign] = useState(profile?.callsign || '');
   const [callsignStatus, setCallsignStatus] = useState(null);
@@ -73,8 +75,8 @@ export default function OnboardingFlow({ profile, updateProfile, checkCallsign, 
   });
 
   return (
-    <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.85)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 9999, padding: 20 }}>
-      <div style={{ background: '#fff', border: '2px solid #000', padding: 36, width: 440, maxHeight: '90vh', overflowY: 'auto' }}>
+    <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.85)', display: 'flex', alignItems: isMobile ? 'flex-end' : 'center', justifyContent: 'center', zIndex: 9999, padding: isMobile ? 0 : 20 }}>
+      <div style={{ background: '#fff', border: '2px solid #000', padding: isMobile ? '28px 20px 36px' : 36, width: '100%', maxWidth: 440, maxHeight: isMobile ? '92vh' : '90vh', overflowY: 'auto', boxSizing: 'border-box' }}>
 
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 6 }}>
           <div style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 22, letterSpacing: '-0.02em' }}>Welcome, Pilot</div>
@@ -117,7 +119,7 @@ export default function OnboardingFlow({ profile, updateProfile, checkCallsign, 
             <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 20 }}>
               <div style={{ width: 64, height: 64, borderRadius: '50%', background: color, border: '2px solid #000' }} />
             </div>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 10, marginBottom: 20 }}>
+            <div style={{ display: 'grid', gridTemplateColumns: `repeat(${isMobile ? 6 : 4}, 1fr)`, gap: 10, marginBottom: 20 }}>
               {SWATCH_COLORS.map(c => (
                 <button key={c} onClick={() => { setColor(c); setHexInput(c); }}
                   style={{ width: '100%', aspectRatio: '1', border: `2px solid ${color === c ? '#000' : 'transparent'}`, background: c, cursor: 'pointer', outline: color === c ? '2px solid #000' : 'none', outlineOffset: 2 }}
@@ -141,7 +143,7 @@ export default function OnboardingFlow({ profile, updateProfile, checkCallsign, 
         {step === 3 && (
           <div>
             <div style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 16, marginBottom: 18 }}>Home region</div>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+            <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: 10 }}>
               {REGIONS.map(r => (
                 <button key={r.key} onClick={() => setRegion(r.key)}
                   style={{

@@ -440,7 +440,7 @@ function AppInner() {
     );
   }
 
-  if (profile && !profile.onboarding_complete) {
+  if (!profile || !profile.onboarding_complete) {
     return (
       <OnboardingFlow
         profile={profile}
