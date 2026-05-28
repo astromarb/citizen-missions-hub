@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useIsMobile } from '../../hooks/useIsMobile.js';
-import LandingZoneBadge from '../shared/LandingZoneBadge.jsx';
+import LandingZoneBadge, { AlphaBadge } from '../shared/LandingZoneBadge.jsx';
 import { typeBg } from '../../data/contractTypes.js';
 import { getContractSize } from '../../utils/contractSize.js';
 
@@ -250,6 +250,15 @@ export default function MissionsView({ sessions, myProfileId, profile, avatarUrl
   const color      = profile?.color       || '#8b949e';
   const homeRegion = profile?.home_region || null;
 
+  const displayBadges = (profile?.badges?.length > 0)
+    ? profile.badges
+    : ['alpha', ...(homeRegion ? ['home_region'] : [])];
+  const renderBadge = (id, size) => {
+    if (id === 'alpha') return <AlphaBadge key="alpha" size={size} />;
+    if (id === 'home_region' && homeRegion) return <LandingZoneBadge key="home_region" region={homeRegion} size={size} />;
+    return null;
+  };
+
   const statsRows = [
     ['Sessions',   mySessions.length.toLocaleString()],
     ['Contracts',  myContracts.toLocaleString()],
@@ -278,7 +287,9 @@ export default function MissionsView({ sessions, myProfileId, profile, avatarUrl
               <div style={{ flex: 1, minWidth: 0 }}>
                 <div style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 15, color: '#fff', textTransform: 'uppercase', letterSpacing: '0.04em', lineHeight: 1.1 }}>{callsign}</div>
               </div>
-              {homeRegion && <LandingZoneBadge region={homeRegion} size="sm" />}
+              <div style={{ display: 'flex', flexDirection: 'row', gap: 4, flexWrap: 'wrap', alignItems: 'center' }}>
+                {displayBadges.map(id => renderBadge(id, 'xs'))}
+              </div>
               <div style={{ width: 4, alignSelf: 'stretch', background: color, flexShrink: 0 }} />
             </div>
           ) : (
@@ -294,7 +305,9 @@ export default function MissionsView({ sessions, myProfileId, profile, avatarUrl
               <div style={{ textAlign: 'center' }}>
                 <div style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 16, color: '#fff', textTransform: 'uppercase', letterSpacing: '0.04em', lineHeight: 1 }}>{callsign}</div>
               </div>
-              {homeRegion && <LandingZoneBadge region={homeRegion} size="md" />}
+              <div style={{ display: 'flex', flexDirection: 'row', gap: 4, flexWrap: 'wrap', justifyContent: 'center' }}>
+                {displayBadges.map(id => renderBadge(id, 'xs'))}
+              </div>
               <div style={{ width: '100%', height: 3, background: color }} />
             </div>
           )}
