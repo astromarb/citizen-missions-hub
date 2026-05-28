@@ -21,6 +21,7 @@ import OnboardingFlow from '@/components/Onboarding/OnboardingFlow.jsx';
 import MissionsView from '@/components/Missions/MissionsView.jsx';
 import LeaderboardView from '@/components/Leaderboard/LeaderboardView.jsx';
 import FriendProfileView from '@/components/Friends/FriendProfileView.jsx';
+import ActiveSessionsView from '@/components/ActiveSessions/ActiveSessionsView.jsx';
 import { ToastProvider, useToast } from '@/components/shared/Toast.jsx';
 import { PLAYER_COLORS } from '@/data/players.js';
 import { fmtKey } from '@/utils/dateUtils.js';
@@ -460,7 +461,7 @@ function AppInner() {
   const myCallsign  = profile?.callsign || null;
 
   const switchTab = (tab) => {
-    SFX.boop();
+    SFX.tab(tab);
     setActiveTab(tab);
     try { localStorage.setItem('cmh-active-tab', tab); } catch {}
     if (tab !== 'calendar') setView('calendar');
@@ -470,12 +471,13 @@ function AppInner() {
 
   const totalPendingRequests = (pending?.length || 0) + (sessionInvites?.length || 0);
   const TABS = [
-    ['missions',     'Missions'],
-    ['calendar',     'Calendar'],
-    ['stats',        'Stats'],
-    ['leaderboard',  'Leaderboards'],
-    ['friends',      totalPendingRequests > 0 ? `Requests (${totalPendingRequests})` : 'Requests'],
-    ['settings',     'Settings'],
+    ['missions',        'Missions'],
+    ['calendar',        'Calendar'],
+    ['active-sessions', 'Active Sessions'],
+    ['stats',           'Stats'],
+    ['leaderboard',     'Leaderboards'],
+    ['friends',         totalPendingRequests > 0 ? `Requests (${totalPendingRequests})` : 'Requests'],
+    ['settings',        'Settings'],
   ];
 
   return (
@@ -717,8 +719,9 @@ function AppInner() {
             />
           )}
 
-          {activeTab === 'missions'    && <MissionsView sessions={sessions} myProfileId={myProfileId} profile={profile} avatarUrl={avatarUrl} onOpenSession={handleOpenSession} />}
-          {activeTab === 'stats'       && <StatsView sessions={sessions} myProfileId={myProfileId} />}
+          {activeTab === 'missions'        && <MissionsView sessions={sessions} myProfileId={myProfileId} profile={profile} avatarUrl={avatarUrl} onOpenSession={handleOpenSession} />}
+          {activeTab === 'active-sessions' && <ActiveSessionsView sessions={sessions} myProfileId={myProfileId} onOpenSession={handleOpenSession} />}
+          {activeTab === 'stats'           && <StatsView sessions={sessions} myProfileId={myProfileId} />}
           {activeTab === 'leaderboard' && <LeaderboardView sessions={sessions} myProfileId={myProfileId} profiles={profiles} friends={friends} />}
           {activeTab === 'friends' && !viewingFriend && (
             <FriendsView

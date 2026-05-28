@@ -15,10 +15,21 @@ function _play(name) {
   a.play().catch(() => {});
 }
 
+const TAB_SOUNDS = {
+  missions:          'missions-switch',
+  calendar:          'calendar-switch',
+  stats:             'stats-switch',
+  leaderboard:       'leaderboards-switch',
+  friends:           'friends-switch',
+  settings:          'settings-switch',
+  'active-sessions': 'active-sessions-switch',
+};
+
 export const SFX = {
   back:  () => _play('back-tap'),
   boop:  () => _play('entry-boop'),
   open:  () => _play('login-open'),
   plus:  () => _play('login-plus'),
   halt:  () => _play('halt-screetch'),
+  tab:   (id) => _play(TAB_SOUNDS[id] || 'entry-boop'),
 };

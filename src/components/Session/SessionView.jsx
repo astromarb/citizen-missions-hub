@@ -689,28 +689,30 @@ export default function SessionView({
             )}
           </div>
 
-          {/* Confirmed pilots + pending invitees */}
-          <div style={{ display: 'flex', justifyContent: 'center', gap: 20, flexWrap: 'wrap', marginBottom: 10 }}>
+          {/* Confirmed pilots + pending invitees + inline invite button */}
+          <div style={{ display: 'flex', justifyContent: 'center', gap: 20, flexWrap: 'wrap', marginBottom: 14, alignItems: 'flex-start' }}>
             {members.map(m => <PlayerSeat key={m.id} member={m} />)}
             {pendingInvites.map(p => <PlayerSeat key={p.id} member={p} pending={true} />)}
-          </div>
-
-          {/* Invite */}
-          {isSessionMember && (
-            <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 14, marginBottom: 14, flexWrap: 'wrap' }}>
-              <div style={{ position: 'relative' }}>
-                <button onClick={() => setShowInvite(v => !v)}
+            {isSessionMember && (
+              <div style={{ position: 'relative', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8 }}>
+                <button
+                  onClick={() => setShowInvite(v => !v)}
                   style={{
-                    padding: '4px 12px', border: '2px dashed var(--border)',
-                    background: 'transparent', cursor: 'pointer',
-                    fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 10,
-                    textTransform: 'uppercase', letterSpacing: '0.08em', color: 'var(--text)',
+                    width: 50, height: 50, borderRadius: '50%', cursor: 'pointer',
+                    border: `2px dashed ${showInvite ? '#c41e3a' : 'var(--border)'}`,
+                    background: showInvite ? 'rgba(196,30,58,0.06)' : 'transparent',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    color: showInvite ? '#c41e3a' : 'var(--muted)',
+                    fontSize: 22, fontWeight: 700, fontFamily: 'var(--font-display)',
                   }}
-                >+ Invite Pilot</button>
+                  onMouseEnter={e => { e.currentTarget.style.borderColor = '#c41e3a'; e.currentTarget.style.color = '#c41e3a'; }}
+                  onMouseLeave={e => { if (!showInvite) { e.currentTarget.style.borderColor = 'var(--border)'; e.currentTarget.style.color = 'var(--muted)'; } }}
+                >+</button>
+                <div style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 11, color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '0.08em', textAlign: 'center' }}>Invite</div>
 
                 {showInvite && (
                   <div style={{
-                    position: 'absolute', top: 34, left: '50%', transform: 'translateX(-50%)',
+                    position: 'absolute', top: 66, left: '50%', transform: 'translateX(-50%)',
                     background: 'var(--bg-1)', border: '2px solid var(--border)', width: 220, zIndex: 50,
                     boxShadow: '4px 4px 0 rgba(0,0,0,0.3)',
                   }}>
@@ -746,8 +748,8 @@ export default function SessionView({
                   </div>
                 )}
               </div>
-            </div>
-          )}
+            )}
+          </div>
 
           {/* Total aUEC */}
           <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'baseline', gap: 6, marginBottom: 10 }}>
@@ -790,18 +792,24 @@ export default function SessionView({
             }}>
 
               {/* ── Contract header ── */}
-              <div style={{ display: 'flex', alignItems: 'flex-start', gap: 12, marginBottom: contract.done ? 0 : 14, flexWrap: 'wrap' }}>
+              <div style={{
+                display: 'flex',
+                alignItems: contract.done ? 'center' : 'flex-start',
+                gap: contract.done ? 16 : 12,
+                marginBottom: contract.done ? 0 : 14,
+                flexWrap: contract.done ? 'nowrap' : 'wrap',
+              }}>
 
                 {/* Left: type + size badge, edit payout link below */}
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 5, flexShrink: 0 }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                     <TypeBadge type={contract.type} />
                     <span title={sz.tip} style={{
-                      fontFamily: 'var(--font-display)', fontSize: 15, fontWeight: 800,
+                      fontFamily: 'var(--font-display)', fontSize: contract.done ? 22 : 15, fontWeight: 800,
                       color: 'var(--text)', textDecoration: 'underline', letterSpacing: '0.02em',
                     }}>{'{ '}{sz.label}{' }'}</span>
                   </div>
-                  {isSessionMember && !isEditingPayout && (
+                  {isSessionMember && !isEditingPayout && !contract.done && (
                     <button
                       onClick={() => { setEditingPayoutVal(String(contract.payout || '')); setEditingPayoutId(contract.id); }}
                       style={{ background: 'none', border: 'none', cursor: 'pointer', fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--muted)', padding: 0, textDecoration: 'underline', textAlign: 'left' }}
@@ -810,12 +818,17 @@ export default function SessionView({
                 </div>
 
                 {/* Middle: separator + system + LOCAL tag */}
-                <div style={{ flex: 1, display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
-                  <span style={{ color: 'var(--border)', fontSize: 14, flexShrink: 0 }}>|</span>
-                  <span style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 12, color: 'var(--text)', letterSpacing: '0.06em', textTransform: 'uppercase' }}>
+                <div style={{ flex: 1, display: 'flex', alignItems: 'center', gap: 10, flexWrap: contract.done ? 'nowrap' : 'wrap', minWidth: 0 }}>
+                  <span style={{ color: 'var(--border)', fontSize: contract.done ? 20 : 14, flexShrink: 0 }}>|</span>
+                  <span style={{
+                    fontFamily: 'var(--font-display)', fontWeight: contract.done ? 800 : 700,
+                    fontSize: contract.done ? 18 : 12,
+                    color: 'var(--text)', letterSpacing: '0.06em', textTransform: 'uppercase',
+                    overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: contract.done ? 'nowrap' : 'normal',
+                  }}>
                     {contract.system}
                   </span>
-                  {isLocal && (
+                  {isLocal && !contract.done && (
                     <span style={{
                       fontFamily: 'var(--font-mono)', fontSize: 8, fontWeight: 700,
                       letterSpacing: '0.12em', textTransform: 'uppercase',
@@ -847,28 +860,36 @@ export default function SessionView({
                     </span>
                   ) : (
                     contract.payout > 0 && (
-                      <span style={{ fontFamily: 'var(--font-mono)', fontSize: 14, color: '#2d8659', fontWeight: 700, background: 'rgba(45,134,89,0.08)', border: '1.5px solid #2d8659', padding: '2px 8px' }}>
+                      <span style={{
+                        fontFamily: 'var(--font-mono)', fontWeight: 700,
+                        fontSize: contract.done ? 26 : 14,
+                        color: '#2d8659', background: 'rgba(45,134,89,0.08)',
+                        border: '1.5px solid #2d8659',
+                        padding: contract.done ? '6px 16px' : '2px 8px',
+                        whiteSpace: 'nowrap',
+                      }}>
                         {contract.payout.toLocaleString()} aUEC
                       </span>
                     )
                   )}
 
                   <div style={{ display: 'flex', alignItems: 'center', gap: 5, flexShrink: 0 }}>
-                    {isSessionMember && (
+                    {isSessionMember && !contract.done && (
                       <span style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '0.08em' }}>Done?</span>
                     )}
                     <button
                       onClick={() => isSessionMember && onToggleDone(session.id, contract.id)}
                       title={contract.done ? 'Complete' : 'Pending'}
                       style={{
-                        width: 24, height: 24,
+                        width: contract.done ? 28 : 24, height: contract.done ? 28 : 24,
                         border: `2px solid ${contract.done ? '#2d8659' : '#000'}`,
                         background: contract.done ? '#2d8659' : 'transparent',
                         cursor: isSessionMember ? 'pointer' : 'default',
                         display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        flexShrink: 0,
                       }}
                     >
-                      {contract.done && <span style={{ fontSize: 12, color: '#fff', fontWeight: 800 }}>✓</span>}
+                      {contract.done && <span style={{ fontSize: 14, color: '#fff', fontWeight: 800 }}>✓</span>}
                     </button>
                   </div>
                 </div>
