@@ -224,6 +224,17 @@ export default function FriendProfileView({ friend, sessions, myProfileId, onBac
   const homeRegion = friend.home_region || null;
   const avatarUrl = friend.avatar_url || null;
 
+  // Badges to display: use saved selection, or fall back to all earned
+  const displayBadges = (friend.badges?.length > 0)
+    ? friend.badges
+    : ['alpha', ...(homeRegion ? ['home_region'] : [])];
+
+  const renderBadge = (id, size) => {
+    if (id === 'alpha') return <AlphaBadge key="alpha" size={size} />;
+    if (id === 'home_region' && homeRegion) return <LandingZoneBadge key="home_region" region={homeRegion} size={size} />;
+    return null;
+  };
+
   const statsRows = [
     ['Sessions', friendSessions.length.toLocaleString()],
     ['Contracts', contractsCount.toLocaleString()],
@@ -268,8 +279,7 @@ export default function FriendProfileView({ friend, sessions, myProfileId, onBac
                 <div style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 15, color: '#fff', textTransform: 'uppercase', letterSpacing: '0.04em', lineHeight: 1.1 }}>{callsign}</div>
               </div>
               <div style={{ display: 'flex', gap: 4, flexShrink: 0 }}>
-                {homeRegion && <LandingZoneBadge region={homeRegion} size="xs" />}
-                <AlphaBadge size="xs" />
+                {displayBadges.map(id => renderBadge(id, 'xs'))}
               </div>
               <div style={{ width: 4, alignSelf: 'stretch', background: color, flexShrink: 0 }} />
             </div>
@@ -288,8 +298,7 @@ export default function FriendProfileView({ friend, sessions, myProfileId, onBac
                 <div style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 16, color: '#fff', textTransform: 'uppercase', letterSpacing: '0.04em', lineHeight: 1 }}>{callsign}</div>
               </div>
               <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap', justifyContent: 'center' }}>
-                {homeRegion && <LandingZoneBadge region={homeRegion} size="xs" />}
-                <AlphaBadge size="xs" />
+                {displayBadges.map(id => renderBadge(id, 'xs'))}
               </div>
               <div style={{ width: '100%', height: 3, background: color }} />
             </div>

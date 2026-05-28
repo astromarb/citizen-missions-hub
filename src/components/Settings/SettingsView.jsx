@@ -2,12 +2,38 @@ import { useState, useRef } from 'react';
 import { supabase } from '@/lib/supabase.js';
 import LandingZoneBadge, { AlphaBadge } from '../shared/LandingZoneBadge.jsx';
 
-const SWATCH_COLORS = [
-  '#378ADD', '#1D9E75', '#7F77DD', '#D85A30',
-  '#E24B4A', '#c41e3a', '#FFB347', '#4ECDC4',
-  '#C44D58', '#556270', '#2ECC71', '#F39C12',
+// ── Color palette ─────────────────────────────────────────────────────────────
+// 11 families × 7 shades = 77 colours, arranged light→dark left-to-right.
+const COLOR_ROWS = [
+  { label: 'Red',     colors: ['#fecaca', '#fca5a5', '#f87171', '#ef4444', '#dc2626', '#b91c1c', '#7f1d1d'] },
+  { label: 'Orange',  colors: ['#fed7aa', '#fdba74', '#fb923c', '#f97316', '#ea580c', '#c2410c', '#7c2d12'] },
+  { label: 'Amber',   colors: ['#fef3c7', '#fde68a', '#fcd34d', '#f59e0b', '#d97706', '#b45309', '#78350f'] },
+  { label: 'Lime',    colors: ['#ecfccb', '#d9f99d', '#bef264', '#a3e635', '#84cc16', '#65a30d', '#365314'] },
+  { label: 'Green',   colors: ['#dcfce7', '#bbf7d0', '#86efac', '#4ade80', '#22c55e', '#16a34a', '#166534'] },
+  { label: 'Emerald', colors: ['#d1fae5', '#a7f3d0', '#6ee7b7', '#34d399', '#10b981', '#059669', '#065f46'] },
+  { label: 'Cyan',    colors: ['#cffafe', '#a5f3fc', '#67e8f9', '#22d3ee', '#06b6d4', '#0891b2', '#164e63'] },
+  { label: 'Blue',    colors: ['#dbeafe', '#bfdbfe', '#93c5fd', '#60a5fa', '#3b82f6', '#2563eb', '#1e3a8a'] },
+  { label: 'Violet',  colors: ['#ede9fe', '#ddd6fe', '#c4b5fd', '#a78bfa', '#8b5cf6', '#7c3aed', '#4c1d95'] },
+  { label: 'Pink',    colors: ['#fce7f3', '#fbcfe8', '#f9a8d4', '#f472b6', '#ec4899', '#db2777', '#9d174d'] },
+  { label: 'Slate',   colors: ['#f1f5f9', '#cbd5e1', '#94a3b8', '#64748b', '#475569', '#334155', '#1e293b'] },
 ];
 
+const isLight = (hex) => {
+  const r = parseInt(hex.slice(1, 3), 16);
+  const g = parseInt(hex.slice(3, 5), 16);
+  const b = parseInt(hex.slice(5, 7), 16);
+  return (0.299 * r + 0.587 * g + 0.114 * b) / 255 > 0.55;
+};
+
+// ── Badge definitions ─────────────────────────────────────────────────────────
+const MAX_BADGES = 5;
+
+const BADGE_DEFS = [
+  { id: 'alpha',       label: 'Alpha Tester', desc: 'Early access' },
+  { id: 'home_region', label: 'Home Region',  desc: 'Set home region' },
+];
+
+// ── Misc ──────────────────────────────────────────────────────────────────────
 const REGIONS = [
   { key: 'New Babbage', label: 'New Babbage', sub: 'MicroTech' },
   { key: 'Area 18',     label: 'Area 18',     sub: 'ArcCorp' },
@@ -27,25 +53,38 @@ function SavedBadge({ visible }) {
 }
 
 export default function SettingsView({ profile, updateProfile, checkCallsign }) {
-  const [color, setColor] = useState(profile?.color || '#378ADD');
-  const [hexInput, setHexInput] = useState(profile?.color || '#378ADD');
+  // ── Colour ─────────────────────────────────────────────────────────────────
+  const [color,      setColor]      = useState(profile?.color || '#3b82f6');
+  const [hexInput,   setHexInput]   = useState(profile?.color || '#3b82f6');
   const [colorSaved, setColorSaved] = useState(false);
 
-  const [region, setRegion] = useState(profile?.home_region || '');
+  // ── Home region ─────────────────────────────────────────────────────────────
+  const [region,      setRegion]      = useState(profile?.home_region || '');
   const [regionSaved, setRegionSaved] = useState(false);
 
-  const [callsign, setCallsign] = useState(profile?.callsign || '');
+  // ── Callsign ────────────────────────────────────────────────────────────────
+  const [callsign,       setCallsign]       = useState(profile?.callsign || '');
   const [callsignStatus, setCallsignStatus] = useState(null);
-  const [checking, setChecking] = useState(false);
-  const [callsignSaved, setCallsignSaved] = useState(false);
+  const [checking,       setChecking]       = useState(false);
+  const [callsignSaved,  setCallsignSaved]  = useState(false);
 
-  const [saving, setSaving] = useState(false);
+  // ── Badges ──────────────────────────────────────────────────────────────────
+  const earnedBadgeIds = [
+    'alpha',
+    ...(profile?.home_region ? ['home_region'] : []),
+  ];
 
-  // RSI handle
+  const [selectedBadges, setSelectedBadges] = useState(() => {
+    if (profile?.badges?.length > 0) return [...profile.badges];
+    return [...earnedBadgeIds];
+  });
+  const [badgesSaved, setBadgesSaved] = useState(false);
+
+  // ── RSI handle ──────────────────────────────────────────────────────────────
   const [rsiHandle,      setRsiHandle]      = useState(profile?.rsi_handle || '');
   const [rsiHandleSaved, setRsiHandleSaved] = useState(false);
 
-  // aUEC balance verification
+  // ── aUEC balance ────────────────────────────────────────────────────────────
   const [auecScanning,  setAuecScanning]  = useState(false);
   const [auecExtracted, setAuecExtracted] = useState(null);
   const [auecScanError, setAuecScanError] = useState(null);
@@ -53,7 +92,32 @@ export default function SettingsView({ profile, updateProfile, checkCallsign }) 
   const [auecSaved,     setAuecSaved]     = useState(false);
   const auecFileRef = useRef(null);
 
+  const [saving, setSaving] = useState(false);
+
   const flash = (setter) => { setter(true); setTimeout(() => setter(false), 2000); };
+
+  // ── Save handlers ────────────────────────────────────────────────────────────
+  const saveColor = async () => {
+    setSaving(true);
+    await updateProfile({ color });
+    setSaving(false);
+    flash(setColorSaved);
+  };
+
+  const saveBadges = async () => {
+    setSaving(true);
+    await updateProfile({ badges: selectedBadges });
+    setSaving(false);
+    flash(setBadgesSaved);
+  };
+
+  const saveRegion = async () => {
+    if (!region) return;
+    setSaving(true);
+    await updateProfile({ home_region: region });
+    setSaving(false);
+    flash(setRegionSaved);
+  };
 
   const saveRsiHandle = async () => {
     if (!rsiHandle.trim()) return;
@@ -61,39 +125,6 @@ export default function SettingsView({ profile, updateProfile, checkCallsign }) 
     await updateProfile({ rsi_handle: rsiHandle.trim().toUpperCase() });
     setSaving(false);
     flash(setRsiHandleSaved);
-  };
-
-  const handleAuecScan = async (file) => {
-    if (!file || !rsiHandle.trim()) return;
-    setAuecScanning(true);
-    setAuecScanError(null);
-    setAuecExtracted(null);
-    try {
-      const base64 = await new Promise((resolve, reject) => {
-        const reader = new FileReader();
-        reader.onload = () => resolve(reader.result.split(',')[1]);
-        reader.onerror = reject;
-        reader.readAsDataURL(file);
-      });
-
-      const { data, error } = await supabase.functions.invoke('extract-auec-balance', {
-        body: { imageBase64: base64, mimeType: file.type, rsiHandle: rsiHandle.trim() },
-      });
-
-      if (error) throw error;
-
-      const amount = data?.amount ?? 0;
-      if (amount >= 1000) {
-        setAuecExtracted(amount);
-      } else {
-        setAuecScanError(`Couldn't detect a balance for "${rsiHandle.trim()}" in that image. Make sure your RSI handle and aUEC balance are both visible, or enter your balance manually below.`);
-      }
-    } catch {
-      setAuecScanError('Scan failed — please try again');
-    } finally {
-      setAuecScanning(false);
-      if (auecFileRef.current) auecFileRef.current.value = '';
-    }
   };
 
   const saveAuecBalance = async (amount) => {
@@ -109,26 +140,6 @@ export default function SettingsView({ profile, updateProfile, checkCallsign }) 
     setAuecScanError(null);
     setSaving(false);
     flash(setAuecSaved);
-  };
-
-  const handleHexInput = (v) => {
-    setHexInput(v);
-    if (/^#[0-9a-fA-F]{6}$/.test(v)) setColor(v);
-  };
-
-  const saveColor = async () => {
-    setSaving(true);
-    await updateProfile({ color });
-    setSaving(false);
-    flash(setColorSaved);
-  };
-
-  const saveRegion = async () => {
-    if (!region) return;
-    setSaving(true);
-    await updateProfile({ home_region: region });
-    setSaving(false);
-    flash(setRegionSaved);
   };
 
   const handleCallsignBlur = async () => {
@@ -147,6 +158,51 @@ export default function SettingsView({ profile, updateProfile, checkCallsign }) 
     flash(setCallsignSaved);
   };
 
+  const handleAuecScan = async (file) => {
+    if (!file || !rsiHandle.trim()) return;
+    setAuecScanning(true);
+    setAuecScanError(null);
+    setAuecExtracted(null);
+    try {
+      const base64 = await new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(reader.result.split(',')[1]);
+        reader.onerror = reject;
+        reader.readAsDataURL(file);
+      });
+      const { data, error } = await supabase.functions.invoke('extract-auec-balance', {
+        body: { imageBase64: base64, mimeType: file.type, rsiHandle: rsiHandle.trim() },
+      });
+      if (error) throw error;
+      const amount = data?.amount ?? 0;
+      if (amount >= 1000) {
+        setAuecExtracted(amount);
+      } else {
+        setAuecScanError(`Couldn't detect a balance for "${rsiHandle.trim()}" in that image. Make sure your RSI handle and aUEC balance are both visible, or enter your balance manually below.`);
+      }
+    } catch {
+      setAuecScanError('Scan failed — please try again');
+    } finally {
+      setAuecScanning(false);
+      if (auecFileRef.current) auecFileRef.current.value = '';
+    }
+  };
+
+  const handleHexInput = (v) => {
+    setHexInput(v);
+    if (/^#[0-9a-fA-F]{6}$/.test(v)) setColor(v);
+  };
+
+  const toggleBadge = (id) => {
+    if (!earnedBadgeIds.includes(id)) return;
+    setSelectedBadges(prev => {
+      if (prev.includes(id)) return prev.filter(x => x !== id);
+      if (prev.length >= MAX_BADGES) return prev;
+      return [...prev, id];
+    });
+  };
+
+  // ── UI helpers ───────────────────────────────────────────────────────────────
   const sectionTitle = (title) => (
     <div style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 15, letterSpacing: '-0.01em', marginBottom: 14 }}>{title}</div>
   );
@@ -163,40 +219,168 @@ export default function SettingsView({ profile, updateProfile, checkCallsign }) 
     >Save</button>
   );
 
+  const renderBadge = (id, size) => {
+    if (id === 'alpha') return <AlphaBadge key="alpha" size={size} />;
+    if (id === 'home_region' && profile?.home_region) return <LandingZoneBadge key="home_region" region={profile.home_region} size={size} />;
+    return null;
+  };
+
   return (
     <div style={{ padding: '20px' }}>
       <div style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 20, letterSpacing: '-0.02em', marginBottom: 24 }}>Settings</div>
 
-      {/* ── Color ── */}
+      {/* ── Crew Color ──────────────────────────────────────────────────────── */}
       <div style={{ border: '2px solid #000', background: '#fff', padding: '20px', marginBottom: 16 }}>
         {sectionTitle('Crew Color')}
-        <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 16 }}>
-          <div style={{ width: 48, height: 48, borderRadius: '50%', background: color, border: '2px solid #000' }} />
-          <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--muted)' }}>Preview</span>
+
+        {/* Preview */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 14 }}>
+          <div style={{ width: 44, height: 44, borderRadius: '50%', background: color, border: '2px solid #000', flexShrink: 0 }} />
+          <span style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--muted)' }}>{color.toUpperCase()}</span>
         </div>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(6, 1fr)', gap: 8, marginBottom: 14 }}>
-          {SWATCH_COLORS.map(c => (
-            <button key={c} onClick={() => { setColor(c); setHexInput(c); }}
-              style={{ width: '100%', aspectRatio: '1', border: `2px solid ${color === c ? '#000' : 'transparent'}`, background: c, cursor: 'pointer', outline: color === c ? '2px solid #000' : 'none', outlineOffset: 2 }}
-            />
+
+        {/* Palette grid — 11 colour families × 7 shades */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 2, marginBottom: 14 }}>
+          {COLOR_ROWS.map(row => (
+            <div key={row.label} style={{ display: 'flex', gap: 2 }}>
+              {row.colors.map(c => {
+                const selected = color === c;
+                const light = isLight(c);
+                return (
+                  <button
+                    key={c}
+                    title={c}
+                    onClick={() => { setColor(c); setHexInput(c); }}
+                    style={{
+                      flex: 1,
+                      height: 26,
+                      background: c,
+                      border: 'none',
+                      cursor: 'pointer',
+                      padding: 0,
+                      position: 'relative',
+                      outline: selected ? `2px solid ${light ? '#000' : '#fff'}` : 'none',
+                      outlineOffset: -2,
+                    }}
+                  >
+                    {selected && (
+                      <span style={{
+                        position: 'absolute', inset: 0, display: 'flex', alignItems: 'center',
+                        justifyContent: 'center', fontSize: 11, color: light ? '#000' : '#fff',
+                        lineHeight: 1,
+                      }}>✓</span>
+                    )}
+                  </button>
+                );
+              })}
+            </div>
           ))}
         </div>
+
+        {/* Custom hex input */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 14 }}>
+          <div style={{ width: 28, height: 28, borderRadius: '50%', background: color, border: '2px solid #000', flexShrink: 0 }} />
           <input
-            style={{ flex: 1, padding: '8px 10px', border: '2px solid #000', fontFamily: 'var(--font-mono)', fontSize: 13, outline: 'none' }}
+            style={{ flex: 1, padding: '7px 10px', border: '2px solid #000', fontFamily: 'var(--font-mono)', fontSize: 13, outline: 'none' }}
             value={hexInput}
             onChange={e => handleHexInput(e.target.value)}
             placeholder="#c41e3a"
             maxLength={7}
           />
         </div>
+
         <div style={{ display: 'flex', alignItems: 'center' }}>
           {saveBtn(saveColor, false)}
           <SavedBadge visible={colorSaved} />
         </div>
       </div>
 
-      {/* ── Home Region ── */}
+      {/* ── Profile Badges ───────────────────────────────────────────────────── */}
+      <div style={{ border: '2px solid #000', background: '#fff', padding: '20px', marginBottom: 16 }}>
+        {sectionTitle('Profile Badges')}
+
+        <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--muted)', marginBottom: 16, lineHeight: 1.6, display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
+          <span>Select which badges appear on your pilot profile.</span>
+          <span style={{
+            fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 11,
+            color: selectedBadges.length >= MAX_BADGES ? '#c41e3a' : '#2d8659',
+          }}>
+            {selectedBadges.length} / {MAX_BADGES}
+          </span>
+        </div>
+
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10, marginBottom: 16 }}>
+          {BADGE_DEFS.map(def => {
+            const earned   = earnedBadgeIds.includes(def.id);
+            const selected = selectedBadges.includes(def.id);
+            const atMax    = !selected && selectedBadges.length >= MAX_BADGES;
+            const clickable = earned && !atMax;
+
+            return (
+              <button
+                key={def.id}
+                onClick={() => clickable || selected ? toggleBadge(def.id) : undefined}
+                style={{
+                  display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6,
+                  padding: '12px 10px', minWidth: 84,
+                  border: `2px solid ${selected ? '#c41e3a' : earned ? '#ccc' : '#e8e8e8'}`,
+                  background: selected ? 'rgba(196,30,58,0.04)' : '#fafafa',
+                  cursor: earned ? 'pointer' : 'default',
+                  opacity: earned ? 1 : 0.45,
+                  position: 'relative',
+                }}
+              >
+                {/* Badge preview */}
+                <div style={{ position: 'relative' }}>
+                  {renderBadge(def.id, 'lg') ?? (
+                    <div style={{
+                      width: 68, height: 68, border: '2px dashed #ddd',
+                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      background: '#f5f5f5',
+                    }}>
+                      <span style={{ fontSize: 18, color: '#ccc' }}>🔒</span>
+                    </div>
+                  )}
+                  {/* Selection indicator overlay */}
+                  {selected && (
+                    <div style={{
+                      position: 'absolute', top: -4, right: -4, width: 16, height: 16,
+                      borderRadius: '50%', background: '#c41e3a', border: '2px solid #fff',
+                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    }}>
+                      <span style={{ color: '#fff', fontSize: 8, lineHeight: 1 }}>✓</span>
+                    </div>
+                  )}
+                </div>
+
+                <span style={{ fontFamily: 'var(--font-mono)', fontSize: 8, color: '#333', textTransform: 'uppercase', letterSpacing: '0.08em', textAlign: 'center' }}>
+                  {def.label}
+                </span>
+                <span style={{
+                  fontFamily: 'var(--font-mono)', fontSize: 7, textTransform: 'uppercase',
+                  letterSpacing: '0.06em', textAlign: 'center',
+                  color: selected ? '#c41e3a' : earned ? '#2d8659' : 'var(--muted)',
+                }}>
+                  {!earned ? 'Locked' : selected ? '● Showing' : atMax ? 'Max reached' : '○ Hidden'}
+                </span>
+              </button>
+            );
+          })}
+        </div>
+
+        {!earnedBadgeIds.includes('home_region') && (
+          <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: 'var(--muted)', marginBottom: 12, lineHeight: 1.5 }}>
+            Set a home region below to unlock the Home Region badge.
+          </div>
+        )}
+
+        <div style={{ display: 'flex', alignItems: 'center' }}>
+          {saveBtn(saveBadges, false)}
+          <SavedBadge visible={badgesSaved} />
+        </div>
+      </div>
+
+      {/* ── Home Region ─────────────────────────────────────────────────────── */}
       <div style={{ border: '2px solid #000', background: '#fff', padding: '20px', marginBottom: 16 }}>
         {sectionTitle('Home Region')}
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 14 }}>
@@ -227,34 +411,7 @@ export default function SettingsView({ profile, updateProfile, checkCallsign }) 
         </div>
       </div>
 
-      {/* ── Your Badges ── */}
-      <div style={{ border: '2px solid #000', background: '#fff', padding: '20px', marginBottom: 16 }}>
-        {sectionTitle('Your Badges')}
-        <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--muted)', marginBottom: 16, lineHeight: 1.6 }}>
-          Badges are displayed on your pilot profile. System badges are awarded automatically.
-        </div>
-        <div style={{ display: 'flex', gap: 14, flexWrap: 'wrap', alignItems: 'flex-start' }}>
-          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6 }}>
-            <AlphaBadge size="lg" />
-            <span style={{ fontFamily: 'var(--font-mono)', fontSize: 8, color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '0.08em', textAlign: 'center' }}>Alpha Tester</span>
-            <span style={{ fontFamily: 'var(--font-mono)', fontSize: 8, color: '#2D7A1F', textTransform: 'uppercase', letterSpacing: '0.06em' }}>System ✓</span>
-          </div>
-          {profile?.home_region && (
-            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6 }}>
-              <LandingZoneBadge region={profile.home_region} size="lg" />
-              <span style={{ fontFamily: 'var(--font-mono)', fontSize: 8, color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '0.08em', textAlign: 'center' }}>Home Region</span>
-              <span style={{ fontFamily: 'var(--font-mono)', fontSize: 8, color: '#2D7A1F', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Earned ✓</span>
-            </div>
-          )}
-          {!profile?.home_region && (
-            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 4, width: 68, height: 80, border: '2px dashed #ccc', background: '#fafafa' }}>
-              <span style={{ fontFamily: 'var(--font-mono)', fontSize: 8, color: '#bbb', textTransform: 'uppercase', letterSpacing: '0.06em', textAlign: 'center', lineHeight: 1.4 }}>Set home{'\n'}region</span>
-            </div>
-          )}
-        </div>
-      </div>
-
-      {/* ── Callsign ── */}
+      {/* ── Callsign ────────────────────────────────────────────────────────── */}
       <div style={{ border: '2px solid #000', background: '#fff', padding: '20px', marginBottom: 16 }}>
         {sectionTitle('Callsign')}
         <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--muted)', marginBottom: 10 }}>
@@ -279,7 +436,8 @@ export default function SettingsView({ profile, updateProfile, checkCallsign }) 
           <SavedBadge visible={callsignSaved} />
         </div>
       </div>
-      {/* ── aUEC Balance Verification ── */}
+
+      {/* ── aUEC Balance Verification ────────────────────────────────────────── */}
       <div style={{ border: '2px solid #000', background: '#fff', padding: '20px' }}>
         {sectionTitle('aUEC Balance Verification')}
         <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--muted)', marginBottom: 16, lineHeight: 1.7 }}>
@@ -287,22 +445,16 @@ export default function SettingsView({ profile, updateProfile, checkCallsign }) 
           AI vision locates your handle in the image and reads the aUEC balance next to it.
         </div>
 
-        {/* RSI handle input */}
+        {/* RSI handle */}
         <div style={{ marginBottom: 16 }}>
-          <div style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 10, letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: 6 }}>
-            RSI Handle
-          </div>
+          <div style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 10, letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: 6 }}>RSI Handle</div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
             <input
               value={rsiHandle}
               onChange={e => setRsiHandle(e.target.value)}
               placeholder="e.g. DIRTYNARWHAL"
               maxLength={32}
-              style={{
-                flex: 1, padding: '9px 12px', border: '2px solid #000',
-                fontFamily: 'var(--font-mono)', fontSize: 13, outline: 'none',
-                textTransform: 'uppercase', letterSpacing: '0.04em',
-              }}
+              style={{ flex: 1, padding: '9px 12px', border: '2px solid #000', fontFamily: 'var(--font-mono)', fontSize: 13, outline: 'none', textTransform: 'uppercase', letterSpacing: '0.04em' }}
             />
             {saveBtn(saveRsiHandle, !rsiHandle.trim())}
             <SavedBadge visible={rsiHandleSaved} />
@@ -329,23 +481,14 @@ export default function SettingsView({ profile, updateProfile, checkCallsign }) 
               {auecExtracted.toLocaleString()} aUEC
             </div>
             <div style={{ display: 'flex', gap: 8 }}>
-              <button
-                onClick={() => saveAuecBalance(auecExtracted)}
-                disabled={saving}
-                style={{
-                  padding: '9px 20px', fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 12,
-                  textTransform: 'uppercase', letterSpacing: '0.04em', cursor: saving ? 'default' : 'pointer',
-                  border: '2px solid #2d8659', background: '#2d8659', color: '#fff',
-                }}
-              >Confirm & Save</button>
-              <button
-                onClick={() => { setAuecExtracted(null); setAuecScanError(null); }}
-                style={{
-                  padding: '9px 20px', fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 12,
-                  textTransform: 'uppercase', letterSpacing: '0.04em', cursor: 'pointer',
-                  border: '2px solid var(--border)', background: 'var(--bg-1)', color: 'var(--text)',
-                }}
-              >Wrong — Retry</button>
+              <button onClick={() => saveAuecBalance(auecExtracted)} disabled={saving}
+                style={{ padding: '9px 20px', fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 12, textTransform: 'uppercase', letterSpacing: '0.04em', cursor: saving ? 'default' : 'pointer', border: '2px solid #2d8659', background: '#2d8659', color: '#fff' }}>
+                Confirm & Save
+              </button>
+              <button onClick={() => { setAuecExtracted(null); setAuecScanError(null); }}
+                style={{ padding: '9px 20px', fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 12, textTransform: 'uppercase', letterSpacing: '0.04em', cursor: 'pointer', border: '2px solid var(--border)', background: 'var(--bg-1)', color: 'var(--text)' }}>
+                Wrong — Retry
+              </button>
             </div>
           </div>
         )}
@@ -357,40 +500,29 @@ export default function SettingsView({ profile, updateProfile, checkCallsign }) 
               {auecScanError}
             </div>
             <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-              <input
-                type="number" min="0"
-                value={auecManual}
-                onChange={e => setAuecManual(e.target.value)}
-                placeholder="Enter balance manually"
-                style={{ flex: 1, padding: '8px 10px', border: '2px solid #000', fontFamily: 'var(--font-mono)', fontSize: 13, outline: 'none' }}
-              />
+              <input type="number" min="0" value={auecManual} onChange={e => setAuecManual(e.target.value)} placeholder="Enter balance manually"
+                style={{ flex: 1, padding: '8px 10px', border: '2px solid #000', fontFamily: 'var(--font-mono)', fontSize: 13, outline: 'none' }} />
               <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--muted)', flexShrink: 0 }}>aUEC</span>
-              <button
-                onClick={() => saveAuecBalance(parseInt(auecManual, 10))}
-                disabled={!auecManual || saving}
+              <button onClick={() => saveAuecBalance(parseInt(auecManual, 10))} disabled={!auecManual || saving}
                 style={{
-                  padding: '9px 20px', fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 12,
-                  textTransform: 'uppercase', letterSpacing: '0.04em',
+                  padding: '9px 20px', fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 12, textTransform: 'uppercase', letterSpacing: '0.04em', flexShrink: 0,
                   cursor: !auecManual ? 'default' : 'pointer',
                   border: `2px solid ${auecManual ? '#c41e3a' : '#ccc'}`,
                   background: auecManual ? '#c41e3a' : '#f5f5f5',
                   color: auecManual ? '#fff' : '#999',
-                  flexShrink: 0,
-                }}
-              >Save</button>
+                }}>Save</button>
             </div>
           </div>
         )}
 
-        {/* Upload button (hidden when result is pending) */}
+        {/* Upload button */}
         {auecExtracted === null && (
           <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
             <button
               onClick={() => auecFileRef.current?.click()}
               disabled={auecScanning || !rsiHandle.trim()}
               style={{
-                padding: '9px 20px', fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 12,
-                textTransform: 'uppercase', letterSpacing: '0.04em',
+                padding: '9px 20px', fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 12, textTransform: 'uppercase', letterSpacing: '0.04em',
                 cursor: (auecScanning || !rsiHandle.trim()) ? 'default' : 'pointer',
                 border: `2px solid ${(auecScanning || !rsiHandle.trim()) ? '#ccc' : '#000'}`,
                 background: (auecScanning || !rsiHandle.trim()) ? '#f5f5f5' : '#000',
@@ -401,13 +533,8 @@ export default function SettingsView({ profile, updateProfile, checkCallsign }) 
               <span style={{ fontSize: 14 }}>{auecScanning ? '⏳' : '📷'}</span>
               <span>{auecScanning ? 'Scanning…' : profile?.auec_balance ? 'Update Screenshot' : 'Upload Screenshot'}</span>
             </button>
-            <input
-              ref={auecFileRef}
-              type="file"
-              accept="image/jpeg,image/png,image/webp"
-              style={{ display: 'none' }}
-              onChange={e => handleAuecScan(e.target.files?.[0])}
-            />
+            <input ref={auecFileRef} type="file" accept="image/jpeg,image/png,image/webp" style={{ display: 'none' }}
+              onChange={e => handleAuecScan(e.target.files?.[0])} />
             <SavedBadge visible={auecSaved} />
           </div>
         )}
@@ -416,12 +543,10 @@ export default function SettingsView({ profile, updateProfile, checkCallsign }) 
             Enter your RSI handle above to enable scanning.
           </div>
         )}
-
         <div style={{ marginTop: 14, fontFamily: 'var(--font-mono)', fontSize: 9, color: 'var(--muted)', lineHeight: 1.7, letterSpacing: '0.02em' }}>
           <strong style={{ color: 'var(--text)' }}>How it works:</strong> upload any screenshot where your RSI handle and ≡ aUEC balance are visible. Direct game screenshots and phone photos of your monitor both work.
         </div>
       </div>
-
     </div>
   );
 }
