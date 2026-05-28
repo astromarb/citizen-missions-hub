@@ -152,6 +152,7 @@ function WaypointRow({ waypoint, myProfileId, members, onSetStatus, canEdit, kin
   };
 
   const memberMap = {};
+  const myColor = (members || []).find(m => m.id === myProfileId)?.color || '#c41e3a';
   (members || []).forEach(m => { memberMap[m.id] = m; });
 
   const statusIcon  = (s) => s === 'loading' ? '↓' : s === 'en_route' ? '→' : s === 'picked_up' ? '🟠' : s === 'done' ? '✅' : '❌';
@@ -246,9 +247,9 @@ function WaypointRow({ waypoint, myProfileId, members, onSetStatus, canEdit, kin
                     title="Mark en route"
                     style={{
                       width: 28, height: 28, cursor: 'pointer',
-                      border: `2px solid ${countFor('en_route') > 0 ? '#0066cc' : '#ccc'}`,
-                      background: countFor('en_route') > 0 ? '#0066cc' : 'transparent',
-                      color: countFor('en_route') > 0 ? '#fff' : '#bbb',
+                      border: `2px solid ${myCompletion?.status === 'en_route' ? myColor : '#ccc'}`,
+                      background: myCompletion?.status === 'en_route' ? myColor + '22' : 'transparent',
+                      color: myCompletion?.status === 'en_route' ? myColor : '#bbb',
                       fontWeight: 700, fontSize: 15,
                       display: 'flex', alignItems: 'center', justifyContent: 'center',
                     }}
@@ -265,9 +266,9 @@ function WaypointRow({ waypoint, myProfileId, members, onSetStatus, canEdit, kin
                     title="Mark loading"
                     style={{
                       width: 28, height: 28, cursor: 'pointer',
-                      border: `2px solid ${countFor('loading') > 0 ? '#9c59d1' : '#ccc'}`,
-                      background: countFor('loading') > 0 ? '#9c59d1' : 'transparent',
-                      color: countFor('loading') > 0 ? '#fff' : '#bbb',
+                      border: `2px solid ${myCompletion?.status === 'loading' ? myColor : '#ccc'}`,
+                      background: myCompletion?.status === 'loading' ? myColor + '22' : 'transparent',
+                      color: myCompletion?.status === 'loading' ? myColor : '#bbb',
                       fontWeight: 700, fontSize: 14,
                       display: 'flex', alignItems: 'center', justifyContent: 'center',
                     }}
@@ -284,9 +285,9 @@ function WaypointRow({ waypoint, myProfileId, members, onSetStatus, canEdit, kin
                     title="Mark picked up"
                     style={{
                       width: 28, height: 28, borderRadius: '50%', cursor: 'pointer',
-                      border: `2px solid ${countFor('picked_up') > 0 ? '#ff9800' : '#ccc'}`,
-                      background: countFor('picked_up') > 0 ? '#ff9800' : 'transparent',
-                      color: countFor('picked_up') > 0 ? '#fff' : '#bbb',
+                      border: `2px solid ${myCompletion?.status === 'picked_up' ? myColor : '#ccc'}`,
+                      background: myCompletion?.status === 'picked_up' ? myColor + '22' : 'transparent',
+                      color: myCompletion?.status === 'picked_up' ? myColor : '#bbb',
                       fontWeight: 700, fontSize: 12,
                       display: 'flex', alignItems: 'center', justifyContent: 'center',
                     }}
@@ -306,9 +307,9 @@ function WaypointRow({ waypoint, myProfileId, members, onSetStatus, canEdit, kin
                     title="Mark en route"
                     style={{
                       width: 28, height: 28, cursor: 'pointer',
-                      border: `2px solid ${countFor('en_route') > 0 ? '#0066cc' : '#ccc'}`,
-                      background: countFor('en_route') > 0 ? '#0066cc' : 'transparent',
-                      color: countFor('en_route') > 0 ? '#fff' : '#bbb',
+                      border: `2px solid ${myCompletion?.status === 'en_route' ? myColor : '#ccc'}`,
+                      background: myCompletion?.status === 'en_route' ? myColor + '22' : 'transparent',
+                      color: myCompletion?.status === 'en_route' ? myColor : '#bbb',
                       fontWeight: 700, fontSize: 15,
                       display: 'flex', alignItems: 'center', justifyContent: 'center',
                     }}
@@ -325,9 +326,9 @@ function WaypointRow({ waypoint, myProfileId, members, onSetStatus, canEdit, kin
                     title="Mark delivered"
                     style={{
                       width: 28, height: 28, cursor: 'pointer',
-                      border: `2px solid ${countFor('done') > 0 ? '#2d8659' : 'var(--border)'}`,
-                      background: countFor('done') > 0 ? '#2d8659' : 'var(--bg-1)',
-                      color: countFor('done') > 0 ? '#fff' : 'var(--muted)',
+                      border: `2px solid ${myCompletion?.status === 'done' ? myColor : 'var(--border)'}`,
+                      background: myCompletion?.status === 'done' ? myColor + '22' : 'var(--bg-1)',
+                      color: myCompletion?.status === 'done' ? myColor : 'var(--muted)',
                       fontWeight: 700, fontSize: 13,
                       display: 'flex', alignItems: 'center', justifyContent: 'center',
                     }}
@@ -344,9 +345,9 @@ function WaypointRow({ waypoint, myProfileId, members, onSetStatus, canEdit, kin
                     title="Mark lost"
                     style={{
                       width: 28, height: 28, cursor: 'pointer',
-                      border: `2px solid ${countFor('failed') > 0 ? '#c41e3a' : '#ccc'}`,
-                      background: 'transparent',
-                      color: countFor('failed') > 0 ? '#c41e3a' : '#bbb',
+                      border: `2px solid ${myCompletion?.status === 'failed' ? myColor : '#ccc'}`,
+                      background: myCompletion?.status === 'failed' ? myColor + '22' : 'transparent',
+                      color: myCompletion?.status === 'failed' ? myColor : '#bbb',
                       fontWeight: 700, fontSize: 13,
                       display: 'flex', alignItems: 'center', justifyContent: 'center',
                     }}
