@@ -14,6 +14,7 @@ const SOUND_VOL = {
   'login-plus':             0.36,
   'back-tap':               0.32,
   'halt-screetch':          0.42,
+  'mission-complete':       0.44,
 };
 
 const _cache = {};
@@ -44,10 +45,11 @@ const TAB_SOUNDS = {
 };
 
 export const SFX = {
-  back: () => _play('back-tap'),
-  boop: () => _play('entry-boop'),
-  open: () => _play('login-open'),
-  plus: () => _play('login-plus'),
-  halt: () => _play('halt-screetch'),
-  tab:  (id) => _play(TAB_SOUNDS[id] || 'entry-boop'),
+  back:     () => _play('back-tap'),
+  boop:     () => _play('entry-boop'),
+  open:     () => _play('login-open'),
+  plus:     () => _play('login-plus'),
+  halt:     () => _play('halt-screetch'),
+  complete: () => _play('mission-complete'),
+  tab:      (id) => _play(TAB_SOUNDS[id] || 'entry-boop'),
 };

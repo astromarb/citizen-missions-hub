@@ -1,7 +1,12 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase.js';
 
-const getUrl = (name) => supabase.storage.from('images').getPublicUrl(name).data.publicUrl;
+const getUrl = (name, updatedAt) => {
+  const base = supabase.storage.from('images').getPublicUrl(name).data.publicUrl;
+  // Append updatedAt as cache-buster: if a file is deleted and re-uploaded with
+  // the same name, the new timestamp makes the URL unique, bypassing CDN cache.
+  return updatedAt ? `${base}?t=${encodeURIComponent(updatedAt)}` : base;
+};
 
 // "alpha-1.png"        → "Alpha Set"
 // "Beta-Players-2.png" → "Beta Players Set"
@@ -13,12 +18,12 @@ function setNameFromFile(filename) {
   return prefix.map(w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()).join(' ') + ' Set';
 }
 
-function groupIntoSets(filenames) {
+function groupIntoSets(fileObjects) {
   const setMap = {};
-  filenames.forEach(name => {
+  fileObjects.forEach(({ name, updatedAt }) => {
     const setName = setNameFromFile(name);
     if (!setMap[setName]) setMap[setName] = [];
-    setMap[setName].push({ id: name, src: getUrl(name) });
+    setMap[setName].push({ id: name, src: getUrl(name, updatedAt) });
   });
   return Object.entries(setMap).map(([name, banners]) => ({ name, banners }));
 }

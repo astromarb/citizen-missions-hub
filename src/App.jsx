@@ -334,8 +334,11 @@ function AppInner() {
   };
 
   const handleToggleDone = (sessionId, contractId) => {
+    const contract = sessions[sessionId]?.contracts.find(c => c.id === contractId);
+    const wasDone = contract?.done ?? false;
     toggleDone(sessionId, contractId);
-    SFX.boop();
+    if (!wasDone) SFX.complete();
+    else SFX.boop();
   };
 
   const handleDeleteContract = (sessionId, contractId) => {

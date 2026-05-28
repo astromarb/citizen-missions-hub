@@ -28,9 +28,12 @@ Deno.serve(async (req) => {
       );
     }
 
+    // Return name + updated_at so the client can append a cache-buster query param.
+    // When a file is deleted and re-uploaded with the same name, updated_at changes,
+    // making the URL unique and bypassing both browser and CDN cache.
     const files = (data ?? [])
-      .map(f => f.name)
-      .filter(n => /\.(png|jpg|jpeg|webp|gif)$/i.test(n));
+      .filter(f => /\.(png|jpg|jpeg|webp|gif)$/i.test(f.name))
+      .map(f => ({ name: f.name, updatedAt: f.updated_at ?? f.created_at ?? '' }));
 
     return new Response(
       JSON.stringify({ files }),
