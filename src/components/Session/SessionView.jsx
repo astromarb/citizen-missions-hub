@@ -159,8 +159,8 @@ function WaypointRow({ waypoint, myProfileId, members, onSetStatus, canEdit, kin
   const statusColor = (s) => s === 'loading' ? '#9c59d1' : s === 'en_route' ? '#0066cc' : s === 'picked_up' ? '#ff9800' : s === 'done' ? '#2d8659' : '#c41e3a';
 
   return (
-    <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8, flexWrap: 'wrap' }}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 6, flex: 1, minWidth: 0 }}>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 5, marginBottom: 10 }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
         <span style={{ color: 'var(--muted)', fontSize: 12, flexShrink: 0 }}>{isPickup ? '↑' : '↓'}</span>
 
         {editingLoc ? (
@@ -216,25 +216,28 @@ function WaypointRow({ waypoint, myProfileId, members, onSetStatus, canEdit, kin
         )}
       </div>
 
-      <div style={{ display: 'flex', gap: 4, alignItems: 'center', flexWrap: 'wrap' }}>
-        {(waypoint.completions || []).map(c => {
-          const m = memberMap[c.profileId];
-          if (!m) return null;
-          const col = m.color || '#888';
-          return (
-            <span key={c.profileId} style={{
-              fontFamily: 'var(--font-display)', fontSize: 10, fontWeight: 700,
-              background: col, color: contrastColor(col),
-              padding: '2px 7px', letterSpacing: '0.06em', textTransform: 'uppercase',
-              border: `2px solid ${col}`, whiteSpace: 'nowrap',
-            }}>
-              {m.callsign}
-            </span>
-          );
-        })}
+      {(waypoint.completions || []).length > 0 && (
+        <div style={{ paddingLeft: 18, display: 'flex', gap: 4, flexWrap: 'wrap', alignItems: 'center' }}>
+          {(waypoint.completions || []).map(c => {
+            const m = memberMap[c.profileId];
+            if (!m) return null;
+            const col = m.color || '#888';
+            return (
+              <span key={c.profileId} style={{
+                fontFamily: 'var(--font-display)', fontSize: 10, fontWeight: 700,
+                background: col, color: contrastColor(col),
+                padding: '2px 6px', letterSpacing: '0.05em', textTransform: 'uppercase',
+                border: `2px solid ${col}`, whiteSpace: 'nowrap',
+              }}>
+                {m.callsign}
+              </span>
+            );
+          })}
+        </div>
+      )}
 
-        {myProfileId && canEdit && (
-          <div style={{ display: 'flex', gap: 12 }}>
+      {myProfileId && canEdit && (
+        <div style={{ paddingLeft: 18, display: 'flex', gap: 10 }}>
             {isPickup ? (
               <>
                 {/* EN ROUTE */}
@@ -356,9 +359,8 @@ function WaypointRow({ waypoint, myProfileId, members, onSetStatus, canEdit, kin
                 </div>
               </>
             )}
-          </div>
-        )}
-      </div>
+        </div>
+      )}
     </div>
   );
 }
