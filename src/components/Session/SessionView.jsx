@@ -121,12 +121,12 @@ function PlayerSeat({ member }) {
   );
 }
 
-function WaypointRow({ waypoint, myProfileId, members, onSetStatus, canEdit, kind, canEditLocation, onUpdateWaypoint, locationListId }) {
+function WaypointRow({ waypoint, myProfileId, members, onSetStatus, canEdit, kind, canEditLocation, onUpdateWaypoint, locationNames }) {
   const [editingLoc, setEditingLoc] = useState(false);
   const [locVal, setLocVal] = useState('');
 
-  const startLocEdit = () => { setLocVal(waypoint.name || ''); setEditingLoc(true); };
-  const saveLocEdit  = () => { if (locVal.trim()) onUpdateWaypoint?.(waypoint.id, { location_name: locVal.trim() }); setEditingLoc(false); };
+  const startLocEdit  = () => { setLocVal(waypoint.name || ''); setEditingLoc(true); };
+  const saveLocEdit   = () => { if (locVal) onUpdateWaypoint?.(waypoint.id, { location_name: locVal }); setEditingLoc(false); };
   const cancelLocEdit = () => setEditingLoc(false);
 
   const myCompletion    = waypoint.completions?.find(c => c.profileId === myProfileId);
@@ -146,18 +146,20 @@ function WaypointRow({ waypoint, myProfileId, members, onSetStatus, canEdit, kin
 
         {editingLoc ? (
           <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, flexWrap: 'wrap' }}>
-            <input
+            <select
               autoFocus
               value={locVal}
-              list={locationListId}
               onChange={e => setLocVal(e.target.value)}
               onKeyDown={e => { if (e.key === 'Enter') saveLocEdit(); if (e.key === 'Escape') cancelLocEdit(); }}
               style={{
-                width: 200, padding: '2px 6px',
+                maxWidth: 220, padding: '2px 4px',
                 border: '2px solid #c41e3a', background: 'var(--bg-1)', color: '#c41e3a',
                 fontFamily: 'var(--font-sans)', fontSize: 12, fontWeight: 500, outline: 'none',
               }}
-            />
+            >
+              <option value="">— pick location —</option>
+              {(locationNames || []).map(n => <option key={n} value={n}>{n}</option>)}
+            </select>
             <button onClick={saveLocEdit}
               style={{ background: '#2d8659', border: 'none', color: '#fff', cursor: 'pointer', padding: '2px 7px', fontWeight: 700, fontSize: 11 }}>✓</button>
             <button onClick={cancelLocEdit}
@@ -333,10 +335,7 @@ export default function SessionView({
   return (
     <div style={{ display: 'flex', flexDirection: 'column', minHeight: '100%' }}>
 
-      {/* shared datalists — referenced by id from inputs anywhere in this view */}
-      <datalist id="sv-locs-datalist">
-        {allLocationNames.map(n => <option key={n} value={n} />)}
-      </datalist>
+      {/* shared datalist for commodity autocomplete */}
       <datalist id="sv-commodities-datalist">
         {allCommodities.map(n => <option key={n} value={n} />)}
       </datalist>
@@ -660,7 +659,7 @@ export default function SessionView({
                       kind="pickup"
                       canEditLocation={isSessionCreator}
                       onUpdateWaypoint={onUpdateWaypoint}
-                      locationListId="sv-locs-datalist"
+                      locationNames={allLocationNames}
                     />
                   ))}
                 </div>
@@ -681,7 +680,7 @@ export default function SessionView({
                       kind="dropoff"
                       canEditLocation={isSessionCreator}
                       onUpdateWaypoint={onUpdateWaypoint}
-                      locationListId="sv-locs-datalist"
+                      locationNames={allLocationNames}
                     />
                   ))}
                 </div>
@@ -747,11 +746,6 @@ export default function SessionView({
                                   style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '0 2px', color: 'var(--muted)', fontSize: 10, fontFamily: 'var(--font-mono)', lineHeight: 1 }}>✎</button>
                               )}
                             </div>
-                            {(c.fromLocation || c.toLocation) && (
-                              <span style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: 'var(--muted)', letterSpacing: '0.04em' }}>
-                                {c.fromLocation || '?'} → {c.toLocation || '?'}
-                              </span>
-                            )}
                           </div>
                         )}
                       </div>
