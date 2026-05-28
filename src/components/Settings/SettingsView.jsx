@@ -1,6 +1,6 @@
 import { useState, useRef } from 'react';
 import { supabase } from '@/lib/supabase.js';
-import LandingZoneBadge from '../shared/LandingZoneBadge.jsx';
+import LandingZoneBadge, { AlphaBadge } from '../shared/LandingZoneBadge.jsx';
 
 const SWATCH_COLORS = [
   '#378ADD', '#1D9E75', '#7F77DD', '#D85A30',
@@ -224,6 +224,33 @@ export default function SettingsView({ profile, updateProfile, checkCallsign }) 
         <div style={{ display: 'flex', alignItems: 'center' }}>
           {saveBtn(saveRegion, !region)}
           <SavedBadge visible={regionSaved} />
+        </div>
+      </div>
+
+      {/* ── Your Badges ── */}
+      <div style={{ border: '2px solid #000', background: '#fff', padding: '20px', marginBottom: 16 }}>
+        {sectionTitle('Your Badges')}
+        <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--muted)', marginBottom: 16, lineHeight: 1.6 }}>
+          Badges are displayed on your pilot profile. System badges are awarded automatically.
+        </div>
+        <div style={{ display: 'flex', gap: 14, flexWrap: 'wrap', alignItems: 'flex-start' }}>
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6 }}>
+            <AlphaBadge size="lg" />
+            <span style={{ fontFamily: 'var(--font-mono)', fontSize: 8, color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '0.08em', textAlign: 'center' }}>Alpha Tester</span>
+            <span style={{ fontFamily: 'var(--font-mono)', fontSize: 8, color: '#2D7A1F', textTransform: 'uppercase', letterSpacing: '0.06em' }}>System ✓</span>
+          </div>
+          {profile?.home_region && (
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6 }}>
+              <LandingZoneBadge region={profile.home_region} size="lg" />
+              <span style={{ fontFamily: 'var(--font-mono)', fontSize: 8, color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '0.08em', textAlign: 'center' }}>Home Region</span>
+              <span style={{ fontFamily: 'var(--font-mono)', fontSize: 8, color: '#2D7A1F', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Earned ✓</span>
+            </div>
+          )}
+          {!profile?.home_region && (
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 4, width: 68, height: 80, border: '2px dashed #ccc', background: '#fafafa' }}>
+              <span style={{ fontFamily: 'var(--font-mono)', fontSize: 8, color: '#bbb', textTransform: 'uppercase', letterSpacing: '0.06em', textAlign: 'center', lineHeight: 1.4 }}>Set home{'\n'}region</span>
+            </div>
+          )}
         </div>
       </div>
 
