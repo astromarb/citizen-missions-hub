@@ -388,6 +388,10 @@ export default function SessionView({
   const [editingPayoutVal, setEditingPayoutVal] = useState('');
   const [editingCargoId, setEditingCargoId]     = useState(null);
   const [editingCargo, setEditingCargo]         = useState({ commodity: '', scu: '' });
+  const [contractEditId, setContractEditId]                   = useState(null);
+  const [editPanel, setEditPanel]                             = useState({ pickups: [], dropoffs: [], cargo: [] });
+  const [confirmDeleteContractId, setConfirmDeleteContractId] = useState(null);
+  const [confirmRemovePlayerId, setConfirmRemovePlayerId]     = useState(null);
 
   const label      = keyToLabel(session.date);
   const totalSCU   = session.contracts.reduce((t, c) => t + c.cargo.reduce((s, x) => s + Number(x.scu || 0), 0), 0);
@@ -426,6 +430,44 @@ export default function SessionView({
     setEditingCargoId(null);
   };
   const cancelCargoEdit = () => setEditingCargoId(null);
+
+  const openContractEdit = (contract) => {
+    setContractEditId(contract.id);
+    setEditPanel({
+      pickups:  contract.pickups.map(wp => ({ id: wp.id, name: wpName(wp) })),
+      dropoffs: contract.dropoffs.map(wp => ({ id: wp.id, name: wpName(wp) })),
+      cargo:    contract.cargo.map(c => ({ id: c.id, commodity: c.commodity || '', scu: String(c.scu || '') })),
+    });
+  };
+  const saveContractEdit = (contract) => {
+    editPanel.pickups.forEach((ep, i) => {
+      const orig = contract.pickups[i];
+      if (orig?.id && ep.name !== wpName(orig)) onUpdateWaypoint?.(orig.id, { location_name: ep.name });
+    });
+    editPanel.dropoffs.forEach((ep, i) => {
+      const orig = contract.dropoffs[i];
+      if (orig?.id && ep.name !== wpName(orig)) onUpdateWaypoint?.(orig.id, { location_name: ep.name });
+    });
+    editPanel.cargo.forEach((ep, i) => {
+      const orig = contract.cargo[i];
+      if (orig?.id && (ep.commodity !== (orig.commodity || '') || Number(ep.scu) !== Number(orig.scu || 0)))
+        onUpdateCargoItem?.(orig.id, { commodity: ep.commodity, scu: Number(ep.scu) || 0 });
+    });
+    setContractEditId(null);
+  };
+  const renderLocationOptions = () => {
+    const grouped = {};
+    allLocations.forEach(l => {
+      const key = `${l.system} → ${l.body}`;
+      if (!grouped[key]) grouped[key] = [];
+      grouped[key].push(l);
+    });
+    return Object.entries(grouped).sort().map(([groupKey, locs]) => (
+      <optgroup key={groupKey} label={groupKey}>
+        {locs.map(l => <option key={l.name} value={l.name}>{l.name}</option>)}
+      </optgroup>
+    ));
+  };
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', minHeight: '100%' }}>
@@ -554,8 +596,17 @@ export default function SessionView({
                             {m.callsign}{m.id === myProfileId ? ' (you)' : ''}{m.id === session.createdBy ? ' ★' : ''}
                           </span>
                           {m.id !== myProfileId && (
-                            <button onClick={() => onRemovePlayer?.(session.id, m.id)} title={`Remove ${m.callsign}`}
-                              style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#c41e3a', fontSize: 14, fontWeight: 700, lineHeight: 1, padding: '0 2px' }}>×</button>
+                            confirmRemovePlayerId === m.id ? (
+                              <div style={{ display: 'flex', gap: 4, alignItems: 'center' }}>
+                                <button onClick={() => { onRemovePlayer?.(session.id, m.id); setConfirmRemovePlayerId(null); }}
+                                  style={{ background: '#c41e3a', border: 'none', color: '#fff', cursor: 'pointer', padding: '2px 7px', fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 10, textTransform: 'uppercase' }}>Kick</button>
+                                <button onClick={() => setConfirmRemovePlayerId(null)}
+                                  style={{ background: 'none', border: '1px solid var(--border)', color: 'var(--muted)', cursor: 'pointer', padding: '2px 6px', fontSize: 10 }}>✗</button>
+                              </div>
+                            ) : (
+                              <button onClick={() => setConfirmRemovePlayerId(m.id)} title={`Remove ${m.callsign}`}
+                                style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#c41e3a', fontSize: 14, fontWeight: 700, lineHeight: 1, padding: '0 2px' }}>×</button>
+                            )
                           )}
                         </div>
                       ))}
@@ -937,22 +988,117 @@ export default function SessionView({
                 </div>
               )}
 
+              {/* ── Contract edit panel ── */}
+              {contractEditId === contract.id && (
+                <div style={{ border: '2px solid #0066cc', background: 'var(--bg-2)', padding: '12px 14px', marginBottom: 14 }}>
+                  <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: '#0066cc', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: 10, fontWeight: 700 }}>Edit Contract</div>
+
+                  {editPanel.pickups.length > 0 && (
+                    <div style={{ marginBottom: 10 }}>
+                      <div style={sectionLbl}>Pickup Locations</div>
+                      {editPanel.pickups.map((ep, i) => (
+                        <div key={ep.id || i} style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 6 }}>
+                          <span style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--muted)', width: 14, flexShrink: 0, textAlign: 'center' }}>↑</span>
+                          <select
+                            value={ep.name}
+                            onChange={e => setEditPanel(p => ({ ...p, pickups: p.pickups.map((x, j) => j === i ? { ...x, name: e.target.value } : x) }))}
+                            style={{ flex: 1, padding: '4px 6px', border: '2px solid var(--border)', background: 'var(--bg-1)', color: 'var(--text)', fontFamily: 'var(--font-sans)', fontSize: 12, outline: 'none' }}
+                          >
+                            <option value="">— pick location —</option>
+                            {renderLocationOptions()}
+                          </select>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
+                  {editPanel.dropoffs.length > 0 && (
+                    <div style={{ marginBottom: 10 }}>
+                      <div style={sectionLbl}>Dropoff Locations</div>
+                      {editPanel.dropoffs.map((ep, i) => (
+                        <div key={ep.id || i} style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 6 }}>
+                          <span style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--muted)', width: 14, flexShrink: 0, textAlign: 'center' }}>↓</span>
+                          <select
+                            value={ep.name}
+                            onChange={e => setEditPanel(p => ({ ...p, dropoffs: p.dropoffs.map((x, j) => j === i ? { ...x, name: e.target.value } : x) }))}
+                            style={{ flex: 1, padding: '4px 6px', border: '2px solid var(--border)', background: 'var(--bg-1)', color: 'var(--text)', fontFamily: 'var(--font-sans)', fontSize: 12, outline: 'none' }}
+                          >
+                            <option value="">— pick location —</option>
+                            {renderLocationOptions()}
+                          </select>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
+                  {editPanel.cargo.length > 0 && (
+                    <div style={{ marginBottom: 10 }}>
+                      <div style={sectionLbl}>Cargo</div>
+                      {editPanel.cargo.map((ep, i) => (
+                        <div key={ep.id || i} style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 6 }}>
+                          <select
+                            value={ep.commodity}
+                            onChange={e => setEditPanel(p => ({ ...p, cargo: p.cargo.map((x, j) => j === i ? { ...x, commodity: e.target.value } : x) }))}
+                            style={{ flex: 1, padding: '4px 6px', border: '2px solid var(--border)', background: 'var(--bg-1)', color: 'var(--text)', fontFamily: 'var(--font-display)', fontSize: 11, fontWeight: 700, outline: 'none' }}
+                          >
+                            <option value="">— commodity —</option>
+                            {allCommodities.map(n => <option key={n} value={n}>{n}</option>)}
+                          </select>
+                          <input
+                            type="number" min="1" step="1"
+                            value={ep.scu}
+                            onChange={e => setEditPanel(p => ({ ...p, cargo: p.cargo.map((x, j) => j === i ? { ...x, scu: e.target.value } : x) }))}
+                            style={{ width: 70, padding: '4px 6px', border: '2px solid var(--border)', background: 'var(--bg-1)', color: 'var(--text)', fontFamily: 'var(--font-mono)', fontSize: 11, outline: 'none' }}
+                          />
+                          <span style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--muted)' }}>SCU</span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
+                  <div style={{ display: 'flex', gap: 8 }}>
+                    <button onClick={() => saveContractEdit(contract)}
+                      style={{ padding: '6px 16px', background: '#2d8659', border: '2px solid #2d8659', color: '#fff', cursor: 'pointer', fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 11, textTransform: 'uppercase' }}>
+                      Save
+                    </button>
+                    <button onClick={() => setContractEditId(null)}
+                      style={{ padding: '6px 14px', background: 'transparent', border: '2px solid var(--border)', color: 'var(--muted)', cursor: 'pointer', fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 11 }}>
+                      Cancel
+                    </button>
+                  </div>
+                </div>
+              )}
+
               {/* ── Footer: remove controls (members only) + creator attribution (always) ── */}
               {(isSessionMember || contract.creatorCallsign) && (
                 <div style={{ borderTop: '1px solid var(--bg-3)', paddingTop: 12, display: 'flex', alignItems: 'center', gap: 10 }}>
-                  {/* Left: remove / vote controls */}
-                  <div>
+                  {/* Left: remove / vote controls + edit */}
+                  <div style={{ display: 'flex', gap: 8, alignItems: 'flex-start', flexWrap: 'wrap' }}>
                     {isSessionMember && (isMine ? (
-                      <button
-                        onClick={() => onDeleteContract(session.id, contract.id)}
-                        style={{
-                          fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 11,
-                          textTransform: 'uppercase', letterSpacing: '0.06em',
-                          padding: '6px 14px', border: '2px solid #c41e3a', background: '#c41e3a', color: '#fff', cursor: 'pointer',
-                        }}
-                        onMouseEnter={e => { e.currentTarget.style.background = '#000'; e.currentTarget.style.borderColor = '#000'; }}
-                        onMouseLeave={e => { e.currentTarget.style.background = '#c41e3a'; e.currentTarget.style.borderColor = '#c41e3a'; }}
-                      >× Remove</button>
+                      confirmDeleteContractId === contract.id ? (
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
+                          <span style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: 'var(--muted)' }}>Remove contract?</span>
+                          <button onClick={() => { onDeleteContract(session.id, contract.id); setConfirmDeleteContractId(null); }}
+                            style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.06em', padding: '6px 12px', border: '2px solid #c41e3a', background: '#c41e3a', color: '#fff', cursor: 'pointer' }}>
+                            Confirm
+                          </button>
+                          <button onClick={() => setConfirmDeleteContractId(null)}
+                            style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 11, padding: '6px 12px', border: '2px solid var(--border)', background: 'transparent', color: 'var(--muted)', cursor: 'pointer' }}>
+                            Cancel
+                          </button>
+                        </div>
+                      ) : (
+                        <button
+                          onClick={() => setConfirmDeleteContractId(contract.id)}
+                          style={{
+                            fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 11,
+                            textTransform: 'uppercase', letterSpacing: '0.06em',
+                            padding: '6px 14px', border: '2px solid #c41e3a', background: '#c41e3a', color: '#fff', cursor: 'pointer',
+                          }}
+                          onMouseEnter={e => { e.currentTarget.style.background = '#000'; e.currentTarget.style.borderColor = '#000'; }}
+                          onMouseLeave={e => { e.currentTarget.style.background = '#c41e3a'; e.currentTarget.style.borderColor = '#c41e3a'; }}
+                        >× Remove</button>
+                      )
                     ) : (
                       <div style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
                         <button
@@ -970,6 +1116,19 @@ export default function SessionView({
                         </div>
                       </div>
                     ))}
+                    {isSessionMember && (isMine || isSessionCreator) && confirmDeleteContractId !== contract.id && (
+                      <button
+                        onClick={() => contractEditId === contract.id ? setContractEditId(null) : openContractEdit(contract)}
+                        style={{
+                          fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 11,
+                          textTransform: 'uppercase', letterSpacing: '0.06em',
+                          padding: '6px 14px', cursor: 'pointer',
+                          border: `2px solid ${contractEditId === contract.id ? '#0066cc' : '#555'}`,
+                          background: contractEditId === contract.id ? '#0066cc' : 'transparent',
+                          color: contractEditId === contract.id ? '#fff' : '#888',
+                        }}
+                      >{contractEditId === contract.id ? '✎ Close' : '✎ Edit'}</button>
+                    )}
                   </div>
 
                   {/* Right: creator attribution */}

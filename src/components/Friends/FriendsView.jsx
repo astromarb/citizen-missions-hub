@@ -24,6 +24,7 @@ export default function FriendsView({ friends, pending, sent, sessionInvites, se
   const [query, setQuery] = useState('');
   const [results, setResults] = useState([]);
   const [searching, setSearching] = useState(false);
+  const [confirmRemoveId, setConfirmRemoveId] = useState(null);
 
   const friendIds = new Set(friends.map(f => f.id));
   const sentIds = new Set(sent.map(f => f.id));
@@ -167,10 +168,16 @@ export default function FriendsView({ friends, pending, sent, sessionInvites, se
           <div style={sectionLabel}>Sent Requests ({sent.length})</div>
           <div style={{ border: '2px solid #000', background: '#fff', padding: '0 16px' }}>
             {sent.map(p => (
-              <ProfileRow key={p.friendshipId} profile={p} actions={[
-                <span key="s" style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--muted)' }}>Pending</span>,
-                actionBtn('Cancel', () => remove(p.friendshipId), 'danger'),
-              ]} />
+              <ProfileRow key={p.friendshipId} profile={p} actions={
+                confirmRemoveId === p.friendshipId ? [
+                  <span key="lbl" style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: 'var(--muted)', whiteSpace: 'nowrap' }}>Cancel request?</span>,
+                  <button key="yes" onClick={() => { remove(p.friendshipId); setConfirmRemoveId(null); }} style={{ border: '2px solid #c41e3a', background: '#c41e3a', color: '#fff', padding: '5px 12px', cursor: 'pointer', fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.04em' }}>Yes</button>,
+                  <button key="no" onClick={() => setConfirmRemoveId(null)} style={{ border: '2px solid #ccc', background: '#f5f5f5', color: '#999', padding: '5px 12px', cursor: 'pointer', fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.04em' }}>No</button>,
+                ] : [
+                  <span key="s" style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--muted)' }}>Pending</span>,
+                  actionBtn('Cancel', () => setConfirmRemoveId(p.friendshipId), 'danger'),
+                ]
+              } />
             ))}
           </div>
         </div>
@@ -187,10 +194,16 @@ export default function FriendsView({ friends, pending, sent, sessionInvites, se
         ) : (
           <div style={{ border: '2px solid #000', background: '#fff', padding: '0 16px' }}>
             {friends.map(f => (
-              <ProfileRow key={f.friendshipId} profile={f} actions={[
-                onViewProfile && actionBtn('View Profile', () => onViewProfile(f), 'default'),
-                actionBtn('Remove', () => remove(f.friendshipId), 'danger'),
-              ].filter(Boolean)} />
+              <ProfileRow key={f.friendshipId} profile={f} actions={
+                confirmRemoveId === f.friendshipId ? [
+                  <span key="lbl" style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: 'var(--muted)', whiteSpace: 'nowrap' }}>Remove friend?</span>,
+                  <button key="confirm" onClick={() => { remove(f.friendshipId); setConfirmRemoveId(null); }} style={{ border: '2px solid #c41e3a', background: '#c41e3a', color: '#fff', padding: '5px 12px', cursor: 'pointer', fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.04em' }}>Confirm</button>,
+                  <button key="cancel" onClick={() => setConfirmRemoveId(null)} style={{ border: '2px solid #ccc', background: '#f5f5f5', color: '#999', padding: '5px 12px', cursor: 'pointer', fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.04em' }}>Cancel</button>,
+                ] : [
+                  onViewProfile && actionBtn('View Profile', () => onViewProfile(f), 'default'),
+                  actionBtn('Remove', () => setConfirmRemoveId(f.friendshipId), 'danger'),
+                ].filter(Boolean)
+              } />
             ))}
           </div>
         )}
