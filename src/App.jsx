@@ -212,7 +212,9 @@ function AppInner() {
   const [profiles, setProfiles] = useState([]);
 
   // ── Nav ──
-  const [activeTab, setActiveTab] = useState('missions');
+  const [activeTab, setActiveTab] = useState(() => {
+    try { return localStorage.getItem('cmh-active-tab') || 'missions'; } catch { return 'missions'; }
+  });
   const [view, setView] = useState('calendar');
   const [viewDate, setViewDate] = useState(new Date(TODAY.getFullYear(), TODAY.getMonth(), 1));
   const [selectedSessionId, setSelectedSessionId] = useState(null);
@@ -441,6 +443,7 @@ function AppInner() {
   const switchTab = (tab) => {
     SFX.boop();
     setActiveTab(tab);
+    try { localStorage.setItem('cmh-active-tab', tab); } catch {}
     if (tab !== 'calendar') setView('calendar');
     if (tab !== 'friends') setViewingFriend(null);
   };

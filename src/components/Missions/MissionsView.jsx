@@ -1,6 +1,19 @@
 import { useState } from 'react';
 import { useIsMobile } from '../../hooks/useIsMobile.js';
 
+// M  T  W  Th  F  Sa  Su  (JS getDay: 0=Sun)
+const DAY_COLORS = [
+  { bg: '#e8db7d', text: '#000' }, // Sunday
+  { bg: '#19535f', text: '#fff' }, // Monday
+  { bg: '#0b7a75', text: '#fff' }, // Tuesday
+  { bg: '#d7c9aa', text: '#000' }, // Wednesday
+  { bg: '#7b2d26', text: '#fff' }, // Thursday
+  { bg: '#f0f3f5', text: '#000' }, // Friday
+  { bg: '#c0d684', text: '#000' }, // Saturday
+];
+
+const FOREST_GREEN = '#2e7d32';
+
 function formatDuration(ms) {
   if (!ms || ms <= 0) return '—';
   const s = Math.floor(ms / 1000);
@@ -24,123 +37,145 @@ function SessionDebrief({ session, myProfileId, onOpenSession }) {
   const memberCount = session.members?.length || 1;
   const payoutPerPilot = memberCount > 0 ? Math.floor(totalPayout / memberCount) : 0;
   const durationMs = sessionDurationMs(session);
-  const allContracts = session.contracts;
-
-  const pilotStats = {};
-  session.members?.forEach(m => {
-    pilotStats[m.id] = { pickupDone: 0, pickupTotal: 0, dropoffDone: 0, dropoffTotal: 0 };
-  });
-  allContracts.forEach(c => {
-    c.pickups.forEach(wp => {
-      session.members?.forEach(m => {
-        if (!pilotStats[m.id]) return;
-        pilotStats[m.id].pickupTotal++;
-        const comp = wp.completions?.find(x => x.profileId === m.id);
-        if (comp?.status === 'done' || comp?.status === 'picked_up') pilotStats[m.id].pickupDone++;
-      });
-    });
-    c.dropoffs.forEach(wp => {
-      session.members?.forEach(m => {
-        if (!pilotStats[m.id]) return;
-        pilotStats[m.id].dropoffTotal++;
-        const comp = wp.completions?.find(x => x.profileId === m.id);
-        if (comp?.status === 'done') pilotStats[m.id].dropoffDone++;
-      });
-    });
-  });
 
   const d = new Date(session.date + 'T12:00:00');
+  const { bg: headerBg, text: headerText } = DAY_COLORS[d.getDay()];
+  const isDark = headerText === '#fff';
+  const mutedColor = isDark ? 'rgba(255,255,255,0.65)' : 'rgba(0,0,0,0.55)';
+
   const dateLabel = d.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' });
+
+  const statusText = session.endedAt ? 'COMPLETE' : session.startedAt ? 'IN PROGRESS' : null;
 
   return (
     <div style={{ border: '2px solid var(--border)', background: 'var(--bg-1)', marginBottom: 20 }}>
 
-      {/* Session header */}
-      <div style={{ background: '#1a1a1a', padding: '14px 20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 10 }}>
+      {/* ── Day-colored header ── */}
+      <div style={{
+        background: headerBg, padding: '14px 20px',
+        display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 10,
+      }}>
         <div>
-          <div style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 16, color: '#fff', textTransform: 'uppercase', letterSpacing: '-0.01em' }}>{dateLabel}</div>
-          <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'rgba(255,255,255,0.4)', marginTop: 3, letterSpacing: '0.06em' }}>
+          <div style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 16, color: headerText, textTransform: 'uppercase', letterSpacing: '-0.01em' }}>
+            {dateLabel}
+          </div>
+          <div style={{ fontFamily: 'var(--font-mono)', fontSize: 12, color: mutedColor, marginTop: 3, letterSpacing: '0.06em' }}>
             {session.contracts.length} contract{session.contracts.length !== 1 ? 's' : ''}
-            {durationMs ? ` · ⏱ ${formatDuration(durationMs)}` : ''}
-            {session.endedAt ? ' · COMPLETE' : session.startedAt ? ' · IN PROGRESS' : ''}
           </div>
         </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 20 }}>
+
+        {/* Right: timer + status (2-3× larger) + OPEN */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+            {durationMs ? (
+              <span style={{ fontFamily: 'var(--font-mono)', fontWeight: 800, fontSize: 22, color: mutedColor, letterSpacing: '0.02em' }}>
+                ⏱ {formatDuration(durationMs)}
+              </span>
+            ) : null}
+            {statusText && (
+              <span style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 22, color: headerText, letterSpacing: '0.04em' }}>
+                {statusText}
+              </span>
+            )}
+          </div>
           {onOpenSession && (
-            <button onClick={() => onOpenSession(session.id)}
+            <button
+              onClick={() => onOpenSession(session.id)}
               style={{
                 padding: '7px 16px', cursor: 'pointer',
                 fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 11,
                 textTransform: 'uppercase', letterSpacing: '0.06em',
-                border: '2px solid rgba(255,255,255,0.3)', background: 'transparent', color: 'rgba(255,255,255,0.7)',
+                border: `2px solid ${isDark ? 'rgba(255,255,255,0.3)' : 'rgba(0,0,0,0.3)'}`,
+                background: 'transparent',
+                color: isDark ? 'rgba(255,255,255,0.7)' : 'rgba(0,0,0,0.7)',
               }}
               onMouseEnter={e => { e.currentTarget.style.background = '#c41e3a'; e.currentTarget.style.borderColor = '#c41e3a'; e.currentTarget.style.color = '#fff'; }}
-              onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.borderColor = 'rgba(255,255,255,0.3)'; e.currentTarget.style.color = 'rgba(255,255,255,0.7)'; }}
+              onMouseLeave={e => {
+                e.currentTarget.style.background = 'transparent';
+                e.currentTarget.style.borderColor = isDark ? 'rgba(255,255,255,0.3)' : 'rgba(0,0,0,0.3)';
+                e.currentTarget.style.color = isDark ? 'rgba(255,255,255,0.7)' : 'rgba(0,0,0,0.7)';
+              }}
             >Open →</button>
           )}
-          {[['TOTAL SCU', totalSCU.toLocaleString()], ['PAYOUT', `${totalPayout.toLocaleString()} aUEC`], ['PER PILOT', `${payoutPerPilot.toLocaleString()} aUEC`]].map(([l, v]) => (
-            <div key={l} style={{ textAlign: 'center' }}>
-              <div style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 16, color: '#c41e3a', lineHeight: 1 }}>{v}</div>
-              <div style={{ fontFamily: 'var(--font-mono)', fontSize: 8, color: 'rgba(255,255,255,0.3)', letterSpacing: '0.1em', textTransform: 'uppercase', marginTop: 3 }}>{l}</div>
-            </div>
-          ))}
         </div>
       </div>
 
-      {/* Crew performance */}
+      {/* ── Stats row (white area) ── */}
+      <div style={{ padding: '14px 20px', borderBottom: '1px solid var(--bg-3)', display: 'flex', alignItems: 'center', gap: 32, flexWrap: 'wrap' }}>
+        <div>
+          <div style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 18, color: '#c41e3a', lineHeight: 1 }}>
+            {totalSCU.toLocaleString()}
+          </div>
+          <div style={{ fontFamily: 'var(--font-mono)', fontSize: 8, color: '#c41e3a', letterSpacing: '0.1em', textTransform: 'uppercase', marginTop: 3 }}>
+            TOTAL SCU
+          </div>
+        </div>
+        <div>
+          <div style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 18, color: FOREST_GREEN, lineHeight: 1 }}>
+            {totalPayout.toLocaleString()} aUEC
+          </div>
+          <div style={{ fontFamily: 'var(--font-mono)', fontSize: 8, color: FOREST_GREEN, letterSpacing: '0.1em', textTransform: 'uppercase', marginTop: 3 }}>
+            PAYOUT
+          </div>
+        </div>
+        <div>
+          <div style={{
+            fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 18, color: FOREST_GREEN, lineHeight: 1,
+            textDecoration: 'underline', textDecorationColor: '#000', textUnderlineOffset: '3px',
+          }}>
+            {payoutPerPilot.toLocaleString()} aUEC
+          </div>
+          <div style={{ fontFamily: 'var(--font-mono)', fontSize: 8, color: FOREST_GREEN, letterSpacing: '0.1em', textTransform: 'uppercase', marginTop: 3 }}>
+            PER PILOT
+          </div>
+        </div>
+      </div>
+
+      {/* ── Crew performance (no pickups/dropoffs) ── */}
       {session.members?.length > 0 && (
         <div style={{ padding: '16px 20px', borderBottom: '1px solid var(--bg-3)' }}>
-          <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, letterSpacing: '0.12em', textTransform: 'uppercase', color: 'var(--muted)', marginBottom: 12 }}>Crew Performance</div>
-          <div style={{ overflowX: 'auto' }}>
-            <table style={{ width: '100%', borderCollapse: 'collapse', fontFamily: 'var(--font-display)', fontSize: 12 }}>
-              <thead>
-                <tr style={{ borderBottom: '2px solid var(--border)' }}>
-                  {['Pilot', 'Pickups', 'Dropoffs', 'Payout Share'].map(h => (
-                    <th key={h} style={{ padding: '6px 10px', textAlign: 'left', fontWeight: 700, fontSize: 10, letterSpacing: '0.08em', textTransform: 'uppercase', color: 'var(--muted)' }}>{h}</th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
-                {session.members.map(m => {
-                  const stats = pilotStats[m.id] || {};
-                  const isMe = m.id === myProfileId;
-                  return (
-                    <tr key={m.id} style={{ borderBottom: '1px solid var(--bg-2)', background: isMe ? 'rgba(196,30,58,0.03)' : 'transparent' }}>
-                      <td style={{ padding: '10px 10px' }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                          <div style={{ width: 20, height: 20, borderRadius: '50%', background: m.color || '#8b949e', flexShrink: 0, border: '2px solid var(--border)' }} />
-                          <span style={{ fontWeight: isMe ? 800 : 700, color: isMe ? '#c41e3a' : 'var(--text)', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
-                            {m.callsign}{isMe ? ' (you)' : ''}
-                          </span>
-                        </div>
-                      </td>
-                      <td style={{ padding: '10px', fontFamily: 'var(--font-mono)', fontSize: 12 }}>
-                        <span style={{ color: stats.pickupDone === stats.pickupTotal && stats.pickupTotal > 0 ? '#2d8659' : 'var(--text)', fontWeight: 700 }}>
-                          {stats.pickupDone} / {stats.pickupTotal}
-                        </span>
-                      </td>
-                      <td style={{ padding: '10px', fontFamily: 'var(--font-mono)', fontSize: 12 }}>
-                        <span style={{ color: stats.dropoffDone === stats.dropoffTotal && stats.dropoffTotal > 0 ? '#2d8659' : 'var(--text)', fontWeight: 700 }}>
-                          {stats.dropoffDone} / {stats.dropoffTotal}
-                        </span>
-                      </td>
-                      <td style={{ padding: '10px', fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 13, color: '#2d8659' }}>
-                        {payoutPerPilot > 0 ? `${payoutPerPilot.toLocaleString()} aUEC` : '—'}
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
+          <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, letterSpacing: '0.12em', textTransform: 'uppercase', color: 'var(--muted)', marginBottom: 12 }}>
+            Crew Performance
           </div>
+          <table style={{ width: '100%', borderCollapse: 'collapse', fontFamily: 'var(--font-display)', fontSize: 12 }}>
+            <thead>
+              <tr style={{ borderBottom: '2px solid var(--border)' }}>
+                {['Pilot', 'Payout Share'].map(h => (
+                  <th key={h} style={{ padding: '6px 10px', textAlign: 'left', fontWeight: 700, fontSize: 10, letterSpacing: '0.08em', textTransform: 'uppercase', color: 'var(--muted)' }}>{h}</th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {session.members.map(m => {
+                const isMe = m.id === myProfileId;
+                return (
+                  <tr key={m.id} style={{ borderBottom: '1px solid var(--bg-2)', background: isMe ? 'rgba(196,30,58,0.03)' : 'transparent' }}>
+                    <td style={{ padding: '10px' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                        <div style={{ width: 20, height: 20, borderRadius: '50%', background: m.color || '#8b949e', flexShrink: 0, border: '2px solid var(--border)' }} />
+                        <span style={{ fontWeight: isMe ? 800 : 700, color: isMe ? '#c41e3a' : 'var(--text)', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+                          {m.callsign}{isMe ? ' (you)' : ''}
+                        </span>
+                      </div>
+                    </td>
+                    <td style={{ padding: '10px', fontWeight: 700, fontSize: 13, color: FOREST_GREEN }}>
+                      {payoutPerPilot > 0 ? `${payoutPerPilot.toLocaleString()} aUEC` : '—'}
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
         </div>
       )}
 
-      {/* Contract breakdown */}
-      {allContracts.length > 0 && (
+      {/* ── Contract breakdown ── */}
+      {session.contracts.length > 0 && (
         <div style={{ padding: '16px 20px' }}>
-          <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, letterSpacing: '0.12em', textTransform: 'uppercase', color: 'var(--muted)', marginBottom: 12 }}>Contract Breakdown</div>
-          {allContracts.map(c => {
+          <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, letterSpacing: '0.12em', textTransform: 'uppercase', color: 'var(--muted)', marginBottom: 12 }}>
+            Contract Breakdown
+          </div>
+          {session.contracts.map(c => {
             const cSCU = c.cargo.reduce((t, ci) => t + Number(ci.scu || 0), 0);
             const isStellar = c.type === 'Hauling - Stellar';
             return (
@@ -171,7 +206,7 @@ function SessionDebrief({ session, myProfileId, onOpenSession }) {
         </div>
       )}
 
-      {allContracts.length === 0 && (
+      {session.contracts.length === 0 && (
         <div style={{ padding: '24px 20px', textAlign: 'center', color: 'var(--muted)', fontFamily: 'var(--font-mono)', fontSize: 12 }}>No contracts logged.</div>
       )}
     </div>
@@ -184,7 +219,6 @@ export default function MissionsView({ sessions, myProfileId, profile, avatarUrl
     .filter(s => s.members?.some(m => m.id === myProfileId))
     .sort((a, b) => new Date(b.date) - new Date(a.date));
 
-  // Lifetime stats for the profile card
   const lifetimeSCU = mySessions.reduce((t, s) =>
     t + s.contracts.reduce((ct, c) => ct + c.cargo.reduce((cg, ci) => cg + Number(ci.scu || 0), 0), 0), 0);
   const lifetimePayout = mySessions.reduce((s, sess) => {
@@ -204,13 +238,13 @@ export default function MissionsView({ sessions, myProfileId, profile, avatarUrl
     );
   }
 
-  const callsign = profile?.callsign || 'Pilot';
-  const color = profile?.color || '#8b949e';
+  const callsign   = profile?.callsign    || 'Pilot';
+  const color      = profile?.color       || '#8b949e';
   const homeRegion = profile?.home_region || null;
 
   const statsRows = [
-    ['Sessions', mySessions.length.toLocaleString()],
-    ['Contracts', myContracts.toLocaleString()],
+    ['Sessions',   mySessions.length.toLocaleString()],
+    ['Contracts',  myContracts.toLocaleString()],
     ['SCU Hauled', lifetimeSCU.toLocaleString()],
     ['aUEC Earned', lifetimePayout > 0 ? lifetimePayout.toLocaleString() : '—'],
     ...(profile?.auec_balance > 0 ? [['Wallet', `${Number(profile.auec_balance).toLocaleString()} aUEC`]] : []),
@@ -224,7 +258,6 @@ export default function MissionsView({ sessions, myProfileId, profile, avatarUrl
         <div style={{ border: '2px solid var(--border)', background: 'var(--bg-1)', marginBottom: isMobile ? 0 : 16 }}>
 
           {isMobile ? (
-            /* Mobile: horizontal header — avatar left, name+region right */
             <div style={{ background: '#1a1a1a', padding: '14px 16px', display: 'flex', alignItems: 'center', gap: 14 }}>
               {avatarUrl ? (
                 <img src={avatarUrl} alt={callsign}
@@ -241,7 +274,6 @@ export default function MissionsView({ sessions, myProfileId, profile, avatarUrl
               <div style={{ width: 4, alignSelf: 'stretch', background: color, flexShrink: 0 }} />
             </div>
           ) : (
-            /* Desktop: vertical header */
             <div style={{ background: '#1a1a1a', padding: '20px 16px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 12 }}>
               {avatarUrl ? (
                 <img src={avatarUrl} alt={callsign}
@@ -259,11 +291,9 @@ export default function MissionsView({ sessions, myProfileId, profile, avatarUrl
             </div>
           )}
 
-          {/* Career stats */}
           <div style={{ padding: isMobile ? '10px 14px' : '14px 16px' }}>
             <div style={{ fontFamily: 'var(--font-mono)', fontSize: 8, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'var(--muted)', marginBottom: 8 }}>Career Stats</div>
             {isMobile ? (
-              /* Mobile: 2×2 grid */
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px 16px' }}>
                 {statsRows.map(([label, val]) => (
                   <div key={label}>
@@ -273,7 +303,6 @@ export default function MissionsView({ sessions, myProfileId, profile, avatarUrl
                 ))}
               </div>
             ) : (
-              /* Desktop: vertical list */
               statsRows.map(([label, val]) => (
                 <div key={label} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', padding: '7px 0', borderBottom: '1px solid var(--bg-2)' }}>
                   <span style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--muted)', letterSpacing: '0.04em' }}>{label}</span>
@@ -288,8 +317,8 @@ export default function MissionsView({ sessions, myProfileId, profile, avatarUrl
       {/* ── Sessions panel ── */}
       <div style={{ flex: 1, minWidth: 0 }}>
         <div style={{ display: 'flex', alignItems: 'baseline', gap: 12, marginBottom: 20 }}>
-          <div style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 20, letterSpacing: '-0.02em' }}>Mission Debrief</div>
-          <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--muted)', letterSpacing: '0.08em' }}>
+          <div style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 20, letterSpacing: '-0.02em' }}>Mission Log</div>
+          <div style={{ fontFamily: 'var(--font-mono)', fontSize: 13, color: 'var(--muted)', letterSpacing: '0.08em' }}>
             {mySessions.length} session{mySessions.length !== 1 ? 's' : ''}
           </div>
         </div>
