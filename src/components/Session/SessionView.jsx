@@ -90,26 +90,41 @@ function SessionTimer({ session, onStart, onPause, onResume, onEnd }) {
   );
 }
 
-function PlayerSeat({ member }) {
+function PlayerSeat({ member, pending = false }) {
   const color = member?.color || '#8b949e';
   const initial = (member?.callsign || '?')[0].toUpperCase();
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8 }}>
-      {member?.avatar_url ? (
-        <img src={member.avatar_url} alt={member.callsign}
-          style={{ width: 50, height: 50, borderRadius: '50%', border: `2px solid ${color}`, objectFit: 'cover', flexShrink: 0 }} />
-      ) : (
-        <div style={{
-          width: 50, height: 50, borderRadius: '50%',
-          background: color, border: '2px solid var(--border)',
-          display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
-        }}>
-          <span style={{ color: '#fff', fontWeight: 700, fontSize: 20, fontFamily: 'var(--font-display)' }}>{initial}</span>
-        </div>
-      )}
+    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8, opacity: pending ? 0.42 : 1 }}>
+      <div style={{ position: 'relative', flexShrink: 0 }}>
+        {member?.avatar_url ? (
+          <img src={member.avatar_url} alt={member.callsign}
+            style={{ width: 50, height: 50, borderRadius: '50%', border: `2px solid ${pending ? '#888' : color}`, objectFit: 'cover', display: 'block' }} />
+        ) : (
+          <div style={{
+            width: 50, height: 50, borderRadius: '50%',
+            background: pending ? '#666' : color,
+            border: `2px solid ${pending ? '#888' : 'var(--border)'}`,
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+          }}>
+            <span style={{ color: '#fff', fontWeight: 700, fontSize: 20, fontFamily: 'var(--font-display)' }}>
+              {pending ? '?' : initial}
+            </span>
+          </div>
+        )}
+        {pending && (
+          <div style={{
+            position: 'absolute', inset: 0, borderRadius: '50%',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            fontSize: 22, fontWeight: 900, color: 'rgba(255,255,255,0.9)',
+            textShadow: '0 1px 4px rgba(0,0,0,0.6)',
+            pointerEvents: 'none',
+          }}>?</div>
+        )}
+      </div>
       <div style={{
         fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 11,
-        color: 'var(--text)', textTransform: 'uppercase', letterSpacing: '0.08em', textAlign: 'center',
+        color: pending ? 'var(--muted)' : 'var(--text)',
+        textTransform: 'uppercase', letterSpacing: '0.08em', textAlign: 'center',
       }}>{member?.callsign}</div>
     </div>
   );
@@ -371,8 +386,10 @@ export default function SessionView({
   const isSessionCreator = !!myProfileId && myProfileId === session.createdBy;
   const creator          = members.find(m => m.id === session.createdBy);
 
+  const pendingInvites    = session.pendingInvites || [];
   const sessionMemberIds  = new Set(members.map(m => m.id));
-  const invitableFriends  = (friends || []).filter(f => !sessionMemberIds.has(f.id));
+  const pendingInviteIds  = new Set(pendingInvites.map(p => p.id));
+  const invitableFriends  = (friends || []).filter(f => !sessionMemberIds.has(f.id) && !pendingInviteIds.has(f.id));
 
   const allLocations = systemsMap
     ? Object.entries(systemsMap).flatMap(([system, locs]) =>
@@ -532,9 +549,10 @@ export default function SessionView({
             )}
           </div>
 
-          {/* All pilots flat */}
+          {/* Confirmed pilots + pending invitees */}
           <div style={{ display: 'flex', justifyContent: 'center', gap: 32, flexWrap: 'wrap', marginBottom: 16 }}>
             {members.map(m => <PlayerSeat key={m.id} member={m} />)}
+            {pendingInvites.map(p => <PlayerSeat key={p.id} member={p} pending={true} />)}
           </div>
 
           {/* Invite */}

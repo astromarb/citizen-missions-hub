@@ -13,6 +13,7 @@ const xf = (s) => ({
   endedAt: s.ended_at || null,
   players: (s.session_players || []).map(sp => sp.profiles?.callsign).filter(Boolean),
   members: (s.session_players || []).map(sp => sp.profiles).filter(Boolean),
+  pendingInvites: (s.session_invites || []).filter(si => si.status === 'pending').map(si => si.invitee).filter(Boolean),
   contracts: (s.contracts || []).map(c => ({
     id: c.id,
     type: c.type,
@@ -56,6 +57,9 @@ export function useSessions(enabled = true, userId) {
       .select(`
         *,
         session_players ( profiles ( id, callsign, color, avatar_url, home_region ) ),
+        session_invites ( id, invitee_id, status,
+          invitee:profiles!invitee_id ( id, callsign, color, avatar_url )
+        ),
         contracts (
           *,
           creator:profiles!creator_id ( callsign, color ),
@@ -90,6 +94,7 @@ export function useSessions(enabled = true, userId) {
       .on('postgres_changes', { event: '*', schema: 'public', table: 'cargo_items' },        load)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'waypoint_completions'},load)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'contract_removal_votes'}, load)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'session_invites' },       load)
       .subscribe();
 
     return () => {
@@ -106,21 +111,19 @@ export function useSessions(enabled = true, userId) {
       .single();
     if (error) { console.error('createSession:', error); return null; }
 
-    // Build the full player list: creator first, then selected friends
-    const playerRows = [];
-    if (userId) playerRows.push({ session_id: sess.id, profile_id: userId });
+    // Add the creator directly; all other selected crew receive pending invites
+    if (userId) await supabase.from('session_players').insert({ session_id: sess.id, profile_id: userId });
 
     if (players.length) {
       const { data: profs } = await supabase
         .from('profiles').select('id, callsign').in('callsign', players);
       if (profs?.length) {
-        for (const p of profs) {
-          if (p.id !== userId) playerRows.push({ session_id: sess.id, profile_id: p.id });
-        }
+        const inviteRows = profs
+          .filter(p => p.id !== userId)
+          .map(p => ({ session_id: sess.id, inviter_id: userId, invitee_id: p.id }));
+        if (inviteRows.length) await supabase.from('session_invites').insert(inviteRows);
       }
     }
-
-    if (playerRows.length) await supabase.from('session_players').insert(playerRows);
 
     // Load fresh so members (including creator's profile) are populated
     await load();
