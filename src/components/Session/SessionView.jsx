@@ -410,7 +410,7 @@ export default function SessionView({
 
       {/* ── Grey content area ── */}
       <div style={{
-        background: '#888',
+        background: '#777',
         flex: 1,
         padding: 24,
         display: 'flex',
