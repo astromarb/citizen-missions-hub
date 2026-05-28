@@ -268,8 +268,8 @@ export default function FriendProfileView({ friend, sessions, myProfileId, onBac
                 <div style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 15, color: '#fff', textTransform: 'uppercase', letterSpacing: '0.04em', lineHeight: 1.1 }}>{callsign}</div>
               </div>
               <div style={{ display: 'flex', gap: 4, flexShrink: 0 }}>
-                {homeRegion && <LandingZoneBadge region={homeRegion} size="sm" />}
-                <AlphaBadge size="sm" />
+                {homeRegion && <LandingZoneBadge region={homeRegion} size="xs" />}
+                <AlphaBadge size="xs" />
               </div>
               <div style={{ width: 4, alignSelf: 'stretch', background: color, flexShrink: 0 }} />
             </div>
@@ -287,9 +287,9 @@ export default function FriendProfileView({ friend, sessions, myProfileId, onBac
               <div style={{ textAlign: 'center' }}>
                 <div style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 16, color: '#fff', textTransform: 'uppercase', letterSpacing: '0.04em', lineHeight: 1 }}>{callsign}</div>
               </div>
-              <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', justifyContent: 'center' }}>
-                {homeRegion && <LandingZoneBadge region={homeRegion} size="md" />}
-                <AlphaBadge size="md" />
+              <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap', justifyContent: 'center' }}>
+                {homeRegion && <LandingZoneBadge region={homeRegion} size="xs" />}
+                <AlphaBadge size="xs" />
               </div>
               <div style={{ width: '100%', height: 3, background: color }} />
             </div>

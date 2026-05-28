@@ -8,8 +8,8 @@ const lbl = {
   letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: 6, color: 'var(--text)',
 };
 
-const emptyWp    = () => ({ name: '', body: '' });
-const emptyItem  = () => ({ commodity: '', scu: '', toLocation: '' });
+const emptyWp   = () => ({ name: '', body: '' });
+const emptyItem = () => ({ commodity: '', scu: '' });
 
 function deriveRoute(pickups, dropoffs, systemsMap) {
   const sysFor = (name) => {
@@ -28,14 +28,12 @@ function deriveRoute(pickups, dropoffs, systemsMap) {
 
   if (allSystems.length === 0) return { system: null, type: null };
 
-  // Interstellar always wins — even a single pickup+dropoff across systems
   if (allSystems.length > 1) {
     const from = pSystems[0] || allSystems[0];
     const to   = dSystems.find(s => s !== from) || allSystems.find(s => s !== from) || allSystems[1];
     return { system: `${from} → ${to}`, type: 'Hauling - Interstellar' };
   }
 
-  // Same system — Planetary if every waypoint shares one body, otherwise Stellar
   const allLocs = [...fp, ...fd];
   const bodies  = allLocs.map(l => l.body).filter(Boolean);
   if (bodies.length === allLocs.length && new Set(bodies).size === 1) {
@@ -46,21 +44,21 @@ function deriveRoute(pickups, dropoffs, systemsMap) {
 }
 
 const MISSION_CATEGORIES = [
-  { key: 'hauling',  label: 'Hauling',         available: true },
-  { key: 'bounty',   label: 'Bounty Hunting',   available: false },
-  { key: 'mining',   label: 'Mining',            available: false },
-  { key: 'salvage',  label: 'Salvage',           available: false },
-  { key: 'security', label: 'Security',          available: false },
+  { key: 'hauling',  label: 'Hauling',       available: true },
+  { key: 'bounty',   label: 'Bounty Hunting', available: false },
+  { key: 'mining',   label: 'Mining',         available: false },
+  { key: 'salvage',  label: 'Salvage',        available: false },
+  { key: 'security', label: 'Security',       available: false },
 ];
 
 export default function AddContractModal({ onSave, onClose, commodities, systemsMap }) {
-  const [step,     setStep]     = useState(0);
-  const [pickups,  setPickups]  = useState([emptyWp()]);
-  const [dropoffs, setDropoffs] = useState([emptyWp()]);
-  const [payout,   setPayout]   = useState('');
-
-  // cargoByPickup[i] = array of { commodity, scu } items for pickups[i]
+  const [step,          setStep]          = useState(0);
+  const [pickups,       setPickups]       = useState([emptyWp()]);
+  const [dropoffs,      setDropoffs]      = useState([emptyWp()]);
+  const [payout,        setPayout]        = useState('');
   const [cargoByPickup, setCargoByPickup] = useState([[emptyItem()]]);
+  // distribution[pi][ii][di] = scu string — only used when multiple dropoffs
+  const [distribution,  setDistribution]  = useState({});
 
   const { system, type } = useMemo(
     () => deriveRoute(pickups, dropoffs, systemsMap || {}),
@@ -69,57 +67,91 @@ export default function AddContractModal({ onSave, onClose, commodities, systems
 
   const filledPickups  = pickups.filter(p => p.name?.trim());
   const filledDropoffs = dropoffs.filter(d => d.name?.trim());
-  const hasPickup  = filledPickups.length > 0;
-  const hasDropoff = filledDropoffs.length > 0;
-  const totalSCU   = cargoByPickup.flat().reduce((t, c) => t + (Number(c.scu) || 0), 0);
-  const hasAnyCargo = cargoByPickup.flat().some(c => c.commodity && Number(c.scu) > 0);
+  const hasPickup      = filledPickups.length > 0;
+  const hasDropoff     = filledDropoffs.length > 0;
+  const multiDropoff   = filledDropoffs.length > 1;
+  const totalSCU       = cargoByPickup.flat().reduce((t, c) => t + (Number(c.scu) || 0), 0);
+  const hasAnyCargo    = cargoByPickup.flat().some(c => c.commodity && Number(c.scu) > 0);
+  const totalSteps     = multiDropoff ? 4 : 3;
 
-  const canAdvance = step === 1 ? hasPickup && hasDropoff : hasAnyCargo;
-  const totalSteps = 3;
+  const canAdvance =
+    step === 1 ? hasPickup && hasDropoff :
+    step === 2 ? hasAnyCargo :
+    true;
 
-  // ── Cargo helpers ───────────────────────────────────────────
+  // ── Cargo helpers ───────────────────────────────────────────────
   const updateCargoItem = (pi, ii, patch) =>
     setCargoByPickup(prev =>
       prev.map((g, gi) => gi !== pi ? g : g.map((item, ji) => ji !== ii ? item : { ...item, ...patch }))
     );
 
   const addCargoItem = (pi) =>
-    setCargoByPickup(prev =>
-      prev.map((g, gi) => gi !== pi ? g : [...g, emptyItem()])
-    );
+    setCargoByPickup(prev => prev.map((g, gi) => gi !== pi ? g : [...g, emptyItem()]));
 
   const removeCargoItem = (pi, ii) =>
-    setCargoByPickup(prev =>
-      prev.map((g, gi) => gi !== pi ? g : g.filter((_, ji) => ji !== ii))
-    );
+    setCargoByPickup(prev => prev.map((g, gi) => gi !== pi ? g : g.filter((_, ji) => ji !== ii)));
 
-  // ── Advance step 1 → 2 ─────────────────────────────────────
+  // ── Step advances ───────────────────────────────────────────────
   const advanceToCargo = () => {
-    const groups = filledPickups.length > 0
-      ? filledPickups.map(() => [emptyItem()])
-      : [[emptyItem()]];
+    const groups = filledPickups.length > 0 ? filledPickups.map(() => [emptyItem()]) : [[emptyItem()]];
     setCargoByPickup(groups);
     setStep(2);
   };
 
-  // ── Save ────────────────────────────────────────────────────
-  const save = () => {
-    const singleDropoff = filledDropoffs.length === 1 ? filledDropoffs[0].name : null;
-    const flatCargo = cargoByPickup.flatMap((group, pi) => {
-      const pickup = filledPickups[pi];
-      return group
-        .filter(c => c.commodity && Number(c.scu) > 0)
-        .map(c => ({
-          commodity:    c.commodity,
-          scu:          c.scu,
-          fromLocation: pickup?.name                  || null,
-          toLocation:   c.toLocation || singleDropoff || null,
-        }));
+  const advanceToDistribution = () => {
+    const dist = {};
+    filledPickups.forEach((_, pi) => {
+      dist[pi] = {};
+      (cargoByPickup[pi] || []).forEach((item, ii) => {
+        if (!item.commodity || !Number(item.scu)) return;
+        dist[pi][ii] = Object.fromEntries(filledDropoffs.map((_, di) => [di, '']));
+      });
     });
+    setDistribution(dist);
+    setStep(3);
+  };
 
+  const splitEvenly = (pi, ii) => {
+    const total = Number(cargoByPickup[pi]?.[ii]?.scu || 0);
+    const count = filledDropoffs.length;
+    if (!count || !total) return;
+    const base = Math.floor(total / count);
+    const rem  = total - base * count;
+    setDistribution(prev => ({
+      ...prev,
+      [pi]: {
+        ...prev[pi],
+        [ii]: Object.fromEntries(filledDropoffs.map((_, di) => [di, String(di === 0 ? base + rem : base)])),
+      },
+    }));
+  };
+
+  // ── Save ────────────────────────────────────────────────────────
+  const save = () => {
+    let flatCargo;
+    if (multiDropoff) {
+      flatCargo = [];
+      filledPickups.forEach((pickup, pi) => {
+        (cargoByPickup[pi] || []).forEach((item, ii) => {
+          if (!item.commodity || !Number(item.scu)) return;
+          filledDropoffs.forEach((dropoff, di) => {
+            const scu = Number(distribution[pi]?.[ii]?.[di] || 0);
+            if (scu > 0) flatCargo.push({ commodity: item.commodity, scu, fromLocation: pickup.name, toLocation: dropoff.name });
+          });
+        });
+      });
+    } else {
+      const singleDropoff = filledDropoffs[0]?.name || null;
+      flatCargo = cargoByPickup.flatMap((group, pi) => {
+        const pickup = filledPickups[pi];
+        return group
+          .filter(c => c.commodity && Number(c.scu) > 0)
+          .map(c => ({ commodity: c.commodity, scu: c.scu, fromLocation: pickup?.name || null, toLocation: singleDropoff }));
+      });
+    }
     onSave({
-      type:     type     || 'Hauling - Stellar',
-      system:   system   || 'Unknown',
+      type:     type   || 'Hauling - Stellar',
+      system:   system || 'Unknown',
       pickups:  filledPickups,
       dropoffs: filledDropoffs,
       cargo:    flatCargo,
@@ -127,7 +159,7 @@ export default function AddContractModal({ onSave, onClose, commodities, systems
     });
   };
 
-  // ── Style helpers ────────────────────────────────────────────
+  // ── Style helpers ────────────────────────────────────────────────
   const primaryBtn = (disabled) => ({
     padding: '10px 24px', fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 12,
     textTransform: 'uppercase', letterSpacing: '0.04em',
@@ -142,6 +174,8 @@ export default function AddContractModal({ onSave, onClose, commodities, systems
     border: '2px solid var(--border)', background: 'var(--bg-1)', color: 'var(--text)', cursor: 'pointer',
   };
 
+  const onBack = () => setStep(s => s - 1);
+
   return (
     <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 999, padding: 20 }}>
       <div style={{ background: 'var(--bg-1)', border: '2px solid var(--border)', padding: 28, width: 500, maxHeight: '90vh', overflowY: 'auto' }}>
@@ -149,17 +183,17 @@ export default function AddContractModal({ onSave, onClose, commodities, systems
         {/* Header */}
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 6 }}>
           <div style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 20, letterSpacing: '-0.02em' }}>Add Contract</div>
-          <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--muted)', letterSpacing: '0.08em' }}>STEP {step + 1}/{totalSteps}</div>
+          <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--muted)', letterSpacing: '0.08em' }}>STEP {step + 1} / {totalSteps}</div>
         </div>
 
         {/* Progress */}
         <div style={{ display: 'flex', gap: 4, marginBottom: 24 }}>
-          {[0, 1, 2].map(s => (
+          {Array.from({ length: totalSteps }, (_, i) => i).map(s => (
             <div key={s} style={{ flex: 1, height: 3, background: step >= s ? '#c41e3a' : 'var(--bg-3)' }} />
           ))}
         </div>
 
-        {/* ── STEP 0: Mission Category ─────────────────────────── */}
+        {/* ── STEP 0: Mission Category ── */}
         {step === 0 && (
           <div>
             <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--muted)', letterSpacing: '0.08em', marginBottom: 16, textTransform: 'uppercase' }}>
@@ -178,13 +212,9 @@ export default function AddContractModal({ onSave, onClose, commodities, systems
                   onMouseEnter={e => { if (cat.available) { e.currentTarget.style.background = '#c41e3a'; e.currentTarget.style.color = '#fff'; } }}
                   onMouseLeave={e => { if (cat.available) { e.currentTarget.style.background = 'rgba(196,30,58,0.04)'; e.currentTarget.style.color = 'var(--text)'; } }}
                 >
-                  <span style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 14, textTransform: 'uppercase', letterSpacing: '0.04em' }}>
-                    {cat.label}
-                  </span>
+                  <span style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 14, textTransform: 'uppercase', letterSpacing: '0.04em' }}>{cat.label}</span>
                   {!cat.available && (
-                    <span style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: 'var(--muted)', letterSpacing: '0.1em', textTransform: 'uppercase' }}>
-                      Coming Soon
-                    </span>
+                    <span style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: 'var(--muted)', letterSpacing: '0.1em', textTransform: 'uppercase' }}>Coming Soon</span>
                   )}
                 </button>
               ))}
@@ -192,7 +222,7 @@ export default function AddContractModal({ onSave, onClose, commodities, systems
           </div>
         )}
 
-        {/* ── STEP 1: Route ────────────────────────────────────── */}
+        {/* ── STEP 1: Route ── */}
         {step === 1 && (
           <div>
             {system ? (
@@ -237,7 +267,7 @@ export default function AddContractModal({ onSave, onClose, commodities, systems
           </div>
         )}
 
-        {/* ── STEP 2: Cargo ────────────────────────────────────── */}
+        {/* ── STEP 2: What are you picking up? ── */}
         {step === 2 && (
           <div>
             {/* Payout */}
@@ -255,13 +285,12 @@ export default function AddContractModal({ onSave, onClose, commodities, systems
               </div>
             </div>
 
-            {/* Per-pickup cargo sections */}
+            {/* Per-pickup cargo — no dropoff picker here */}
             <div style={{ marginBottom: 4 }}>
               <span style={lbl}>↑ What are you picking up?</span>
             </div>
             {(filledPickups.length > 0 ? filledPickups : [{ name: 'Pickup', body: '' }]).map((pickup, pi) => (
               <div key={pi} style={{ marginBottom: 12, border: '1px solid var(--bg-3)', background: 'var(--bg-2)' }}>
-                {/* Location header */}
                 <div style={{ padding: '8px 12px', borderBottom: '1px solid var(--bg-3)', display: 'flex', alignItems: 'baseline', gap: 8 }}>
                   <span style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 12, textTransform: 'uppercase', letterSpacing: '0.04em', color: 'var(--text)' }}>
                     {pickup.name}
@@ -272,48 +301,26 @@ export default function AddContractModal({ onSave, onClose, commodities, systems
                     </span>
                   )}
                 </div>
-                {/* Cargo rows */}
                 <div style={{ padding: '10px 12px' }}>
                   {(cargoByPickup[pi] || [emptyItem()]).map((item, ii) => (
-                    <div key={ii} style={{ marginBottom: 8 }}>
-                      <div style={{ display: 'flex', gap: 8, alignItems: 'center', marginBottom: filledDropoffs.length > 1 ? 4 : 0 }}>
-                        <div style={{ flex: 1 }}>
-                          <CommodityAutocomplete
-                            value={item.commodity}
-                            onChange={v => updateCargoItem(pi, ii, { commodity: v })}
-                            commodities={commodities}
-                          />
-                        </div>
-                        <input type="number" min="1"
-                          style={{ width: 68, padding: '8px 8px', background: 'var(--bg-1)', border: '2px solid var(--border)', color: 'var(--text)', fontSize: 13, textAlign: 'right', fontFamily: 'var(--font-mono)', outline: 'none' }}
-                          placeholder="SCU"
-                          value={item.scu}
-                          onChange={e => updateCargoItem(pi, ii, { scu: e.target.value })}
+                    <div key={ii} style={{ display: 'flex', gap: 8, alignItems: 'center', marginBottom: 8 }}>
+                      <div style={{ flex: 1 }}>
+                        <CommodityAutocomplete
+                          value={item.commodity}
+                          onChange={v => updateCargoItem(pi, ii, { commodity: v })}
+                          commodities={commodities}
                         />
-                        <span style={{ fontSize: 11, color: 'var(--muted)', fontFamily: 'var(--font-mono)', width: 28, flexShrink: 0 }}>SCU</span>
-                        {(cargoByPickup[pi]?.length || 1) > 1 && (
-                          <button style={{ background: 'none', border: 'none', color: '#c41e3a', cursor: 'pointer', fontSize: 18, fontWeight: 700, flexShrink: 0 }}
-                            onClick={() => removeCargoItem(pi, ii)}>×</button>
-                        )}
                       </div>
-                      {filledDropoffs.length > 1 && (
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap', paddingLeft: 4 }}>
-                          <span style={{ fontFamily: 'var(--font-mono)', fontSize: 8, color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '0.08em', flexShrink: 0 }}>↓ Drop at:</span>
-                          {filledDropoffs.map((d, di) => (
-                            <button key={di}
-                              onClick={() => updateCargoItem(pi, ii, { toLocation: item.toLocation === d.name ? '' : d.name })}
-                              style={{
-                                padding: '3px 8px', cursor: 'pointer',
-                                fontFamily: 'var(--font-mono)', fontSize: 9, fontWeight: 700,
-                                textTransform: 'uppercase', letterSpacing: '0.04em',
-                                border: `2px solid ${item.toLocation === d.name ? '#2d8659' : 'var(--border)'}`,
-                                background: item.toLocation === d.name ? 'rgba(45,134,89,0.12)' : 'transparent',
-                                color: item.toLocation === d.name ? '#2d8659' : 'var(--muted)',
-                                whiteSpace: 'nowrap',
-                              }}
-                            >{d.name}</button>
-                          ))}
-                        </div>
+                      <input type="number" min="1"
+                        style={{ width: 68, padding: '8px 8px', background: 'var(--bg-1)', border: '2px solid var(--border)', color: 'var(--text)', fontSize: 13, textAlign: 'right', fontFamily: 'var(--font-mono)', outline: 'none' }}
+                        placeholder="SCU"
+                        value={item.scu}
+                        onChange={e => updateCargoItem(pi, ii, { scu: e.target.value })}
+                      />
+                      <span style={{ fontSize: 11, color: 'var(--muted)', fontFamily: 'var(--font-mono)', width: 28, flexShrink: 0 }}>SCU</span>
+                      {(cargoByPickup[pi]?.length || 1) > 1 && (
+                        <button style={{ background: 'none', border: 'none', color: '#c41e3a', cursor: 'pointer', fontSize: 18, fontWeight: 700, flexShrink: 0 }}
+                          onClick={() => removeCargoItem(pi, ii)}>×</button>
                       )}
                     </div>
                   ))}
@@ -344,24 +351,93 @@ export default function AddContractModal({ onSave, onClose, commodities, systems
           </div>
         )}
 
+        {/* ── STEP 3: Where does each item go? (multi-dropoff) ── */}
+        {step === 3 && (
+          <div>
+            <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--muted)', letterSpacing: '0.04em', marginBottom: 18, lineHeight: 1.6 }}>
+              Assign how many SCU of each cargo type go to each dropoff. Use <strong>Split Evenly</strong> to divide automatically.
+            </div>
+            {filledPickups.map((pickup, pi) => {
+              const items = (cargoByPickup[pi] || []).filter(c => c.commodity && Number(c.scu) > 0);
+              if (!items.length) return null;
+              return (
+                <div key={pi} style={{ marginBottom: 20 }}>
+                  {filledPickups.length > 1 && (
+                    <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--muted)', marginBottom: 8, padding: '6px 10px', background: 'var(--bg-2)', border: '1px solid var(--bg-3)' }}>
+                      ↑ Picked up at: {pickup.name}
+                    </div>
+                  )}
+                  {items.map((item, ii) => {
+                    const totalItemSCU = Number(item.scu);
+                    const assigned = filledDropoffs.reduce((sum, _, di) => sum + (Number(distribution[pi]?.[ii]?.[di]) || 0), 0);
+                    const remaining = totalItemSCU - assigned;
+                    return (
+                      <div key={ii} style={{ marginBottom: 12, border: '1px solid var(--bg-3)', background: 'var(--bg-2)' }}>
+                        <div style={{ padding: '8px 12px', borderBottom: '1px solid var(--bg-3)', display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
+                          <span style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 13, textTransform: 'uppercase', letterSpacing: '0.04em' }}>{item.commodity}</span>
+                          <span style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--muted)' }}>{totalItemSCU.toLocaleString()} SCU total</span>
+                        </div>
+                        <div style={{ padding: '10px 12px' }}>
+                          {filledDropoffs.map((dropoff, di) => (
+                            <div key={di} style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
+                              <span style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: 'var(--muted)', flexShrink: 0 }}>↓</span>
+                              <span style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.04em', flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                                {dropoff.name}
+                              </span>
+                              <input
+                                type="number" min="0" max={totalItemSCU}
+                                style={{ width: 68, padding: '6px 8px', background: 'var(--bg-1)', border: '2px solid var(--border)', color: 'var(--text)', fontSize: 13, textAlign: 'right', fontFamily: 'var(--font-mono)', outline: 'none' }}
+                                placeholder="SCU"
+                                value={distribution[pi]?.[ii]?.[di] ?? ''}
+                                onChange={e => setDistribution(prev => ({
+                                  ...prev,
+                                  [pi]: { ...prev[pi], [ii]: { ...prev[pi]?.[ii], [di]: e.target.value } },
+                                }))}
+                              />
+                              <span style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--muted)', width: 28, flexShrink: 0 }}>SCU</span>
+                            </div>
+                          ))}
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 4 }}>
+                            <button
+                              onClick={() => splitEvenly(pi, ii)}
+                              style={{ padding: '4px 12px', cursor: 'pointer', fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 10, textTransform: 'uppercase', letterSpacing: '0.06em', border: '1.5px solid var(--border)', background: 'transparent', color: 'var(--muted)' }}
+                              onMouseEnter={e => { e.currentTarget.style.borderColor = '#2d8659'; e.currentTarget.style.color = '#2d8659'; }}
+                              onMouseLeave={e => { e.currentTarget.style.borderColor = 'var(--border)'; e.currentTarget.style.color = 'var(--muted)'; }}
+                            >⇌ Split Evenly</button>
+                            <span style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: remaining === 0 ? '#2d8659' : remaining < 0 ? '#c41e3a' : 'var(--muted)' }}>
+                              {remaining === 0 ? '✓ All assigned' : remaining > 0 ? `${remaining} unassigned` : `${Math.abs(remaining)} over`}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              );
+            })}
+          </div>
+        )}
+
         {/* Navigation */}
         <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 24, gap: 8 }}>
           <button style={secondaryBtn}
-            onClick={step === 0 ? onClose : () => setStep(s => s - 1)}
+            onClick={step === 0 ? onClose : onBack}
             onMouseEnter={e => { e.currentTarget.style.background = '#000'; e.currentTarget.style.color = '#fff'; }}
             onMouseLeave={e => { e.currentTarget.style.background = getComputedStyle(document.documentElement).getPropertyValue('--bg-1').trim(); e.currentTarget.style.color = getComputedStyle(document.documentElement).getPropertyValue('--text').trim(); }}
           >
             {step === 0 ? 'Cancel' : '← Back'}
           </button>
           {step > 0 && (
-            <button style={primaryBtn(!canAdvance)}
+            <button
+              style={primaryBtn(!canAdvance)}
               onClick={() => {
                 if (!canAdvance) return;
                 if (step === 1) advanceToCargo();
+                else if (step === 2 && multiDropoff) advanceToDistribution();
                 else save();
               }}
             >
-              {step < 2 ? 'Continue →' : 'Save Contract'}
+              {step === 2 && multiDropoff ? 'Continue →' : step < totalSteps - 1 ? 'Continue →' : 'Save Contract'}
             </button>
           )}
         </div>
