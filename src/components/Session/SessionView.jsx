@@ -639,6 +639,8 @@ export default function SessionView({
           const isEditingPayout = editingPayoutId === contract.id;
           const cSCU = contract.cargo.reduce((t, c) => t + Number(c.scu || 0), 0);
           const sz   = getContractSize(cSCU);
+          const allBodies = [...contract.pickups, ...contract.dropoffs].map(w => w.body).filter(Boolean);
+          const isLocal   = allBodies.length > 0 && new Set(allBodies).size === 1;
 
           return (
             <div key={contract.id} style={{
@@ -666,12 +668,20 @@ export default function SessionView({
                   )}
                 </div>
 
-                {/* Middle: separator + system */}
-                <div style={{ flex: 1, display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
+                {/* Middle: separator + system + LOCAL tag */}
+                <div style={{ flex: 1, display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
                   <span style={{ color: 'var(--border)', fontSize: 14, flexShrink: 0 }}>|</span>
                   <span style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 12, color: 'var(--text)', letterSpacing: '0.06em', textTransform: 'uppercase' }}>
                     {contract.system}
                   </span>
+                  {isLocal && (
+                    <span style={{
+                      fontFamily: 'var(--font-mono)', fontSize: 8, fontWeight: 700,
+                      letterSpacing: '0.12em', textTransform: 'uppercase',
+                      border: '1.5px solid #2e7d32', color: '#2e7d32',
+                      padding: '1px 5px', whiteSpace: 'nowrap', flexShrink: 0,
+                    }}>LOCAL</span>
+                  )}
                 </div>
 
                 {/* Right: payout + Done? */}

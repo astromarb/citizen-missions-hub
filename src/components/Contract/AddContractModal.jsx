@@ -35,20 +35,14 @@ function deriveRoute(pickups, dropoffs, systemsMap) {
     return { system: `${from} → ${to}`, type: 'Hauling - Interstellar' };
   }
 
-  // Same system — check if all locations share one body (Planetary)
+  // Same system — Planetary if every waypoint shares one body, otherwise Stellar
   const allLocs = [...fp, ...fd];
   const bodies  = allLocs.map(l => l.body).filter(Boolean);
   if (bodies.length === allLocs.length && new Set(bodies).size === 1) {
     return { system: allSystems[0], type: 'Hauling - Planetary' };
   }
 
-  // Direct: exactly 1 pickup + 1 dropoff, same system
-  if (fp.length === 1 && fd.length === 1) {
-    return { system: allSystems[0], type: 'Hauling - Direct' };
-  }
-
-  // Same system, different bodies or multiple stops → Solar
-  return { system: allSystems[0], type: 'Hauling - Solar' };
+  return { system: allSystems[0], type: 'Hauling - Stellar' };
 }
 
 const MISSION_CATEGORIES = [
