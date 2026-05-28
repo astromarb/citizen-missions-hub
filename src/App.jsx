@@ -469,7 +469,7 @@ function AppInner() {
     ['missions',     'Missions'],
     ['calendar',     'Calendar'],
     ['stats',        'Stats'],
-    ['leaderboard',  'Leaderboard'],
+    ['leaderboard',  'Leaderboards'],
     ['friends',      totalPendingRequests > 0 ? `Requests (${totalPendingRequests})` : 'Requests'],
     ['settings',     'Settings'],
   ];
@@ -715,7 +715,7 @@ function AppInner() {
 
           {activeTab === 'missions'    && <MissionsView sessions={sessions} myProfileId={myProfileId} profile={profile} avatarUrl={avatarUrl} onOpenSession={handleOpenSession} />}
           {activeTab === 'stats'       && <StatsView sessions={sessions} myProfileId={myProfileId} />}
-          {activeTab === 'leaderboard' && <LeaderboardView sessions={sessions} myProfileId={myProfileId} profiles={profiles} />}
+          {activeTab === 'leaderboard' && <LeaderboardView sessions={sessions} myProfileId={myProfileId} profiles={profiles} friends={friends} />}
           {activeTab === 'friends' && !viewingFriend && (
             <FriendsView
               friends={friends}

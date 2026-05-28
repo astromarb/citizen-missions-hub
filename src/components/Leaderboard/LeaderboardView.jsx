@@ -1,22 +1,90 @@
+import { useState } from 'react';
 import { useIsMobile } from '../../hooks/useIsMobile.js';
 
-export default function LeaderboardView({ sessions, myProfileId, profiles = [] }) {
-  const isMobile = useIsMobile();
-  const allSessions = Object.values(sessions);
+const rankMedal = (i) => i === 0 ? '#c41e3a' : i === 1 ? '#555' : i === 2 ? '#7a5c00' : 'var(--muted)';
+const fmtSCU  = (n) => `${n.toLocaleString()} SCU`;
+const fmtAUEC = (n) => n > 0 ? `${n.toLocaleString()} aUEC` : '—';
+const fmt     = (n) => n.toLocaleString();
 
-  // Aggregate per-player stats across all sessions
+function Board({ title, rows, valueKey, format, myProfileId }) {
+  if (rows.length === 0) {
+    return (
+      <div style={{ border: '2px solid var(--border)', background: 'var(--bg-1)' }}>
+        <div style={{ background: '#1a1a1a', padding: '10px 16px', fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 12, color: '#fff', textTransform: 'uppercase', letterSpacing: '0.06em' }}>{title}</div>
+        <div style={{ padding: '20px 16px', fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--muted)', textAlign: 'center' }}>No data yet.</div>
+      </div>
+    );
+  }
+  return (
+    <div style={{ border: '2px solid var(--border)', background: 'var(--bg-1)' }}>
+      <div style={{ background: '#1a1a1a', padding: '10px 16px', fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 12, color: '#fff', textTransform: 'uppercase', letterSpacing: '0.06em' }}>{title}</div>
+      {rows.map((p, i) => {
+        const isMe = p.id === myProfileId;
+        return (
+          <div key={p.id} style={{
+            display: 'flex', alignItems: 'center', gap: 12,
+            padding: '10px 16px', borderBottom: '1px solid var(--bg-3)',
+            background: isMe ? 'rgba(196,30,58,0.04)' : 'transparent',
+          }}>
+            <div style={{ fontFamily: 'var(--font-mono)', fontWeight: 800, fontSize: 13, color: rankMedal(i), width: 22, flexShrink: 0, textAlign: 'center' }}>
+              {i === 0 ? '★' : `${i + 1}`}
+            </div>
+            <div style={{ width: 12, height: 12, borderRadius: '50%', background: p.color, flexShrink: 0, border: '2px solid var(--border)' }} />
+            <div style={{ fontFamily: 'var(--font-display)', fontWeight: isMe ? 800 : 700, fontSize: 13, color: isMe ? '#c41e3a' : 'var(--text)', textTransform: 'uppercase', letterSpacing: '0.04em', flex: 1 }}>
+              {p.callsign}{isMe ? ' ★' : ''}
+            </div>
+            <div style={{ fontFamily: 'var(--font-mono)', fontWeight: 700, fontSize: 13, color: i === 0 ? '#c41e3a' : 'var(--text)' }}>
+              {format(p[valueKey])}
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+function Section({ title, open, onToggle, children }) {
+  return (
+    <div style={{ marginBottom: 16 }}>
+      <button
+        onClick={onToggle}
+        style={{
+          width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+          padding: '10px 16px', border: '2px solid var(--border)', background: 'var(--bg-2)',
+          cursor: 'pointer', textAlign: 'left',
+          fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 13,
+          textTransform: 'uppercase', letterSpacing: '0.06em', color: 'var(--text)',
+          marginBottom: open ? 12 : 0,
+        }}
+      >
+        <span>{title}</span>
+        <span style={{ fontFamily: 'var(--font-mono)', fontSize: 14, color: 'var(--muted)', lineHeight: 1 }}>{open ? '▲' : '▼'}</span>
+      </button>
+      {open && children}
+    </div>
+  );
+}
+
+export default function LeaderboardView({ sessions, myProfileId, profiles = [], friends = [] }) {
+  const isMobile = useIsMobile();
+  const [scope, setScope] = useState('global');
+  const [haulingOpen, setHaulingOpen] = useState(true);
+  const [walletOpen, setWalletOpen] = useState(true);
+
+  const friendIds = new Set(friends.map(f => f.id));
+
+  // Aggregate per-player hauling stats from all sessions
   const statsMap = {};
-  allSessions.forEach(sess => {
+  Object.values(sessions).forEach(sess => {
     const mc = sess.members?.length || 1;
-    const sessSCU = sess.contracts.reduce((t, c) =>
-      t + c.cargo.reduce((s, ci) => s + Number(ci.scu || 0), 0), 0);
+    const sessSCU    = sess.contracts.reduce((t, c) => t + c.cargo.reduce((s, ci) => s + Number(ci.scu || 0), 0), 0);
     const sessPayout = sess.contracts.reduce((t, c) => t + (c.payout || 0), 0);
 
     sess.members?.forEach(m => {
       if (!statsMap[m.id]) statsMap[m.id] = { id: m.id, callsign: m.callsign, color: m.color || '#8b949e', sessions: 0, scu: 0, payout: 0, waypoints: 0 };
       statsMap[m.id].sessions++;
-      statsMap[m.id].scu     += Math.floor(sessSCU    / mc);
-      statsMap[m.id].payout  += Math.floor(sessPayout / mc);
+      statsMap[m.id].scu    += Math.floor(sessSCU    / mc);
+      statsMap[m.id].payout += Math.floor(sessPayout / mc);
     });
 
     sess.contracts.forEach(c => {
@@ -30,143 +98,101 @@ export default function LeaderboardView({ sessions, myProfileId, profiles = [] }
     });
   });
 
-  const players = Object.values(statsMap);
-  if (players.length === 0) {
-    return (
-      <div style={{ padding: 20 }}>
-        <div style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 20, letterSpacing: '-0.02em', marginBottom: 20 }}>Leaderboards</div>
-        <div style={{ textAlign: 'center', padding: '60px 20px', border: '2px dashed var(--border)', background: 'var(--bg-1)' }}>
-          <div style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 18, marginBottom: 8 }}>No Data Yet</div>
-          <div style={{ color: 'var(--muted)', fontSize: 13, fontFamily: 'var(--font-sans)' }}>Complete missions with crew to appear on the boards.</div>
-        </div>
-      </div>
-    );
-  }
+  const isFriendsScope = scope === 'friends';
+  const inScope = (id) => !isFriendsScope || id === myProfileId || friendIds.has(id);
 
+  const players    = Object.values(statsMap).filter(p => inScope(p.id));
   const bySCU      = [...players].sort((a, b) => b.scu      - a.scu);
   const byPayout   = [...players].sort((a, b) => b.payout   - a.payout);
   const bySessions = [...players].sort((a, b) => b.sessions - a.sessions);
   const byWaypoints= [...players].sort((a, b) => b.waypoints- a.waypoints);
 
-  const rankMedal = (i) => i === 0 ? '#c41e3a' : i === 1 ? '#555' : i === 2 ? '#7a5c00' : 'var(--muted)';
-
-  function Board({ title, rows, valueKey, format }) {
-    return (
-      <div style={{ border: '2px solid var(--border)', background: 'var(--bg-1)' }}>
-        <div style={{
-          background: '#1a1a1a', padding: '12px 16px',
-          fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 13,
-          color: '#fff', textTransform: 'uppercase', letterSpacing: '0.06em',
-        }}>{title}</div>
-        {rows.map((p, i) => {
-          const isMe = p.id === myProfileId;
-          const val = format(p[valueKey]);
-          return (
-            <div key={p.id} style={{
-              display: 'flex', alignItems: 'center', gap: 12,
-              padding: '11px 16px',
-              borderBottom: '1px solid var(--bg-3)',
-              background: isMe ? 'rgba(196,30,58,0.04)' : 'transparent',
-            }}>
-              <div style={{
-                fontFamily: 'var(--font-mono)', fontWeight: 800, fontSize: 13,
-                color: rankMedal(i), width: 24, flexShrink: 0, textAlign: 'center',
-              }}>
-                {i === 0 ? '★' : `${i + 1}`}
-              </div>
-              <div style={{ width: 12, height: 12, borderRadius: '50%', background: p.color, flexShrink: 0, border: '2px solid var(--border)' }} />
-              <div style={{
-                fontFamily: 'var(--font-display)', fontWeight: isMe ? 800 : 700, fontSize: 13,
-                color: isMe ? '#c41e3a' : 'var(--text)', textTransform: 'uppercase',
-                letterSpacing: '0.04em', flex: 1,
-              }}>
-                {p.callsign}{isMe ? ' ★' : ''}
-              </div>
-              <div style={{
-                fontFamily: 'var(--font-mono)', fontWeight: 700, fontSize: 13,
-                color: i === 0 ? '#c41e3a' : 'var(--text)',
-              }}>{val}</div>
-            </div>
-          );
-        })}
-      </div>
-    );
-  }
-
-  const fmt    = (n) => n.toLocaleString();
-  const fmtSCU = (n) => `${n.toLocaleString()} SCU`;
-  const fmtAUEC= (n) => n > 0 ? `${n.toLocaleString()} aUEC` : '—';
-
-  // Wallet leaderboard — profiles who have verified their balance
   const walletRows = profiles
-    .filter(p => p.auec_balance > 0)
+    .filter(p => p.auec_balance > 0 && inScope(p.id))
     .sort((a, b) => b.auec_balance - a.auec_balance)
     .map(p => ({ id: p.id, callsign: p.callsign, color: p.color || '#8b949e', balance: p.auec_balance }));
 
+  // Secondary tab styles
+  const scopeTab = (key, label) => (
+    <button
+      key={key}
+      onClick={() => setScope(key)}
+      style={{
+        padding: '8px 20px',
+        fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 11,
+        textTransform: 'uppercase', letterSpacing: '0.08em',
+        cursor: 'pointer', border: 'none', borderBottom: `3px solid ${scope === key ? '#c41e3a' : 'transparent'}`,
+        background: 'transparent',
+        color: scope === key ? '#c41e3a' : 'var(--muted)',
+      }}
+    >{label}</button>
+  );
+
   return (
-    <div style={{ padding: 20 }}>
-      <div style={{ display: 'flex', alignItems: 'baseline', gap: 12, marginBottom: 20 }}>
-        <div style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 20, letterSpacing: '-0.02em' }}>Leaderboards</div>
-        <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--muted)', letterSpacing: '0.08em' }}>
-          {players.length} pilot{players.length !== 1 ? 's' : ''} · all-time
-        </div>
+    <div style={{ padding: isMobile ? '12px' : '20px' }}>
+
+      {/* Page title */}
+      <div style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 20, letterSpacing: '-0.02em', marginBottom: 0 }}>Leaderboards</div>
+
+      {/* Secondary scope tabs */}
+      <div style={{ display: 'flex', borderBottom: '2px solid var(--border)', marginBottom: 24, marginTop: 6 }}>
+        {scopeTab('global',  'Global')}
+        {scopeTab('friends', 'Friends')}
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: 16, marginBottom: 16 }}>
-        <Board title="SCU Hauled"          rows={bySCU}        valueKey="scu"       format={fmtSCU}  />
-        <Board title="aUEC Earned"         rows={byPayout}     valueKey="payout"    format={fmtAUEC} />
-        <Board title="Sessions Flown"      rows={bySessions}   valueKey="sessions"  format={fmt}     />
-        <Board title="Waypoints Completed" rows={byWaypoints}  valueKey="waypoints" format={fmt}     />
-      </div>
-
-      {/* ── Verified Wallet ── full-width, profile-level data ── */}
-      {walletRows.length > 0 && (
-        <div style={{ border: '2px solid var(--border)', background: 'var(--bg-1)' }}>
-          <div style={{
-            background: '#1a1a1a', padding: '12px 16px',
-            display: 'flex', alignItems: 'baseline', gap: 12,
-          }}>
-            <div style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 13, color: '#fff', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
-              Verified Wallet
-            </div>
-            <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: 'rgba(255,255,255,0.35)', letterSpacing: '0.08em' }}>
-              self-reported · {walletRows.length} pilot{walletRows.length !== 1 ? 's' : ''}
-            </div>
+      {/* ── HAULING section ── */}
+      <Section title="Hauling" open={haulingOpen} onToggle={() => setHaulingOpen(v => !v)}>
+        {players.length === 0 ? (
+          <div style={{ padding: '32px 20px', textAlign: 'center', border: '2px dashed var(--border)', background: 'var(--bg-1)', fontFamily: 'var(--font-mono)', fontSize: 12, color: 'var(--muted)', marginBottom: 16 }}>
+            {isFriendsScope ? 'No friends have session data yet.' : 'No session data yet.'}
           </div>
-          {walletRows.map((p, i) => {
-            const isMe = p.id === myProfileId;
-            return (
-              <div key={p.id} style={{
-                display: 'flex', alignItems: 'center', gap: 12,
-                padding: '11px 16px',
-                borderBottom: '1px solid var(--bg-3)',
-                background: isMe ? 'rgba(196,30,58,0.04)' : 'transparent',
-              }}>
-                <div style={{
-                  fontFamily: 'var(--font-mono)', fontWeight: 800, fontSize: 13,
-                  color: rankMedal(i), width: 24, flexShrink: 0, textAlign: 'center',
+        ) : (
+          <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: 12, marginBottom: 16 }}>
+            <Board title="SCU Hauled"          rows={bySCU}        valueKey="scu"       format={fmtSCU}  myProfileId={myProfileId} />
+            <Board title="aUEC Earned"         rows={byPayout}     valueKey="payout"    format={fmtAUEC} myProfileId={myProfileId} />
+            <Board title="Sessions Flown"      rows={bySessions}   valueKey="sessions"  format={fmt}     myProfileId={myProfileId} />
+            <Board title="Waypoints Completed" rows={byWaypoints}  valueKey="waypoints" format={fmt}     myProfileId={myProfileId} />
+          </div>
+        )}
+      </Section>
+
+      {/* ── WALLET section ── */}
+      <Section title="Wallet" open={walletOpen} onToggle={() => setWalletOpen(v => !v)}>
+        {walletRows.length === 0 ? (
+          <div style={{ padding: '32px 20px', textAlign: 'center', border: '2px dashed var(--border)', background: 'var(--bg-1)', fontFamily: 'var(--font-mono)', fontSize: 12, color: 'var(--muted)' }}>
+            {isFriendsScope ? 'No friends have verified their wallet yet.' : 'No verified wallets yet.'}
+          </div>
+        ) : (
+          <div style={{ border: '2px solid var(--border)', background: 'var(--bg-1)' }}>
+            <div style={{ background: '#1a1a1a', padding: '10px 16px', display: 'flex', alignItems: 'baseline', gap: 10 }}>
+              <div style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 12, color: '#fff', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Verified Balance</div>
+              <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: 'rgba(255,255,255,0.35)', letterSpacing: '0.08em' }}>self-reported · {walletRows.length} pilot{walletRows.length !== 1 ? 's' : ''}</div>
+            </div>
+            {walletRows.map((p, i) => {
+              const isMe = p.id === myProfileId;
+              return (
+                <div key={p.id} style={{
+                  display: 'flex', alignItems: 'center', gap: 12,
+                  padding: '10px 16px', borderBottom: '1px solid var(--bg-3)',
+                  background: isMe ? 'rgba(196,30,58,0.04)' : 'transparent',
                 }}>
-                  {i === 0 ? '★' : `${i + 1}`}
+                  <div style={{ fontFamily: 'var(--font-mono)', fontWeight: 800, fontSize: 13, color: rankMedal(i), width: 22, flexShrink: 0, textAlign: 'center' }}>
+                    {i === 0 ? '★' : `${i + 1}`}
+                  </div>
+                  <div style={{ width: 12, height: 12, borderRadius: '50%', background: p.color, flexShrink: 0, border: '2px solid var(--border)' }} />
+                  <div style={{ fontFamily: 'var(--font-display)', fontWeight: isMe ? 800 : 700, fontSize: 13, color: isMe ? '#c41e3a' : 'var(--text)', textTransform: 'uppercase', letterSpacing: '0.04em', flex: 1 }}>
+                    {p.callsign}{isMe ? ' ★' : ''}
+                  </div>
+                  <div style={{ fontFamily: 'var(--font-mono)', fontWeight: 700, fontSize: 13, color: i === 0 ? '#c41e3a' : '#2d8659' }}>
+                    {Number(p.balance).toLocaleString()} aUEC
+                  </div>
                 </div>
-                <div style={{ width: 12, height: 12, borderRadius: '50%', background: p.color, flexShrink: 0, border: '2px solid var(--border)' }} />
-                <div style={{
-                  fontFamily: 'var(--font-display)', fontWeight: isMe ? 800 : 700, fontSize: 13,
-                  color: isMe ? '#c41e3a' : 'var(--text)', textTransform: 'uppercase',
-                  letterSpacing: '0.04em', flex: 1,
-                }}>
-                  {p.callsign}{isMe ? ' ★' : ''}
-                </div>
-                <div style={{
-                  fontFamily: 'var(--font-mono)', fontWeight: 700, fontSize: 13,
-                  color: i === 0 ? '#c41e3a' : '#2d8659',
-                }}>
-                  {Number(p.balance).toLocaleString()} aUEC
-                </div>
-              </div>
-            );
-          })}
-        </div>
-      )}
+              );
+            })}
+          </div>
+        )}
+      </Section>
+
     </div>
   );
 }
