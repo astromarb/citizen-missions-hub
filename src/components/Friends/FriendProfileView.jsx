@@ -247,7 +247,7 @@ export default function FriendProfileView({ friend, sessions, myProfileId, onBac
     <div style={{ padding: isMobile ? 12 : 20, display: 'flex', flexDirection: isMobile ? 'column' : 'row', gap: isMobile ? 16 : 24, alignItems: 'flex-start' }}>
 
       {/* ── Left sidebar ── */}
-      <div style={{ width: isMobile ? '100%' : 330, flexShrink: 0, position: isMobile ? 'static' : 'sticky', top: 20 }}>
+      <div style={{ width: isMobile ? '100%' : 275, flexShrink: 0, position: isMobile ? 'static' : 'sticky', top: 20 }}>
 
         {/* Back button */}
         <button
@@ -267,17 +267,17 @@ export default function FriendProfileView({ friend, sessions, myProfileId, onBac
         <div style={{ border: '2px solid var(--border)', background: 'var(--bg-1)' }}>
           {isMobile ? (
             /* Mobile: horizontal header */
-            <div style={{ background: '#1a1a1a', padding: '16px 18px', display: 'flex', alignItems: 'center', gap: 14 }}>
+            <div style={{ background: '#1a1a1a', padding: '14px 16px', display: 'flex', alignItems: 'center', gap: 12 }}>
               {avatarUrl ? (
                 <img src={avatarUrl} alt={callsign}
-                  style={{ width: 66, height: 66, borderRadius: '50%', border: `4px solid ${color}`, objectFit: 'cover', flexShrink: 0 }} />
+                  style={{ width: 58, height: 58, borderRadius: '50%', border: `3px solid ${color}`, objectFit: 'cover', flexShrink: 0 }} />
               ) : (
-                <div style={{ width: 66, height: 66, borderRadius: '50%', background: color, border: `4px solid ${color}`, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                  <span style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 26, color: '#fff' }}>{callsign[0]?.toUpperCase()}</span>
+                <div style={{ width: 58, height: 58, borderRadius: '50%', background: color, border: `3px solid ${color}`, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                  <span style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 22, color: '#fff' }}>{callsign[0]?.toUpperCase()}</span>
                 </div>
               )}
               <div style={{ flex: 1, minWidth: 0 }}>
-                <div style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 18, color: '#fff', textTransform: 'uppercase', letterSpacing: '0.04em', lineHeight: 1.1 }}>{callsign}</div>
+                <div style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 17, color: '#fff', textTransform: 'uppercase', letterSpacing: '0.04em', lineHeight: 1.1 }}>{callsign}</div>
               </div>
               <div style={{ display: 'flex', gap: 4, flexShrink: 0 }}>
                 {displayBadges.map(id => renderBadge(id, 'xs'))}
@@ -286,22 +286,22 @@ export default function FriendProfileView({ friend, sessions, myProfileId, onBac
             </div>
           ) : (
             /* Desktop: vertical header */
-            <div style={{ background: '#1a1a1a', padding: '28px 22px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 16 }}>
+            <div style={{ background: '#1a1a1a', padding: '24px 18px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 14 }}>
               {avatarUrl ? (
                 <img src={avatarUrl} alt={callsign}
-                  style={{ width: 108, height: 108, borderRadius: '50%', border: `4px solid ${color}`, objectFit: 'cover' }} />
+                  style={{ width: 90, height: 90, borderRadius: '50%', border: `4px solid ${color}`, objectFit: 'cover' }} />
               ) : (
-                <div style={{ width: 108, height: 108, borderRadius: '50%', background: color, border: `4px solid ${color}`, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                  <span style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 42, color: '#fff' }}>{callsign[0]?.toUpperCase()}</span>
+                <div style={{ width: 90, height: 90, borderRadius: '50%', background: color, border: `4px solid ${color}`, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  <span style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 35, color: '#fff' }}>{callsign[0]?.toUpperCase()}</span>
                 </div>
               )}
               <div style={{ textAlign: 'center' }}>
-                <div style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 22, color: '#fff', textTransform: 'uppercase', letterSpacing: '0.04em', lineHeight: 1 }}>{callsign}</div>
+                <div style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 20, color: '#fff', textTransform: 'uppercase', letterSpacing: '0.04em', lineHeight: 1 }}>{callsign}</div>
               </div>
               <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap', justifyContent: 'center' }}>
                 {displayBadges.map(id => renderBadge(id, 'sm'))}
               </div>
-              <div style={{ width: '100%', height: 5, background: color }} />
+              <div style={{ width: '100%', height: 4, background: color }} />
             </div>
           )}
 
