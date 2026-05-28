@@ -115,7 +115,7 @@ function PlayerSeat({ member }) {
   );
 }
 
-function WaypointRow({ waypoint, myProfileId, members, onSetStatus, canEdit, kind, canEditLocation, onUpdateWaypoint, locationNames }) {
+function WaypointRow({ waypoint, myProfileId, members, onSetStatus, canEdit, kind, canEditLocation, onUpdateWaypoint, allLocations }) {
   const [editingLoc, setEditingLoc] = useState(false);
   const [locVal, setLocVal] = useState('');
 
@@ -152,7 +152,19 @@ function WaypointRow({ waypoint, myProfileId, members, onSetStatus, canEdit, kin
               }}
             >
               <option value="">— pick location —</option>
-              {(locationNames || []).map(n => <option key={n} value={n}>{n}</option>)}
+              {(() => {
+                const grouped = {};
+                (allLocations || []).forEach(l => {
+                  const key = `${l.system} → ${l.body}`;
+                  if (!grouped[key]) grouped[key] = [];
+                  grouped[key].push(l);
+                });
+                return Object.entries(grouped).sort().map(([groupKey, locs]) => (
+                  <optgroup key={groupKey} label={groupKey}>
+                    {locs.map(l => <option key={l.name} value={l.name}>{l.name}</option>)}
+                  </optgroup>
+                ));
+              })()}
             </select>
             <button onClick={saveLocEdit}
               style={{ background: '#2d8659', border: 'none', color: '#fff', cursor: 'pointer', padding: '2px 7px', fontWeight: 700, fontSize: 11 }}>✓</button>
@@ -305,9 +317,10 @@ export default function SessionView({
   const sessionMemberIds  = new Set(members.map(m => m.id));
   const invitableFriends  = (friends || []).filter(f => !sessionMemberIds.has(f.id));
 
-  // Flat list of all known location names for datalist autocomplete
-  const allLocationNames = systemsMap
-    ? [...new Set(Object.values(systemsMap).flat().map(l => (typeof l === 'string' ? l : l?.name)).filter(Boolean))].sort()
+  const allLocations = systemsMap
+    ? Object.entries(systemsMap).flatMap(([system, locs]) =>
+        locs.map(l => ({ name: typeof l === 'string' ? l : l?.name, body: l?.body || '', system }))
+      ).filter(l => l.name)
     : [];
   const allCommodities = commodities || [];
 
@@ -454,17 +467,9 @@ export default function SessionView({
             {members.map(m => <PlayerSeat key={m.id} member={m} />)}
           </div>
 
-          {/* Creator name + invite */}
+          {/* Invite */}
           {isSessionMember && (
             <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 14, marginBottom: 14, flexWrap: 'wrap' }}>
-              {creator && (
-                <span style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--muted)' }}>
-                  Session by{' '}
-                  <span style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 11, color: 'var(--text)', textTransform: 'uppercase' }}>
-                    {creator.callsign}
-                  </span>
-                </span>
-              )}
               <div style={{ position: 'relative' }}>
                 <button onClick={() => setShowInvite(v => !v)}
                   style={{
@@ -647,7 +652,7 @@ export default function SessionView({
                       kind="pickup"
                       canEditLocation={isSessionCreator}
                       onUpdateWaypoint={onUpdateWaypoint}
-                      locationNames={allLocationNames}
+                      allLocations={allLocations}
                     />
                   ))}
                 </div>
@@ -668,7 +673,7 @@ export default function SessionView({
                       kind="dropoff"
                       canEditLocation={isSessionCreator}
                       onUpdateWaypoint={onUpdateWaypoint}
-                      locationNames={allLocationNames}
+                      allLocations={allLocations}
                     />
                   ))}
                 </div>
