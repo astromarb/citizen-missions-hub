@@ -213,6 +213,8 @@ function AppInner() {
 
   // ── Nav ──
   const [activeTab, setActiveTab] = useState(() => {
+    const urlTab = new URLSearchParams(window.location.search).get('tab');
+    if (urlTab) return urlTab;
     try { return localStorage.getItem('cmh-active-tab') || 'missions'; } catch { return 'missions'; }
   });
   const [view, setView] = useState('calendar');
@@ -290,14 +292,14 @@ function AppInner() {
     SFX.open();
     setSelectedSessionId(id);
     setView('session');
-    window.history.replaceState(null, '', `?session=${id}`);
+    window.history.replaceState(null, '', `?tab=calendar&session=${id}`);
   };
 
   const closeSession = () => {
     SFX.back();
     setView('calendar');
     setSelectedSessionId(null);
-    window.history.replaceState(null, '', window.location.pathname);
+    window.history.replaceState(null, '', '?tab=calendar');
   };
 
   const saveSession = async ({ date: dateKey, players }) => {
@@ -463,6 +465,7 @@ function AppInner() {
     try { localStorage.setItem('cmh-active-tab', tab); } catch {}
     if (tab !== 'calendar') setView('calendar');
     if (tab !== 'friends') setViewingFriend(null);
+    window.history.replaceState(null, '', `?tab=${tab}`);
   };
 
   const totalPendingRequests = (pending?.length || 0) + (sessionInvites?.length || 0);
@@ -759,13 +762,12 @@ function AppInner() {
             setJoinToken(null);
             SFX.open();
             showToast('Joined session!', 'success');
-            window.history.replaceState(null, '', window.location.pathname);
             handleOpenSession(sessionId);
           }}
           onDismiss={() => {
             setJoinToken(null);
             SFX.back();
-            window.history.replaceState(null, '', window.location.pathname);
+            window.history.replaceState(null, '', `?tab=${activeTab}`);
           }}
         />
       )}
