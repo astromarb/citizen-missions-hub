@@ -160,7 +160,17 @@ export default function OnboardingFlow({ profile, updateProfile, checkCallsign, 
           </div>
         )}
 
-        <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 28 }}>
+        <div style={{ display: 'flex', justifyContent: step > 1 ? 'space-between' : 'flex-end', alignItems: 'center', marginTop: 28 }}>
+          {step > 1 && (
+            <button
+              onClick={() => setStep(step - 1)}
+              style={{
+                padding: '11px 20px', fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 13,
+                textTransform: 'uppercase', letterSpacing: '0.04em', cursor: 'pointer',
+                border: '2px solid #000', background: '#fff', color: '#000',
+              }}
+            >← Back</button>
+          )}
           {step < 3 ? (
             <button style={btnPrimary(!canNext())} onClick={() => canNext() && setStep(step + 1)}>
               Next →
