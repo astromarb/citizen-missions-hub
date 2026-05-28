@@ -5,6 +5,7 @@ const xf = (s) => ({
   id: s.id,
   date: s.date,
   createdBy: s.created_by || null,
+  createdAt: s.created_at || null,
   startedAt: s.started_at || null,
   pausedAt: s.paused_at || null,
   totalPausedMs: s.total_paused_ms || 0,

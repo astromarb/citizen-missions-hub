@@ -127,10 +127,10 @@ function SessionDebrief({ session, myProfileId, onOpenSession }) {
                   letterSpacing: '0.06em', textTransform: 'uppercase', whiteSpace: 'nowrap',
                 }}>{c.type}</span>
                 <span title={sz.tip} style={{
-                  background: sz.bg, color: '#fff', padding: '2px 6px',
-                  fontFamily: 'var(--font-mono)', fontSize: 9, fontWeight: 700, letterSpacing: '0.08em',
-                  border: '2px solid rgba(0,0,0,0.15)',
-                }}>{sz.label}</span>
+                  fontFamily: 'var(--font-display)', fontSize: 13, fontWeight: 800,
+                  color: 'var(--text)', textDecoration: 'underline', letterSpacing: '0.02em',
+                }}>{'{ '}{sz.label}{' }'}</span>
+                <span style={{ color: 'var(--border)', fontSize: 13, flexShrink: 0 }}>|</span>
                 <span style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 12, textTransform: 'uppercase', letterSpacing: '0.04em', flex: 1, color: 'var(--text)' }}>
                   {c.system}
                 </span>

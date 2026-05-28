@@ -111,12 +111,6 @@ function PlayerSeat({ member }) {
         fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 11,
         color: 'var(--text)', textTransform: 'uppercase', letterSpacing: '0.08em', textAlign: 'center',
       }}>{member?.callsign}</div>
-      {member?.home_region && (
-        <div style={{
-          fontFamily: 'var(--font-mono)', fontSize: 9, color: 'var(--muted)',
-          textTransform: 'uppercase', letterSpacing: '0.06em', textAlign: 'center', marginTop: -4,
-        }}>{member.home_region}</div>
-      )}
     </div>
   );
 }
@@ -335,11 +329,6 @@ export default function SessionView({
   return (
     <div style={{ display: 'flex', flexDirection: 'column', minHeight: '100%' }}>
 
-      {/* shared datalist for commodity autocomplete */}
-      <datalist id="sv-commodities-datalist">
-        {allCommodities.map(n => <option key={n} value={n} />)}
-      </datalist>
-
       {/* ── Session header bar ── */}
       <div style={{
         background: '#777', padding: '14px 24px', borderBottom: '2px solid #000',
@@ -455,6 +444,9 @@ export default function SessionView({
 
           <div style={{ fontFamily: 'var(--font-sans)', fontSize: 12, color: 'var(--muted)', marginBottom: 20, lineHeight: 1.6 }}>
             {label} · {memberCount} pilot{memberCount !== 1 ? 's' : ''} · {session.contracts.length} run{session.contracts.length !== 1 ? 's' : ''}
+            {session.createdAt && (
+              <span> · Created {new Date(session.createdAt).toLocaleString(undefined, { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })}</span>
+            )}
           </div>
 
           {/* All pilots flat */}
@@ -468,7 +460,7 @@ export default function SessionView({
               {creator && (
                 <span style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--muted)' }}>
                   Session by{' '}
-                  <span style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 11, color: creator.color || 'var(--text)', textTransform: 'uppercase' }}>
+                  <span style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 11, color: 'var(--text)', textTransform: 'uppercase' }}>
                     {creator.callsign}
                   </span>
                 </span>
@@ -581,16 +573,12 @@ export default function SessionView({
                   )}
                 </div>
 
-                {/* Middle: system + creator */}
+                {/* Middle: separator + system */}
                 <div style={{ flex: 1, display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
+                  <span style={{ color: 'var(--border)', fontSize: 14, flexShrink: 0 }}>|</span>
                   <span style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 12, color: 'var(--text)', letterSpacing: '0.06em', textTransform: 'uppercase' }}>
                     {contract.system}
                   </span>
-                  {contract.creatorCallsign && (
-                    <span style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--muted)' }}>
-                      by <span style={{ fontFamily: 'var(--font-display)', fontWeight: 700, color: contract.creatorColor || 'var(--text)', fontSize: 11 }}>{contract.creatorCallsign}</span>
-                    </span>
-                  )}
                 </div>
 
                 {/* Right: payout + Done? */}
@@ -700,18 +688,19 @@ export default function SessionView({
                             display: 'flex', flexDirection: 'column', gap: 6, minWidth: 200,
                           }}>
                             <div style={{ fontFamily: 'var(--font-mono)', fontSize: 8, color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '0.1em' }}>Edit Cargo</div>
-                            <input
+                            <select
                               autoFocus
                               value={editingCargo.commodity}
-                              list="sv-commodities-datalist"
                               onChange={e => setEditingCargo(v => ({ ...v, commodity: e.target.value }))}
-                              placeholder="Commodity"
                               style={{
-                                padding: '3px 6px', border: '2px solid var(--border)',
+                                padding: '3px 4px', border: '2px solid var(--border)',
                                 background: 'var(--bg-1)', color: 'var(--text)',
                                 fontFamily: 'var(--font-display)', fontSize: 11, fontWeight: 700, outline: 'none',
                               }}
-                            />
+                            >
+                              <option value="">— pick commodity —</option>
+                              {allCommodities.map(n => <option key={n} value={n}>{n}</option>)}
+                            </select>
                             <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
                               <input
                                 type="number" min="1" step="1"
@@ -754,35 +743,49 @@ export default function SessionView({
                 </div>
               )}
 
-              {/* ── Footer ── */}
-              {isSessionMember && (
-                <div style={{ borderTop: '1px solid var(--bg-3)', paddingTop: 12, display: 'flex', alignItems: 'flex-start', gap: 10 }}>
-                  {isMine ? (
-                    <button
-                      onClick={() => onDeleteContract(session.id, contract.id)}
-                      style={{
-                        fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 11,
-                        textTransform: 'uppercase', letterSpacing: '0.06em',
-                        padding: '6px 14px', border: '2px solid #c41e3a', background: '#c41e3a', color: '#fff', cursor: 'pointer',
-                      }}
-                      onMouseEnter={e => { e.currentTarget.style.background = '#000'; e.currentTarget.style.borderColor = '#000'; }}
-                      onMouseLeave={e => { e.currentTarget.style.background = '#c41e3a'; e.currentTarget.style.borderColor = '#c41e3a'; }}
-                    >× Remove</button>
-                  ) : (
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
+              {/* ── Footer: remove controls (members only) + creator attribution (always) ── */}
+              {(isSessionMember || contract.creatorCallsign) && (
+                <div style={{ borderTop: '1px solid var(--bg-3)', paddingTop: 12, display: 'flex', alignItems: 'center', gap: 10 }}>
+                  {/* Left: remove / vote controls */}
+                  <div>
+                    {isSessionMember && (isMine ? (
                       <button
-                        onClick={() => myVoted ? onWithdrawVote?.(contract.id) : onCastRemovalVote?.(contract.id, session.id)}
+                        onClick={() => onDeleteContract(session.id, contract.id)}
                         style={{
                           fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 11,
                           textTransform: 'uppercase', letterSpacing: '0.06em',
-                          padding: '6px 14px', cursor: 'pointer',
-                          border: `2px solid ${myVoted ? '#c41e3a' : '#bbb'}`,
-                          background: 'transparent', color: myVoted ? '#c41e3a' : '#888',
+                          padding: '6px 14px', border: '2px solid #c41e3a', background: '#c41e3a', color: '#fff', cursor: 'pointer',
                         }}
-                      >Vote Remove ({voteCount} / {threshold})</button>
-                      <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: 'var(--muted)', fontStyle: 'italic' }}>
-                        Requires majority vote to remove.
+                        onMouseEnter={e => { e.currentTarget.style.background = '#000'; e.currentTarget.style.borderColor = '#000'; }}
+                        onMouseLeave={e => { e.currentTarget.style.background = '#c41e3a'; e.currentTarget.style.borderColor = '#c41e3a'; }}
+                      >× Remove</button>
+                    ) : (
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
+                        <button
+                          onClick={() => myVoted ? onWithdrawVote?.(contract.id) : onCastRemovalVote?.(contract.id, session.id)}
+                          style={{
+                            fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 11,
+                            textTransform: 'uppercase', letterSpacing: '0.06em',
+                            padding: '6px 14px', cursor: 'pointer',
+                            border: `2px solid ${myVoted ? '#c41e3a' : '#bbb'}`,
+                            background: 'transparent', color: myVoted ? '#c41e3a' : '#888',
+                          }}
+                        >Vote Remove ({voteCount} / {threshold})</button>
+                        <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: 'var(--muted)', fontStyle: 'italic' }}>
+                          Requires majority vote to remove.
+                        </div>
                       </div>
+                    ))}
+                  </div>
+
+                  {/* Right: creator attribution */}
+                  {contract.creatorCallsign && (
+                    <div style={{ marginLeft: 'auto', textAlign: 'right' }}>
+                      <span style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--muted)' }}>posted by </span>
+                      <span style={{
+                        fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 11,
+                        color: contract.creatorColor || 'var(--text)', textTransform: 'uppercase',
+                      }}>{contract.creatorCallsign}</span>
                     </div>
                   )}
                 </div>
