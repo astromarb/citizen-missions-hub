@@ -7,13 +7,18 @@ export function useProfile(userId) {
 
   const load = useCallback(async () => {
     if (!userId) { setLoading(false); return; }
-    const { data, error } = await supabase
-      .from('profiles')
-      .select('id, callsign, color, avatar_url, home_region, onboarding_complete, auec_balance, auec_balance_verified_at, rsi_handle')
-      .eq('id', userId)
-      .single();
-    if (!error && data) setProfile(data);
-    setLoading(false);
+    try {
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('id, callsign, color, avatar_url, home_region, onboarding_complete, auec_balance, auec_balance_verified_at, rsi_handle')
+        .eq('id', userId)
+        .single();
+      if (!error && data) setProfile(data);
+    } catch (e) {
+      console.error('useProfile load:', e);
+    } finally {
+      setLoading(false);
+    }
   }, [userId]);
 
   useEffect(() => { load(); }, [load]);

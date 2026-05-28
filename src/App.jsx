@@ -241,7 +241,8 @@ function AppInner() {
   const [joinToken, setJoinToken] = useState(() => new URLSearchParams(window.location.search).get('join'));
 
   useEffect(() => {
-    supabase.auth.getSession()
+    const timeout = new Promise((_, rej) => setTimeout(() => rej(new Error('auth-timeout')), 12000));
+    Promise.race([supabase.auth.getSession(), timeout])
       .then(({ data: { session } }) => {
         setAuthSession(session);
         setAuthLoading(false);

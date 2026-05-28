@@ -52,33 +52,38 @@ export function useSessions(enabled = true, userId) {
   const channelRef = useRef(null);
 
   const load = useCallback(async () => {
-    const { data, error } = await supabase
-      .from('sessions')
-      .select(`
-        *,
-        session_players ( profiles ( id, callsign, color, avatar_url, home_region ) ),
-        session_invites ( id, invitee_id, status,
-          invitee:profiles!invitee_id ( id, callsign, color, avatar_url )
-        ),
-        contracts (
+    try {
+      const { data, error } = await supabase
+        .from('sessions')
+        .select(`
           *,
-          creator:profiles!creator_id ( callsign, color ),
-          contract_removal_votes ( voter_id ),
-          contract_waypoints (
-            id, kind, location_name, body, sort_order,
-            waypoint_completions ( profile_id, status )
+          session_players ( profiles ( id, callsign, color, avatar_url, home_region ) ),
+          session_invites ( id, invitee_id, status,
+            invitee:profiles!invitee_id ( id, callsign, color, avatar_url )
           ),
-          cargo_items ( id, commodity, scu, from_location, to_location )
-        )
-      `)
-      .order('date', { ascending: false });
+          contracts (
+            *,
+            creator:profiles!creator_id ( callsign, color ),
+            contract_removal_votes ( voter_id ),
+            contract_waypoints (
+              id, kind, location_name, body, sort_order,
+              waypoint_completions ( profile_id, status )
+            ),
+            cargo_items ( id, commodity, scu, from_location, to_location )
+          )
+        `)
+        .order('date', { ascending: false });
 
-    if (error) { console.error('useSessions:', error); setLoading(false); return; }
+      if (error) { console.error('useSessions:', error); return; }
 
-    const map = {};
-    for (const s of (data || [])) map[s.id] = xf(s);
-    setSessions(map);
-    setLoading(false);
+      const map = {};
+      for (const s of (data || [])) map[s.id] = xf(s);
+      setSessions(map);
+    } catch (e) {
+      console.error('useSessions load:', e);
+    } finally {
+      setLoading(false);
+    }
   }, []);
 
   useEffect(() => {
