@@ -129,17 +129,29 @@ function PlayerSeat({ member }) {
   );
 }
 
-function WaypointRow({ waypoint, myProfileId, members, onSetStatus, canEdit }) {
+function WaypointRow({ waypoint, myProfileId, members, onSetStatus, canEdit, kind }) {
   const myCompletion = waypoint.completions?.find(c => c.profileId === myProfileId);
   const otherCompletions = (waypoint.completions || []).filter(c => c.profileId !== myProfileId);
+  const isPickup = kind === 'pickup';
 
   const memberMap = {};
   (members || []).forEach(m => { memberMap[m.id] = m; });
 
+  const statusIcon = (status) => {
+    if (status === 'picked_up') return '🟠';
+    if (status === 'done')      return '✅';
+    return '❌';
+  };
+  const statusColor = (status) => {
+    if (status === 'picked_up') return '#ff9800';
+    if (status === 'done')      return '#2d8659';
+    return '#c41e3a';
+  };
+
   return (
     <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8, flexWrap: 'wrap' }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 6, flex: 1, minWidth: 0 }}>
-        <span style={{ color: 'var(--muted)', fontSize: 12, flexShrink: 0 }}>↑</span>
+        <span style={{ color: 'var(--muted)', fontSize: 12, flexShrink: 0 }}>{isPickup ? '↑' : '↓'}</span>
         <span style={{
           fontFamily: 'var(--font-sans)', fontSize: 13,
           color: '#c41e3a', fontWeight: 500, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
@@ -153,69 +165,72 @@ function WaypointRow({ waypoint, myProfileId, members, onSetStatus, canEdit }) {
           const m = memberMap[c.profileId];
           const label = m?.callsign || c.profileId.slice(0, 6);
           const col = m?.color || '#888';
-          const icon = c.status === 'done' ? '✅' : c.status === 'picked_up' ? '🟠' : '❌';
-          const borderCol = c.status === 'done' ? '#2d8659' : c.status === 'picked_up' ? '#ff9800' : '#c41e3a';
+          const borderCol = statusColor(c.status);
           return (
             <span key={c.profileId} style={{
               fontFamily: 'var(--font-mono)', fontSize: 10, padding: '2px 7px',
               border: `1.5px solid ${borderCol}`,
               color: borderCol, fontWeight: 600,
             }}>
-              <span style={{ color: col }}>■</span> {label} {icon}
+              <span style={{ color: col }}>■</span> {label} {statusIcon(c.status)}
             </span>
           );
         })}
 
         {myProfileId && canEdit && (
           <div style={{ display: 'flex', gap: 12 }}>
-            {/* Orange circle — Picked Up */}
-            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 3 }}>
-              <button
-                onClick={() => onSetStatus(waypoint.id, myCompletion?.status === 'picked_up' ? null : 'picked_up')}
-                title="Mark picked up / in transit"
-                style={{
-                  width: 28, height: 28, borderRadius: '50%', cursor: 'pointer',
-                  border: `2px solid ${myCompletion?.status === 'picked_up' ? '#ff9800' : '#ccc'}`,
-                  background: myCompletion?.status === 'picked_up' ? '#ff9800' : 'transparent',
-                  color: myCompletion?.status === 'picked_up' ? '#fff' : '#bbb',
-                  fontWeight: 700, fontSize: 12,
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                }}
-              >●</button>
-              <span style={{ fontFamily: 'var(--font-mono)', fontSize: 7, color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '0.06em', whiteSpace: 'nowrap' }}>PICKED UP</span>
-            </div>
-            {/* Green check — Delivered/Done */}
-            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 3 }}>
-              <button
-                onClick={() => onSetStatus(waypoint.id, myCompletion?.status === 'done' ? null : 'done')}
-                title="Mark delivered / done"
-                style={{
-                  width: 28, height: 28, cursor: 'pointer',
-                  border: `2px solid var(--border)`,
-                  background: myCompletion?.status === 'done' ? '#2d8659' : 'var(--bg-1)',
-                  color: myCompletion?.status === 'done' ? '#fff' : 'var(--muted)',
-                  fontWeight: 700, fontSize: 13,
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                }}
-              >✓</button>
-              <span style={{ fontFamily: 'var(--font-mono)', fontSize: 7, color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '0.06em', whiteSpace: 'nowrap' }}>DELIVERED</span>
-            </div>
-            {/* Red X — Failed */}
-            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 3 }}>
-              <button
-                onClick={() => onSetStatus(waypoint.id, myCompletion?.status === 'failed' ? null : 'failed')}
-                title="Mark failed"
-                style={{
-                  width: 28, height: 28, cursor: 'pointer',
-                  border: `2px solid ${myCompletion?.status === 'failed' ? '#c41e3a' : '#ccc'}`,
-                  background: 'transparent',
-                  color: myCompletion?.status === 'failed' ? '#c41e3a' : '#bbb',
-                  fontWeight: 700, fontSize: 13,
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                }}
-              >✕</button>
-              <span style={{ fontFamily: 'var(--font-mono)', fontSize: 7, color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '0.06em', whiteSpace: 'nowrap' }}>LOST</span>
-            </div>
+            {isPickup ? (
+              /* Pickup rows: PICKED UP only */
+              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 3 }}>
+                <button
+                  onClick={() => onSetStatus(waypoint.id, myCompletion?.status === 'picked_up' ? null : 'picked_up')}
+                  title="Mark picked up"
+                  style={{
+                    width: 28, height: 28, borderRadius: '50%', cursor: 'pointer',
+                    border: `2px solid ${myCompletion?.status === 'picked_up' ? '#ff9800' : '#ccc'}`,
+                    background: myCompletion?.status === 'picked_up' ? '#ff9800' : 'transparent',
+                    color: myCompletion?.status === 'picked_up' ? '#fff' : '#bbb',
+                    fontWeight: 700, fontSize: 12,
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  }}
+                >●</button>
+                <span style={{ fontFamily: 'var(--font-mono)', fontSize: 7, color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '0.06em', whiteSpace: 'nowrap' }}>PICKED UP</span>
+              </div>
+            ) : (
+              /* Dropoff rows: DELIVERED and LOST */
+              <>
+                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 3 }}>
+                  <button
+                    onClick={() => onSetStatus(waypoint.id, myCompletion?.status === 'done' ? null : 'done')}
+                    title="Mark delivered"
+                    style={{
+                      width: 28, height: 28, cursor: 'pointer',
+                      border: `2px solid ${myCompletion?.status === 'done' ? '#2d8659' : 'var(--border)'}`,
+                      background: myCompletion?.status === 'done' ? '#2d8659' : 'var(--bg-1)',
+                      color: myCompletion?.status === 'done' ? '#fff' : 'var(--muted)',
+                      fontWeight: 700, fontSize: 13,
+                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    }}
+                  >✓</button>
+                  <span style={{ fontFamily: 'var(--font-mono)', fontSize: 7, color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '0.06em', whiteSpace: 'nowrap' }}>DELIVERED</span>
+                </div>
+                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 3 }}>
+                  <button
+                    onClick={() => onSetStatus(waypoint.id, myCompletion?.status === 'failed' ? null : 'failed')}
+                    title="Mark lost"
+                    style={{
+                      width: 28, height: 28, cursor: 'pointer',
+                      border: `2px solid ${myCompletion?.status === 'failed' ? '#c41e3a' : '#ccc'}`,
+                      background: 'transparent',
+                      color: myCompletion?.status === 'failed' ? '#c41e3a' : '#bbb',
+                      fontWeight: 700, fontSize: 13,
+                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    }}
+                  >✕</button>
+                  <span style={{ fontFamily: 'var(--font-mono)', fontSize: 7, color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '0.06em', whiteSpace: 'nowrap' }}>LOST</span>
+                </div>
+              </>
+            )}
           </div>
         )}
       </div>
@@ -662,6 +677,7 @@ export default function SessionView({
                       members={members}
                       onSetStatus={onSetWaypointStatus || (() => {})}
                       canEdit={isSessionMember}
+                      kind="pickup"
                     />
                   ))}
                 </div>
@@ -679,6 +695,7 @@ export default function SessionView({
                       members={members}
                       onSetStatus={onSetWaypointStatus || (() => {})}
                       canEdit={isSessionMember}
+                      kind="dropoff"
                     />
                   ))}
                 </div>
