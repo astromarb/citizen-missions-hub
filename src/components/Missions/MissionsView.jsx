@@ -251,7 +251,7 @@ export default function MissionsView({ sessions, myProfileId, profile, avatarUrl
   const color      = profile?.color       || '#8b949e';
   const homeRegion = profile?.home_region || null;
 
-  const displayBadges = (profile?.badges?.length > 0)
+  const displayBadges = (profile?.badges != null)
     ? profile.badges
     : ['alpha', ...(homeRegion ? ['home_region'] : [])];
   const renderBadge = (id, size) => {
@@ -333,18 +333,17 @@ export default function MissionsView({ sessions, myProfileId, profile, avatarUrl
               ))
             )}
           </div>
-        </div>
 
-        {/* ── Profile banner panel ── */}
-        {!isMobile && profile?.banner_panel && getBanner(profile.banner_panel) && (
-          <div style={{
-            width: '100%', aspectRatio: '1',
-            backgroundImage: `url(${getBanner(profile.banner_panel).src})`,
-            backgroundSize: 'cover', backgroundPosition: 'center',
-            backgroundColor: getBanner(profile.banner_panel).fallbackBg,
-            border: '2px solid var(--border)', marginTop: 16,
-          }} />
-        )}
+          {/* ── Profile banner panel — flush with card bottom ── */}
+          {!isMobile && profile?.banner_panel && getBanner(profile.banner_panel) && (
+            <div style={{
+              width: '100%', aspectRatio: '1',
+              backgroundImage: `url(${getBanner(profile.banner_panel).src})`,
+              backgroundSize: 'cover', backgroundPosition: 'center',
+              backgroundColor: getBanner(profile.banner_panel).fallbackBg,
+            }} />
+          )}
+        </div>
       </div>
 
       {/* ── Sessions panel ── */}

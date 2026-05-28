@@ -90,7 +90,7 @@ export default function SettingsView({ profile, updateProfile, checkCallsign }) 
   ];
 
   const [selectedBadges, setSelectedBadges] = useState(() => {
-    if (profile?.badges?.length > 0) return [...profile.badges];
+    if (profile?.badges != null) return [...profile.badges];
     return [...earnedBadgeIds];
   });
   const [badgesSaved, setBadgesSaved] = useState(false);
@@ -127,7 +127,8 @@ export default function SettingsView({ profile, updateProfile, checkCallsign }) 
     setRegion(profile.home_region || '');
     setRsiHandle(profile.rsi_handle || '');
     setBannerPanel(profile.banner_panel || null);
-    if (profile.badges?.length > 0) setSelectedBadges([...profile.badges]);
+    const earned = ['alpha', ...(profile.home_region ? ['home_region'] : [])];
+    setSelectedBadges(profile.badges != null ? [...profile.badges] : [...earned]);
   // Only resync on first load or when user data changes server-side.
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [profile?.id]);

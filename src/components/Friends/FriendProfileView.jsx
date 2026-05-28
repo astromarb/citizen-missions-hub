@@ -226,7 +226,7 @@ export default function FriendProfileView({ friend, sessions, myProfileId, onBac
   const avatarUrl = friend.avatar_url || null;
 
   // Badges to display: use saved selection, or fall back to all earned
-  const displayBadges = (friend.badges?.length > 0)
+  const displayBadges = (friend.badges != null)
     ? friend.badges
     : ['alpha', ...(homeRegion ? ['home_region'] : [])];
 
@@ -326,18 +326,17 @@ export default function FriendProfileView({ friend, sessions, myProfileId, onBac
               ))
             )}
           </div>
-        </div>
 
-        {/* ── Profile banner panel ── */}
-        {!isMobile && friend?.banner_panel && getBanner(friend.banner_panel) && (
-          <div style={{
-            width: '100%', aspectRatio: '1',
-            backgroundImage: `url(${getBanner(friend.banner_panel).src})`,
-            backgroundSize: 'cover', backgroundPosition: 'center',
-            backgroundColor: getBanner(friend.banner_panel).fallbackBg,
-            border: '2px solid var(--border)', marginTop: 16,
-          }} />
-        )}
+          {/* ── Profile banner panel — flush with card bottom ── */}
+          {!isMobile && friend?.banner_panel && getBanner(friend.banner_panel) && (
+            <div style={{
+              width: '100%', aspectRatio: '1',
+              backgroundImage: `url(${getBanner(friend.banner_panel).src})`,
+              backgroundSize: 'cover', backgroundPosition: 'center',
+              backgroundColor: getBanner(friend.banner_panel).fallbackBg,
+            }} />
+          )}
+        </div>
       </div>
 
       {/* ── Right panel ── */}
