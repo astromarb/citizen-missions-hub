@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import TypeBadge from '../shared/TypeBadge.jsx';
 import { keyToLabel } from '../../utils/dateUtils.js';
+import { getContractSize } from '../../utils/contractSize.js';
 
 const wpName = (w) => (typeof w === 'object' ? w.name : w) || '';
 
@@ -166,46 +167,55 @@ function WaypointRow({ waypoint, myProfileId, members, onSetStatus }) {
         })}
 
         {myProfileId && (
-          <div style={{ display: 'flex', gap: 3 }}>
+          <div style={{ display: 'flex', gap: 12 }}>
             {/* Orange circle — Picked Up */}
-            <button
-              onClick={() => onSetStatus(waypoint.id, myCompletion?.status === 'picked_up' ? null : 'picked_up')}
-              title="Mark picked up / in transit"
-              style={{
-                width: 28, height: 28, borderRadius: '50%', cursor: 'pointer',
-                border: `2px solid ${myCompletion?.status === 'picked_up' ? '#ff9800' : '#ccc'}`,
-                background: myCompletion?.status === 'picked_up' ? '#ff9800' : 'transparent',
-                color: myCompletion?.status === 'picked_up' ? '#fff' : '#bbb',
-                fontWeight: 700, fontSize: 12,
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-              }}
-            >●</button>
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 3 }}>
+              <button
+                onClick={() => onSetStatus(waypoint.id, myCompletion?.status === 'picked_up' ? null : 'picked_up')}
+                title="Mark picked up / in transit"
+                style={{
+                  width: 28, height: 28, borderRadius: '50%', cursor: 'pointer',
+                  border: `2px solid ${myCompletion?.status === 'picked_up' ? '#ff9800' : '#ccc'}`,
+                  background: myCompletion?.status === 'picked_up' ? '#ff9800' : 'transparent',
+                  color: myCompletion?.status === 'picked_up' ? '#fff' : '#bbb',
+                  fontWeight: 700, fontSize: 12,
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                }}
+              >●</button>
+              <span style={{ fontFamily: 'var(--font-mono)', fontSize: 7, color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '0.06em', whiteSpace: 'nowrap' }}>PICKED UP</span>
+            </div>
             {/* Green check — Delivered/Done */}
-            <button
-              onClick={() => onSetStatus(waypoint.id, myCompletion?.status === 'done' ? null : 'done')}
-              title="Mark delivered / done"
-              style={{
-                width: 28, height: 28, cursor: 'pointer',
-                border: `2px solid var(--border)`,
-                background: myCompletion?.status === 'done' ? '#2d8659' : 'var(--bg-1)',
-                color: myCompletion?.status === 'done' ? '#fff' : 'var(--muted)',
-                fontWeight: 700, fontSize: 13,
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-              }}
-            >✓</button>
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 3 }}>
+              <button
+                onClick={() => onSetStatus(waypoint.id, myCompletion?.status === 'done' ? null : 'done')}
+                title="Mark delivered / done"
+                style={{
+                  width: 28, height: 28, cursor: 'pointer',
+                  border: `2px solid var(--border)`,
+                  background: myCompletion?.status === 'done' ? '#2d8659' : 'var(--bg-1)',
+                  color: myCompletion?.status === 'done' ? '#fff' : 'var(--muted)',
+                  fontWeight: 700, fontSize: 13,
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                }}
+              >✓</button>
+              <span style={{ fontFamily: 'var(--font-mono)', fontSize: 7, color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '0.06em', whiteSpace: 'nowrap' }}>DELIVERED</span>
+            </div>
             {/* Red X — Failed */}
-            <button
-              onClick={() => onSetStatus(waypoint.id, myCompletion?.status === 'failed' ? null : 'failed')}
-              title="Mark failed"
-              style={{
-                width: 28, height: 28, cursor: 'pointer',
-                border: `2px solid ${myCompletion?.status === 'failed' ? '#c41e3a' : '#ccc'}`,
-                background: 'transparent',
-                color: myCompletion?.status === 'failed' ? '#c41e3a' : '#bbb',
-                fontWeight: 700, fontSize: 13,
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-              }}
-            >✕</button>
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 3 }}>
+              <button
+                onClick={() => onSetStatus(waypoint.id, myCompletion?.status === 'failed' ? null : 'failed')}
+                title="Mark failed"
+                style={{
+                  width: 28, height: 28, cursor: 'pointer',
+                  border: `2px solid ${myCompletion?.status === 'failed' ? '#c41e3a' : '#ccc'}`,
+                  background: 'transparent',
+                  color: myCompletion?.status === 'failed' ? '#c41e3a' : '#bbb',
+                  fontWeight: 700, fontSize: 13,
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                }}
+              >✕</button>
+              <span style={{ fontFamily: 'var(--font-mono)', fontSize: 7, color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '0.06em', whiteSpace: 'nowrap' }}>LOST</span>
+            </div>
           </div>
         )}
       </div>
@@ -563,6 +573,17 @@ export default function SessionView({
               <div style={{ display: 'flex', alignItems: 'flex-start', gap: 12, marginBottom: 14, flexWrap: 'wrap' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 12, flex: 1, flexWrap: 'wrap' }}>
                   <TypeBadge type={contract.type} />
+                  {(() => {
+                    const cSCU = contract.cargo.reduce((t, c) => t + Number(c.scu || 0), 0);
+                    const sz = getContractSize(cSCU);
+                    return (
+                      <span title={sz.tip} style={{
+                        background: sz.bg, color: '#fff', padding: '2px 7px',
+                        fontFamily: 'var(--font-mono)', fontSize: 10, fontWeight: 700, letterSpacing: '0.08em',
+                        border: '2px solid rgba(0,0,0,0.15)',
+                      }}>{sz.label}</span>
+                    );
+                  })()}
                   <span style={{
                     fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 12,
                     color: 'var(--text)', letterSpacing: '0.06em', textTransform: 'uppercase',
@@ -587,21 +608,24 @@ export default function SessionView({
                 </div>
 
                 {/* Done checkbox */}
-                <button
-                  onClick={() => onToggleDone(session.id, contract.id)}
-                  title={contract.done ? 'Mark active' : 'Mark complete'}
-                  style={{
-                    width: 24, height: 24, flexShrink: 0,
-                    border: `2px solid ${contract.done ? '#2d8659' : '#000'}`,
-                    background: contract.done ? '#2d8659' : 'transparent',
-                    cursor: 'pointer',
-                    display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  }}
-                >
-                  {contract.done && (
-                    <span style={{ fontSize: 12, color: '#fff', fontWeight: 800 }}>✓</span>
-                  )}
-                </button>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 5, flexShrink: 0 }}>
+                  <span style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '0.08em' }}>Done?</span>
+                  <button
+                    onClick={() => onToggleDone(session.id, contract.id)}
+                    title={contract.done ? 'Mark active' : 'Mark complete'}
+                    style={{
+                      width: 24, height: 24,
+                      border: `2px solid ${contract.done ? '#2d8659' : '#000'}`,
+                      background: contract.done ? '#2d8659' : 'transparent',
+                      cursor: 'pointer',
+                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    }}
+                  >
+                    {contract.done && (
+                      <span style={{ fontSize: 12, color: '#fff', fontWeight: 800 }}>✓</span>
+                    )}
+                  </button>
+                </div>
               </div>
 
               <div style={{ height: 1, background: 'var(--bg-3)', marginBottom: 14 }} />
@@ -645,15 +669,24 @@ export default function SessionView({
                     <div key={i} style={{
                       padding: '6px 12px',
                       background: 'transparent',
-                      border: '2px solid #c41e3a',
+                      border: '2px solid #555',
                       display: 'flex', flexDirection: 'column', gap: 2,
                     }}>
-                      <span style={{
-                        fontFamily: 'var(--font-display)', fontSize: 11, fontWeight: 700,
-                        color: '#c41e3a', letterSpacing: '0.04em',
-                      }}>
-                        {c.commodity} · {c.scu} SCU
-                      </span>
+                      <div style={{ display: 'flex', alignItems: 'baseline', gap: 4 }}>
+                        <span style={{
+                          fontFamily: 'var(--font-display)', fontSize: 11, fontWeight: 700,
+                          color: 'var(--text)', letterSpacing: '0.04em',
+                          textDecoration: 'underline',
+                        }}>
+                          {c.commodity}
+                        </span>
+                        <span style={{
+                          fontFamily: 'var(--font-mono)', fontSize: 11, fontWeight: 700,
+                          color: 'var(--muted)',
+                        }}>
+                          · {c.scu} SCU
+                        </span>
+                      </div>
                       {(c.fromLocation || c.toLocation) && (
                         <span style={{
                           fontFamily: 'var(--font-mono)', fontSize: 9,

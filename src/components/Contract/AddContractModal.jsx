@@ -1,6 +1,7 @@
 import { useState, useMemo } from 'react';
 import LocationAutocomplete from '../Autocomplete/LocationAutocomplete.jsx';
 import CommodityAutocomplete from '../Autocomplete/CommodityAutocomplete.jsx';
+import { typeBg } from '../../data/contractTypes.js';
 
 const lbl = {
   display: 'block', fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 10,
@@ -8,7 +9,7 @@ const lbl = {
 };
 
 const emptyWp    = () => ({ name: '', body: '' });
-const emptyItem  = () => ({ commodity: '', scu: '' });
+const emptyItem  = () => ({ commodity: '', scu: '', toLocation: '' });
 
 function deriveRoute(pickups, dropoffs, systemsMap) {
   const sysFor = (name) => {
@@ -27,15 +28,7 @@ function deriveRoute(pickups, dropoffs, systemsMap) {
 
   if (allSystems.length === 0) return { system: null, type: null };
 
-  // Direct: exactly 1 pickup + 1 dropoff (regardless of distance)
-  if (fp.length === 1 && fd.length === 1) {
-    const sys = allSystems.length > 1
-      ? `${pSystems[0] || allSystems[0]} → ${dSystems[0] || allSystems[1]}`
-      : allSystems[0];
-    return { system: sys, type: 'Hauling - Direct' };
-  }
-
-  // Multiple stops — check systems first
+  // Interstellar always wins — even a single pickup+dropoff across systems
   if (allSystems.length > 1) {
     const from = pSystems[0] || allSystems[0];
     const to   = dSystems.find(s => s !== from) || allSystems.find(s => s !== from) || allSystems[1];
@@ -49,7 +42,12 @@ function deriveRoute(pickups, dropoffs, systemsMap) {
     return { system: allSystems[0], type: 'Hauling - Planetary' };
   }
 
-  // Same system, different bodies → Solar
+  // Direct: exactly 1 pickup + 1 dropoff, same system
+  if (fp.length === 1 && fd.length === 1) {
+    return { system: allSystems[0], type: 'Hauling - Direct' };
+  }
+
+  // Same system, different bodies or multiple stops → Solar
   return { system: allSystems[0], type: 'Hauling - Solar' };
 }
 
@@ -120,8 +118,8 @@ export default function AddContractModal({ onSave, onClose, commodities, systems
         .map(c => ({
           commodity:    c.commodity,
           scu:          c.scu,
-          fromLocation: pickup?.name   || null,
-          toLocation:   singleDropoff  || null,
+          fromLocation: pickup?.name                  || null,
+          toLocation:   c.toLocation || singleDropoff || null,
         }));
     });
 
@@ -204,9 +202,9 @@ export default function AddContractModal({ onSave, onClose, commodities, systems
         {step === 1 && (
           <div>
             {system ? (
-              <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 18, padding: '10px 14px', background: 'rgba(196,30,58,0.05)', border: '2px solid #c41e3a' }}>
-                <span style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 13, color: '#c41e3a' }}>{type}</span>
-                <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--muted)', letterSpacing: '0.06em' }}>{system}</span>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 18, padding: '10px 14px', background: typeBg(type), border: `2px solid ${typeBg(type)}` }}>
+                <span style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 13, color: '#fff' }}>{type}</span>
+                <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'rgba(255,255,255,0.75)', letterSpacing: '0.06em' }}>{system}</span>
               </div>
             ) : (hasPickup || hasDropoff) ? (
               <div style={{ marginBottom: 18, padding: '10px 14px', background: 'var(--bg-2)', border: '2px solid #ccc' }}>
@@ -283,24 +281,45 @@ export default function AddContractModal({ onSave, onClose, commodities, systems
                 {/* Cargo rows */}
                 <div style={{ padding: '10px 12px' }}>
                   {(cargoByPickup[pi] || [emptyItem()]).map((item, ii) => (
-                    <div key={ii} style={{ display: 'flex', gap: 8, alignItems: 'center', marginBottom: 6 }}>
-                      <div style={{ flex: 1 }}>
-                        <CommodityAutocomplete
-                          value={item.commodity}
-                          onChange={v => updateCargoItem(pi, ii, { commodity: v })}
-                          commodities={commodities}
+                    <div key={ii} style={{ marginBottom: 8 }}>
+                      <div style={{ display: 'flex', gap: 8, alignItems: 'center', marginBottom: filledDropoffs.length > 1 ? 4 : 0 }}>
+                        <div style={{ flex: 1 }}>
+                          <CommodityAutocomplete
+                            value={item.commodity}
+                            onChange={v => updateCargoItem(pi, ii, { commodity: v })}
+                            commodities={commodities}
+                          />
+                        </div>
+                        <input type="number" min="1"
+                          style={{ width: 68, padding: '8px 8px', background: 'var(--bg-1)', border: '2px solid var(--border)', color: 'var(--text)', fontSize: 13, textAlign: 'right', fontFamily: 'var(--font-mono)', outline: 'none' }}
+                          placeholder="SCU"
+                          value={item.scu}
+                          onChange={e => updateCargoItem(pi, ii, { scu: e.target.value })}
                         />
+                        <span style={{ fontSize: 11, color: 'var(--muted)', fontFamily: 'var(--font-mono)', width: 28, flexShrink: 0 }}>SCU</span>
+                        {(cargoByPickup[pi]?.length || 1) > 1 && (
+                          <button style={{ background: 'none', border: 'none', color: '#c41e3a', cursor: 'pointer', fontSize: 18, fontWeight: 700, flexShrink: 0 }}
+                            onClick={() => removeCargoItem(pi, ii)}>×</button>
+                        )}
                       </div>
-                      <input type="number" min="1"
-                        style={{ width: 68, padding: '8px 8px', background: 'var(--bg-1)', border: '2px solid var(--border)', color: 'var(--text)', fontSize: 13, textAlign: 'right', fontFamily: 'var(--font-mono)', outline: 'none' }}
-                        placeholder="SCU"
-                        value={item.scu}
-                        onChange={e => updateCargoItem(pi, ii, { scu: e.target.value })}
-                      />
-                      <span style={{ fontSize: 11, color: 'var(--muted)', fontFamily: 'var(--font-mono)', width: 28, flexShrink: 0 }}>SCU</span>
-                      {(cargoByPickup[pi]?.length || 1) > 1 && (
-                        <button style={{ background: 'none', border: 'none', color: '#c41e3a', cursor: 'pointer', fontSize: 18, fontWeight: 700, flexShrink: 0 }}
-                          onClick={() => removeCargoItem(pi, ii)}>×</button>
+                      {filledDropoffs.length > 1 && (
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap', paddingLeft: 4 }}>
+                          <span style={{ fontFamily: 'var(--font-mono)', fontSize: 8, color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '0.08em', flexShrink: 0 }}>↓ Drop at:</span>
+                          {filledDropoffs.map((d, di) => (
+                            <button key={di}
+                              onClick={() => updateCargoItem(pi, ii, { toLocation: item.toLocation === d.name ? '' : d.name })}
+                              style={{
+                                padding: '3px 8px', cursor: 'pointer',
+                                fontFamily: 'var(--font-mono)', fontSize: 9, fontWeight: 700,
+                                textTransform: 'uppercase', letterSpacing: '0.04em',
+                                border: `2px solid ${item.toLocation === d.name ? '#2d8659' : 'var(--border)'}`,
+                                background: item.toLocation === d.name ? 'rgba(45,134,89,0.12)' : 'transparent',
+                                color: item.toLocation === d.name ? '#2d8659' : 'var(--muted)',
+                                whiteSpace: 'nowrap',
+                              }}
+                            >{d.name}</button>
+                          ))}
+                        </div>
                       )}
                     </div>
                   ))}
@@ -316,7 +335,7 @@ export default function AddContractModal({ onSave, onClose, commodities, systems
             <div style={{ marginTop: 16, padding: '12px 14px', background: 'var(--bg-2)', border: '2px solid #000' }}>
               <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--muted)', marginBottom: 6 }}>Route Summary</div>
               <div style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 14, marginBottom: 8 }}>
-                <span style={{ color: '#c41e3a' }}>{type || 'Hauling'}</span>
+                <span style={{ color: typeBg(type) }}>{type || 'Hauling'}</span>
                 {system && <span style={{ color: 'var(--muted)', fontWeight: 400 }}> · {system}</span>}
               </div>
               <div style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 18, color: '#c41e3a', letterSpacing: '-0.02em' }}>

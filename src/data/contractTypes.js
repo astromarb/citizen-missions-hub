@@ -5,7 +5,7 @@ export const CONTRACT_TYPES = {
   'Hauling - Solar':         { bg: '#e07028', color: '#fff' },
   'Hauling - Planetary':     { bg: '#2e7d32', color: '#fff' },
   // Legacy alias — maps old saved contracts
-  'Hauling - Stellar':       { bg: '#0066cc', color: '#fff' },
+  'Hauling - Stellar':       { bg: '#e07028', color: '#fff' },
   'Hauling - Local':         { bg: '#2e7d32', color: '#fff' },
 };
 

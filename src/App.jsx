@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { supabase } from '@/lib/supabase.js';
 import { useSessions } from '@/hooks/useSessions.js';
 import { useRefData } from '@/hooks/useRefData.js';
@@ -11,7 +11,6 @@ import SessionView from '@/components/Session/SessionView.jsx';
 import AddContractModal from '@/components/Contract/AddContractModal.jsx';
 import SessionManageList from '@/components/Session/SessionManageList.jsx';
 import LoginScreen from '@/components/Auth/LoginScreen.jsx';
-import AuthLog from '@/components/Auth/AuthLog.jsx';
 import StatsView from '@/components/Stats/StatsView.jsx';
 import FriendsView from '@/components/Friends/FriendsView.jsx';
 import SettingsView from '@/components/Settings/SettingsView.jsx';
@@ -205,8 +204,6 @@ function AppInner() {
   // ── Auth ──
   const [authSession, setAuthSession] = useState(null);
   const [authLoading, setAuthLoading] = useState(true);
-  const [authLog, setAuthLog] = useState([]);
-  const lastNameRef = useRef('Pilot');
 
   // ── Profiles ──
   const [profiles, setProfiles] = useState([]);
@@ -237,39 +234,20 @@ function AppInner() {
   const { profile, loading: profileLoading, checkCallsign, updateProfile, reload: reloadProfile } = useProfile(userId);
   const { friends, pending, sent, searchUsers, sendRequest, respond, remove: removeFriend } = useFriends(userId, !!authSession);
 
-  // ── Auth log ──
-  const addLog = useCallback((event, name) => {
-    setAuthLog(prev => [{ id: Date.now() + Math.random(), time: new Date(), event, name }, ...prev].slice(0, 100));
-  }, []);
-
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
       setAuthSession(session);
-      if (session?.user) lastNameRef.current = getUserName(session.user);
       setAuthLoading(false);
     });
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       setAuthSession(session);
-      if (event === 'SIGNED_IN' && session?.user) {
-        const name = getUserName(session.user);
-        lastNameRef.current = name;
-        addLog('SIGNED_IN', name);
-        SFX.open();
-      } else if (event === 'SIGNED_OUT') {
-        addLog('SIGNED_OUT', lastNameRef.current);
-        SFX.back();
-      } else if (event === 'INITIAL_SESSION' && session?.user) {
-        const name = getUserName(session.user);
-        lastNameRef.current = name;
-        addLog('INITIAL_SESSION', name);
-      } else if (event === 'TOKEN_REFRESHED') {
-        addLog('TOKEN_REFRESHED', lastNameRef.current);
-      }
+      if (event === 'SIGNED_IN') SFX.open();
+      else if (event === 'SIGNED_OUT') SFX.back();
     });
 
     return () => subscription.unsubscribe();
-  }, [addLog]);
+  }, []);
 
   useEffect(() => {
     if (!authSession) { setProfiles([]); return; }
@@ -781,7 +759,6 @@ function AppInner() {
         />
       )}
 
-      <AuthLog entries={authLog} />
     </div>
   );
 }

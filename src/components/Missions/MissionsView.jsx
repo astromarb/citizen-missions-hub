@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useIsMobile } from '../../hooks/useIsMobile.js';
 import LandingZoneBadge from '../shared/LandingZoneBadge.jsx';
 import { typeBg } from '../../data/contractTypes.js';
+import { getContractSize } from '../../utils/contractSize.js';
 
 // M  T  W  Th  F  Sa  Su  (JS getDay: 0=Sun)
 const DAY_COLORS = [
@@ -179,6 +180,7 @@ function SessionDebrief({ session, myProfileId, onOpenSession }) {
           </div>
           {session.contracts.map(c => {
             const cSCU = c.cargo.reduce((t, ci) => t + Number(ci.scu || 0), 0);
+            const sz = getContractSize(cSCU);
             return (
               <div key={c.id} style={{
                 display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap',
@@ -193,6 +195,11 @@ function SessionDebrief({ session, myProfileId, onOpenSession }) {
                   fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 10,
                   letterSpacing: '0.06em', textTransform: 'uppercase', whiteSpace: 'nowrap',
                 }}>{c.type}</span>
+                <span title={sz.tip} style={{
+                  background: sz.bg, color: '#fff', padding: '2px 6px',
+                  fontFamily: 'var(--font-mono)', fontSize: 9, fontWeight: 700, letterSpacing: '0.08em',
+                  border: '2px solid rgba(0,0,0,0.15)',
+                }}>{sz.label}</span>
                 <span style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 12, textTransform: 'uppercase', letterSpacing: '0.04em', flex: 1, color: 'var(--text)' }}>
                   {c.system}
                 </span>

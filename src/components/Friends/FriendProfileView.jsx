@@ -1,6 +1,7 @@
 import { useIsMobile } from '../../hooks/useIsMobile.js';
 import LandingZoneBadge from '../shared/LandingZoneBadge.jsx';
 import { typeBg } from '../../data/contractTypes.js';
+import { getContractSize } from '../../utils/contractSize.js';
 
 function formatDuration(ms) {
   if (!ms || ms <= 0) return '—';
@@ -27,28 +28,6 @@ function SessionDebrief({ session, myProfileId, onOpenSession }) {
   const durationMs = sessionDurationMs(session);
   const allContracts = session.contracts;
 
-  const pilotStats = {};
-  session.members?.forEach(m => {
-    pilotStats[m.id] = { pickupDone: 0, pickupTotal: 0, dropoffDone: 0, dropoffTotal: 0 };
-  });
-  allContracts.forEach(c => {
-    c.pickups.forEach(wp => {
-      session.members?.forEach(m => {
-        if (!pilotStats[m.id]) return;
-        pilotStats[m.id].pickupTotal++;
-        const comp = wp.completions?.find(x => x.profileId === m.id);
-        if (comp?.status === 'done' || comp?.status === 'picked_up') pilotStats[m.id].pickupDone++;
-      });
-    });
-    c.dropoffs.forEach(wp => {
-      session.members?.forEach(m => {
-        if (!pilotStats[m.id]) return;
-        pilotStats[m.id].dropoffTotal++;
-        const comp = wp.completions?.find(x => x.profileId === m.id);
-        if (comp?.status === 'done') pilotStats[m.id].dropoffDone++;
-      });
-    });
-  });
 
   const d = new Date(session.date + 'T12:00:00');
   const dateLabel = d.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' });
@@ -96,14 +75,13 @@ function SessionDebrief({ session, myProfileId, onOpenSession }) {
             <table style={{ width: '100%', borderCollapse: 'collapse', fontFamily: 'var(--font-display)', fontSize: 12 }}>
               <thead>
                 <tr style={{ borderBottom: '2px solid var(--border)' }}>
-                  {['Pilot', 'Pickups', 'Dropoffs', 'Payout Share'].map(h => (
+                  {['Pilot', 'Payout Share'].map(h => (
                     <th key={h} style={{ padding: '6px 10px', textAlign: 'left', fontWeight: 700, fontSize: 10, letterSpacing: '0.08em', textTransform: 'uppercase', color: 'var(--muted)' }}>{h}</th>
                   ))}
                 </tr>
               </thead>
               <tbody>
                 {session.members.map(m => {
-                  const stats = pilotStats[m.id] || {};
                   const isMe = m.id === myProfileId;
                   return (
                     <tr key={m.id} style={{ borderBottom: '1px solid var(--bg-2)', background: isMe ? 'rgba(196,30,58,0.03)' : 'transparent' }}>
@@ -114,16 +92,6 @@ function SessionDebrief({ session, myProfileId, onOpenSession }) {
                             {m.callsign}{isMe ? ' (you)' : ''}
                           </span>
                         </div>
-                      </td>
-                      <td style={{ padding: '10px', fontFamily: 'var(--font-mono)', fontSize: 12 }}>
-                        <span style={{ color: stats.pickupDone === stats.pickupTotal && stats.pickupTotal > 0 ? '#2d8659' : 'var(--text)', fontWeight: 700 }}>
-                          {stats.pickupDone} / {stats.pickupTotal}
-                        </span>
-                      </td>
-                      <td style={{ padding: '10px', fontFamily: 'var(--font-mono)', fontSize: 12 }}>
-                        <span style={{ color: stats.dropoffDone === stats.dropoffTotal && stats.dropoffTotal > 0 ? '#2d8659' : 'var(--text)', fontWeight: 700 }}>
-                          {stats.dropoffDone} / {stats.dropoffTotal}
-                        </span>
                       </td>
                       <td style={{ padding: '10px', fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 13, color: '#2d8659' }}>
                         {payoutPerPilot > 0 ? `${payoutPerPilot.toLocaleString()} aUEC` : '—'}
@@ -143,6 +111,7 @@ function SessionDebrief({ session, myProfileId, onOpenSession }) {
           <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, letterSpacing: '0.12em', textTransform: 'uppercase', color: 'var(--muted)', marginBottom: 12 }}>Contract Breakdown</div>
           {allContracts.map(c => {
             const cSCU = c.cargo.reduce((t, ci) => t + Number(ci.scu || 0), 0);
+            const sz = getContractSize(cSCU);
             return (
               <div key={c.id} style={{
                 display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap',
@@ -157,6 +126,11 @@ function SessionDebrief({ session, myProfileId, onOpenSession }) {
                   fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 10,
                   letterSpacing: '0.06em', textTransform: 'uppercase', whiteSpace: 'nowrap',
                 }}>{c.type}</span>
+                <span title={sz.tip} style={{
+                  background: sz.bg, color: '#fff', padding: '2px 6px',
+                  fontFamily: 'var(--font-mono)', fontSize: 9, fontWeight: 700, letterSpacing: '0.08em',
+                  border: '2px solid rgba(0,0,0,0.15)',
+                }}>{sz.label}</span>
                 <span style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 12, textTransform: 'uppercase', letterSpacing: '0.04em', flex: 1, color: 'var(--text)' }}>
                   {c.system}
                 </span>
