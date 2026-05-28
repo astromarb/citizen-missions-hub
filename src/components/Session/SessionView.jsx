@@ -126,12 +126,13 @@ function WaypointRow({ waypoint, myProfileId, members, onSetStatus, canEdit, kin
   const myCompletion    = waypoint.completions?.find(c => c.profileId === myProfileId);
   const otherCompletions = (waypoint.completions || []).filter(c => c.profileId !== myProfileId);
   const isPickup = kind === 'pickup';
+  const countFor = (status) => (waypoint.completions || []).filter(c => c.status === status).length;
 
   const memberMap = {};
   (members || []).forEach(m => { memberMap[m.id] = m; });
 
-  const statusIcon  = (s) => s === 'en_route' ? '→' : s === 'picked_up' ? '🟠' : s === 'done' ? '✅' : '❌';
-  const statusColor = (s) => s === 'en_route' ? '#0066cc' : s === 'picked_up' ? '#ff9800' : s === 'done' ? '#2d8659' : '#c41e3a';
+  const statusIcon  = (s) => s === 'loading' ? '↓' : s === 'en_route' ? '→' : s === 'picked_up' ? '🟠' : s === 'done' ? '✅' : '❌';
+  const statusColor = (s) => s === 'loading' ? '#9c59d1' : s === 'en_route' ? '#0066cc' : s === 'picked_up' ? '#ff9800' : s === 'done' ? '#2d8659' : '#c41e3a';
 
   return (
     <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8, flexWrap: 'wrap' }}>
@@ -211,7 +212,30 @@ function WaypointRow({ waypoint, myProfileId, members, onSetStatus, canEdit, kin
           <div style={{ display: 'flex', gap: 12 }}>
             {isPickup ? (
               <>
+                {/* LOADING */}
                 <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 3 }}>
+                  <span style={{ fontFamily: 'var(--font-mono)', fontSize: 8, color: '#aaa', height: 11, lineHeight: '11px', textAlign: 'center' }}>
+                    {countFor('loading') > 0 ? `(${countFor('loading')})` : ''}
+                  </span>
+                  <button
+                    onClick={() => onSetStatus(waypoint.id, myCompletion?.status === 'loading' ? null : 'loading')}
+                    title="Mark loading"
+                    style={{
+                      width: 28, height: 28, cursor: 'pointer',
+                      border: `2px solid ${myCompletion?.status === 'loading' ? '#9c59d1' : '#ccc'}`,
+                      background: myCompletion?.status === 'loading' ? '#9c59d1' : 'transparent',
+                      color: myCompletion?.status === 'loading' ? '#fff' : '#bbb',
+                      fontWeight: 700, fontSize: 14,
+                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    }}
+                  >↓</button>
+                  <span style={{ fontFamily: 'var(--font-mono)', fontSize: 7, color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '0.06em', whiteSpace: 'nowrap' }}>LOADING</span>
+                </div>
+                {/* EN ROUTE */}
+                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 3 }}>
+                  <span style={{ fontFamily: 'var(--font-mono)', fontSize: 8, color: '#aaa', height: 11, lineHeight: '11px', textAlign: 'center' }}>
+                    {countFor('en_route') > 0 ? `(${countFor('en_route')})` : ''}
+                  </span>
                   <button
                     onClick={() => onSetStatus(waypoint.id, myCompletion?.status === 'en_route' ? null : 'en_route')}
                     title="Mark en route"
@@ -226,7 +250,11 @@ function WaypointRow({ waypoint, myProfileId, members, onSetStatus, canEdit, kin
                   >→</button>
                   <span style={{ fontFamily: 'var(--font-mono)', fontSize: 7, color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '0.06em', whiteSpace: 'nowrap' }}>EN ROUTE</span>
                 </div>
+                {/* PICKED UP */}
                 <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 3 }}>
+                  <span style={{ fontFamily: 'var(--font-mono)', fontSize: 8, color: '#aaa', height: 11, lineHeight: '11px', textAlign: 'center' }}>
+                    {countFor('picked_up') > 0 ? `(${countFor('picked_up')})` : ''}
+                  </span>
                   <button
                     onClick={() => onSetStatus(waypoint.id, myCompletion?.status === 'picked_up' ? null : 'picked_up')}
                     title="Mark picked up"
@@ -244,7 +272,30 @@ function WaypointRow({ waypoint, myProfileId, members, onSetStatus, canEdit, kin
               </>
             ) : (
               <>
+                {/* EN ROUTE (dropoff) */}
                 <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 3 }}>
+                  <span style={{ fontFamily: 'var(--font-mono)', fontSize: 8, color: '#aaa', height: 11, lineHeight: '11px', textAlign: 'center' }}>
+                    {countFor('en_route') > 0 ? `(${countFor('en_route')})` : ''}
+                  </span>
+                  <button
+                    onClick={() => onSetStatus(waypoint.id, myCompletion?.status === 'en_route' ? null : 'en_route')}
+                    title="Mark en route"
+                    style={{
+                      width: 28, height: 28, cursor: 'pointer',
+                      border: `2px solid ${myCompletion?.status === 'en_route' ? '#0066cc' : '#ccc'}`,
+                      background: myCompletion?.status === 'en_route' ? '#0066cc' : 'transparent',
+                      color: myCompletion?.status === 'en_route' ? '#fff' : '#bbb',
+                      fontWeight: 700, fontSize: 15,
+                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    }}
+                  >→</button>
+                  <span style={{ fontFamily: 'var(--font-mono)', fontSize: 7, color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '0.06em', whiteSpace: 'nowrap' }}>EN ROUTE</span>
+                </div>
+                {/* DELIVERED */}
+                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 3 }}>
+                  <span style={{ fontFamily: 'var(--font-mono)', fontSize: 8, color: '#aaa', height: 11, lineHeight: '11px', textAlign: 'center' }}>
+                    {countFor('done') > 0 ? `(${countFor('done')})` : ''}
+                  </span>
                   <button
                     onClick={() => onSetStatus(waypoint.id, myCompletion?.status === 'done' ? null : 'done')}
                     title="Mark delivered"
@@ -259,7 +310,11 @@ function WaypointRow({ waypoint, myProfileId, members, onSetStatus, canEdit, kin
                   >✓</button>
                   <span style={{ fontFamily: 'var(--font-mono)', fontSize: 7, color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '0.06em', whiteSpace: 'nowrap' }}>DELIVERED</span>
                 </div>
+                {/* LOST */}
                 <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 3 }}>
+                  <span style={{ fontFamily: 'var(--font-mono)', fontSize: 8, color: '#aaa', height: 11, lineHeight: '11px', textAlign: 'center' }}>
+                    {countFor('failed') > 0 ? `(${countFor('failed')})` : ''}
+                  </span>
                   <button
                     onClick={() => onSetStatus(waypoint.id, myCompletion?.status === 'failed' ? null : 'failed')}
                     title="Mark lost"
