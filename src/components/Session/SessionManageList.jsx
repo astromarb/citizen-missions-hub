@@ -146,10 +146,7 @@ function SessionRow({ session, onDelete, onUpdate, onOpen }) {
 
 export default function SessionManageList({ sessions, myProfileId, onDelete, onUpdate, onOpen, onNewSession }) {
   const mine = Object.values(sessions)
-    .filter(s =>
-      s.createdBy === myProfileId ||
-      (s.createdBy == null && s.members?.some(m => m.id === myProfileId))
-    )
+    .filter(s => s.members?.some(m => m.id === myProfileId))
     .sort((a, b) => new Date(b.date) - new Date(a.date));
   const [filter, setFilter] = useState('');
 
