@@ -229,6 +229,7 @@ function AppInner() {
     setWaypointStatus, castRemovalVote, withdrawRemovalVote, addPlayerToSession,
     startSession, pauseSession, resumeSession, endSession,
     deleteSession, updateSession, updateContract,
+    updateWaypoint, updateCargoItem,
   } = useSessions(!!authSession, userId);
   const { commodities, systemsMap } = useRefData(!!authSession);
   const { profile, loading: profileLoading, checkCallsign, updateProfile, reload: reloadProfile } = useProfile(userId);
@@ -655,6 +656,10 @@ function AppInner() {
               onDeleteSession={handleDeleteSession}
               onUpdateSession={updateSession}
               onUpdateContract={updateContract}
+              onUpdateWaypoint={updateWaypoint}
+              onUpdateCargoItem={updateCargoItem}
+              commodities={commodities}
+              systemsMap={systemsMap}
               playerColors={playerColors}
               myProfileId={myProfileId}
               myCallsign={myCallsign}

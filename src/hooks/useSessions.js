@@ -318,11 +318,28 @@ export function useSessions(enabled = true, userId) {
     return true;
   }, [load]);
 
+  // ── updateWaypoint ─────────────────────────────────────────
+  const updateWaypoint = useCallback(async (waypointId, updates) => {
+    const { error } = await supabase.from('contract_waypoints').update(updates).eq('id', waypointId);
+    if (error) { console.error('updateWaypoint:', error); return false; }
+    await load();
+    return true;
+  }, [load]);
+
+  // ── updateCargoItem ────────────────────────────────────────
+  const updateCargoItem = useCallback(async (cargoItemId, updates) => {
+    const { error } = await supabase.from('cargo_items').update(updates).eq('id', cargoItemId);
+    if (error) { console.error('updateCargoItem:', error); return false; }
+    await load();
+    return true;
+  }, [load]);
+
   return {
     sessions, loading,
     createSession, createContract, toggleDone, deleteContract,
     setWaypointStatus, castRemovalVote, withdrawRemovalVote, addPlayerToSession,
     startSession, pauseSession, resumeSession, endSession,
     deleteSession, updateSession, updateContract,
+    updateWaypoint, updateCargoItem,
   };
 }
