@@ -97,6 +97,12 @@ function SystemBubble({ msg, isMobile }) {
         <div style={{ fontSize: 8, color: '#c41e3a', letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: 4 }}>⚡ Nexus Hub System</div>
         <ReactMarkdown
           components={{
+            h1:     ({children}) => <span style={{ display: 'block', fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 20, letterSpacing: '-0.01em', margin: '6px 0 4px' }}>{children}</span>,
+            h2:     ({children}) => <span style={{ display: 'block', fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 17, letterSpacing: '-0.01em', margin: '5px 0 3px' }}>{children}</span>,
+            h3:     ({children}) => <span style={{ display: 'block', fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 15, margin: '4px 0 3px' }}>{children}</span>,
+            h4:     ({children}) => <span style={{ display: 'block', fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 13, margin: '4px 0 2px' }}>{children}</span>,
+            h5:     ({children}) => <span style={{ display: 'block', fontFamily: 'var(--font-mono)',    fontWeight: 700, fontSize: 10, textTransform: 'uppercase', letterSpacing: '0.1em', margin: '4px 0 2px' }}>{children}</span>,
+            h6:     ({children}) => <span style={{ display: 'block', fontFamily: 'var(--font-mono)',    fontWeight: 700, fontSize: 9,  textTransform: 'uppercase', letterSpacing: '0.1em', opacity: 0.6, margin: '3px 0 2px' }}>{children}</span>,
             p:      ({children}) => <span style={{ display: 'block', marginBottom: '0.35em' }}>{children}</span>,
             strong: ({children}) => <strong style={{ fontWeight: 700 }}>{children}</strong>,
             em:     ({children}) => <em style={{ fontStyle: 'italic' }}>{children}</em>,
