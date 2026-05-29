@@ -283,51 +283,57 @@ export default function MissionsView({ sessions, myProfileId, profile, avatarUrl
 
       {/* ── Profile card ── */}
       <div style={{ width: isMobile ? '100%' : 275, flexShrink: 0, position: isMobile ? 'static' : 'sticky', top: 20 }}>
-        <div style={{ border: '2px solid var(--border)', background: bannerObj ? bannerObj.fallbackBg : 'var(--bg-1)', marginBottom: isMobile ? 0 : 16, position: 'relative', overflow: 'hidden' }}>
-
-          {/* Banner bleeds from top, fading into card background */}
-          {bannerObj && (
-            <>
-              <div style={{
-                position: 'absolute', top: 0, left: 0, right: 0,
-                height: isMobile ? 190 : '100%',
-                backgroundImage: `url(${bannerSrc ?? bannerObj.src})`,
-                backgroundSize: 'cover', backgroundPosition: 'top center',
-                backgroundColor: bannerObj.fallbackBg, zIndex: 0,
-              }} />
-              <div style={{
-                position: 'absolute', zIndex: 1, pointerEvents: 'none',
-                top: isMobile ? 65 : '45%', left: 0, right: 0,
-                height: isMobile ? 140 : '55%',
-                background: isMobile ? 'linear-gradient(to bottom, transparent, var(--bg-1))' : 'linear-gradient(to bottom, transparent, rgba(0,0,0,0.72))',
-              }} />
-            </>
-          )}
-
-          <div style={{ position: 'relative', zIndex: 2 }}>
-            {isMobile ? (
-              <div style={{ padding: '14px 16px', display: 'flex', alignItems: 'center', gap: 12 }}>
-                {avatarUrl ? (
-                  <img src={avatarUrl} alt={callsign}
-                    style={{ width: 58, height: 58, borderRadius: '50%', border: `3px solid ${color}`, objectFit: 'cover', flexShrink: 0 }} />
-                ) : (
-                  <div style={{ width: 58, height: 58, borderRadius: '50%', background: color, border: `3px solid ${color}`, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                    <span style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 22, color: '#fff' }}>{callsign[0]?.toUpperCase()}</span>
-                  </div>
-                )}
-                <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 17, color: bannerObj ? txtCol : '#fff', textTransform: 'uppercase', letterSpacing: '0.04em', lineHeight: 1.1, textShadow: shadow }}>{callsign}</div>
-                </div>
-                <div style={{ display: 'flex', flexDirection: 'row', gap: 4, flexWrap: 'wrap', alignItems: 'center' }}>
-                  {displayBadges.map(id => renderBadge(id, 'xs'))}
-                </div>
-                <div style={{ width: 4, alignSelf: 'stretch', background: color, flexShrink: 0 }} />
-              </div>
+        {isMobile ? (
+          /* Mobile: full-square banner, stats overlaid at bottom, callsign hidden */
+          <div style={{ border: '2px solid var(--border)', position: 'relative', overflow: 'hidden', aspectRatio: '1 / 1', background: '#111' }}>
+            {bannerSrc ? (
+              <div style={{ position: 'absolute', inset: 0, backgroundImage: `url(${bannerSrc})`, backgroundSize: 'cover', backgroundPosition: 'center' }} />
             ) : (
+              <div style={{ position: 'absolute', inset: 0, background: '#1a1a1a' }} />
+            )}
+            {/* Contrast gradient: subtle at top, heavy at bottom */}
+            <div style={{ position: 'absolute', inset: 0, pointerEvents: 'none', background: 'linear-gradient(to bottom, rgba(0,0,0,0.3) 0%, transparent 38%, rgba(0,0,0,0.65) 56%, rgba(0,0,0,0.93) 100%)' }} />
+            {/* Color accent bar */}
+            <div style={{ position: 'absolute', top: 0, right: 0, bottom: 0, width: 4, background: color, zIndex: 3 }} />
+            {/* Top-left: avatar + badges only (no callsign text on mobile) */}
+            <div style={{ position: 'absolute', top: 14, left: 14, zIndex: 2, display: 'flex', alignItems: 'center', gap: 10 }}>
+              {avatarUrl ? (
+                <img src={avatarUrl} alt={callsign} style={{ width: 54, height: 54, borderRadius: '50%', border: `3px solid ${color}`, objectFit: 'cover', flexShrink: 0 }} />
+              ) : (
+                <div style={{ width: 54, height: 54, borderRadius: '50%', background: color, border: `3px solid ${color}`, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                  <span style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 20, color: '#fff' }}>{callsign[0]?.toUpperCase()}</span>
+                </div>
+              )}
+              <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap' }}>
+                {displayBadges.map(id => renderBadge(id, 'xs'))}
+              </div>
+            </div>
+            {/* Bottom: stats overlaid on gradient */}
+            <div style={{ position: 'absolute', bottom: 0, left: 0, right: 4, zIndex: 2, padding: '10px 14px 14px' }}>
+              <div style={{ fontFamily: 'var(--font-mono)', fontSize: 8, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'rgba(255,255,255,0.55)', marginBottom: 6 }}>Career Stats</div>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '4px 16px' }}>
+                {statsRows.map(([label, val]) => (
+                  <div key={label}>
+                    <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: 'rgba(255,255,255,0.65)', letterSpacing: '0.04em' }}>{label}</div>
+                    <div style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 15, color: '#fff', letterSpacing: '-0.01em', textShadow: '0 1px 6px rgba(0,0,0,0.9)' }}>{val}</div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        ) : (
+          /* Desktop: banner bleeds from top, callsign + stats below */
+          <div style={{ border: '2px solid var(--border)', background: bannerObj ? bannerObj.fallbackBg : 'var(--bg-1)', marginBottom: 16, position: 'relative', overflow: 'hidden' }}>
+            {bannerObj && (
+              <>
+                <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: '100%', backgroundImage: `url(${bannerSrc ?? bannerObj.src})`, backgroundSize: 'cover', backgroundPosition: 'top center', backgroundColor: bannerObj.fallbackBg, zIndex: 0 }} />
+                <div style={{ position: 'absolute', zIndex: 1, pointerEvents: 'none', top: '45%', left: 0, right: 0, height: '55%', background: 'linear-gradient(to bottom, transparent, rgba(0,0,0,0.72))' }} />
+              </>
+            )}
+            <div style={{ position: 'relative', zIndex: 2 }}>
               <div style={{ background: bannerObj ? 'transparent' : '#1a1a1a', padding: '24px 18px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 14 }}>
                 {avatarUrl ? (
-                  <img src={avatarUrl} alt={callsign}
-                    style={{ width: 90, height: 90, borderRadius: '50%', border: `4px solid ${color}`, objectFit: 'cover' }} />
+                  <img src={avatarUrl} alt={callsign} style={{ width: 90, height: 90, borderRadius: '50%', border: `4px solid ${color}`, objectFit: 'cover' }} />
                 ) : (
                   <div style={{ width: 90, height: 90, borderRadius: '50%', background: color, border: `4px solid ${color}`, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                     <span style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 35, color: '#fff' }}>{callsign[0]?.toUpperCase()}</span>
@@ -341,30 +347,18 @@ export default function MissionsView({ sessions, myProfileId, profile, avatarUrl
                 </div>
                 <div style={{ width: '100%', height: 4, background: color }} />
               </div>
-            )}
-
-            <div style={{ padding: isMobile ? '10px 14px' : '18px 20px' }}>
-              <div style={{ fontFamily: 'var(--font-mono)', fontSize: isMobile ? 8 : 10, letterSpacing: '0.14em', textTransform: 'uppercase', color: bannerObj ? lblCol : 'var(--muted)', marginBottom: 8, textShadow: shadow }}>Career Stats</div>
-              {isMobile ? (
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px 16px' }}>
-                  {statsRows.map(([label, val]) => (
-                    <div key={label}>
-                      <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: bannerObj ? lblCol : 'var(--muted)', letterSpacing: '0.04em', textShadow: shadow }}>{label}</div>
-                      <div style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 14, color: bannerObj ? txtCol : 'var(--text)', letterSpacing: '-0.01em', textShadow: shadow }}>{val}</div>
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                statsRows.map(([label, val]) => (
+              <div style={{ padding: '18px 20px' }}>
+                <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, letterSpacing: '0.14em', textTransform: 'uppercase', color: bannerObj ? lblCol : 'var(--muted)', marginBottom: 8, textShadow: shadow }}>Career Stats</div>
+                {statsRows.map(([label, val]) => (
                   <div key={label} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', padding: '9px 0', borderBottom: `1px solid ${bannerObj ? 'rgba(255,255,255,0.15)' : 'var(--bg-2)'}` }}>
                     <span style={{ fontFamily: 'var(--font-mono)', fontSize: 12, color: bannerObj ? lblCol : 'var(--muted)', letterSpacing: '0.04em', textShadow: shadow }}>{label}</span>
                     <span style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 16, color: bannerObj ? txtCol : 'var(--text)', letterSpacing: '-0.01em', textShadow: shadow }}>{val}</span>
                   </div>
-                ))
-              )}
+                ))}
+              </div>
             </div>
           </div>
-        </div>
+        )}
       </div>
 
       {/* ── Sessions panel ── */}

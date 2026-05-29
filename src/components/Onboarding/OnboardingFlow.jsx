@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useIsMobile } from '../../hooks/useIsMobile.js';
+import { SFX } from '../../hooks/useSound.js';
 import { useBanners } from '../../hooks/useBanners.js';
 import { useBannerMetadata } from '../../hooks/useBannerMetadata.js';
 
@@ -76,6 +77,7 @@ export default function OnboardingFlow({ profile, updateProfile, checkCallsign, 
       home_region_changed_at: now,
     });
     setSaving(false);
+    SFX.open();
     onComplete();
   };
 
@@ -137,13 +139,14 @@ export default function OnboardingFlow({ profile, updateProfile, checkCallsign, 
         {/* ── Step 2: Color ── */}
         {step === 2 && (
           <div>
-            <div style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 16, marginBottom: 18 }}>Pick your crew color</div>
+            <div style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 16, marginBottom: 4 }}>Pick your crew color</div>
+            <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--muted)', marginBottom: 18 }}>Can be changed later in Settings.</div>
             <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 20 }}>
               <div style={{ width: 64, height: 64, borderRadius: '50%', background: color, border: '2px solid #000' }} />
             </div>
             <div style={{ display: 'grid', gridTemplateColumns: `repeat(${isMobile ? 6 : 4}, 1fr)`, gap: 10 }}>
               {SWATCH_COLORS.map(c => (
-                <button key={c} onClick={() => setColor(c)}
+                <button key={c} onClick={() => { SFX.boop(); setColor(c); }}
                   style={{ width: '100%', aspectRatio: '1', border: `2px solid ${color === c ? '#000' : 'transparent'}`, background: c, cursor: 'pointer', outline: color === c ? '2px solid #000' : 'none', outlineOffset: 2 }}
                 />
               ))}
@@ -229,7 +232,7 @@ export default function OnboardingFlow({ profile, updateProfile, checkCallsign, 
                         return (
                           <button
                             key={b.id}
-                            onClick={() => setBanner(b.id)}
+                            onClick={() => { SFX.boop(); setBanner(b.id); }}
                             style={{
                               display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 3,
                               background: 'none', border: 'none', cursor: 'pointer', padding: 0,
@@ -268,10 +271,11 @@ export default function OnboardingFlow({ profile, updateProfile, checkCallsign, 
         {/* ── Step 4: Home Region ── */}
         {step === 4 && (
           <div>
-            <div style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 16, marginBottom: 18 }}>Home region</div>
+            <div style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 16, marginBottom: 4 }}>What is your Home Region?</div>
+            <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--muted)', marginBottom: 18 }}>Can be changed later in Settings.</div>
             <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: 10 }}>
               {REGIONS.map(r => (
-                <button key={r.key} onClick={() => setRegion(r.key)}
+                <button key={r.key} onClick={() => { SFX.boop(); setRegion(r.key); }}
                   style={{
                     padding: '20px 14px', border: `2px solid ${region === r.key ? '#c41e3a' : '#000'}`,
                     background: region === r.key ? 'rgba(196,30,58,0.05)' : '#fff',
@@ -290,7 +294,7 @@ export default function OnboardingFlow({ profile, updateProfile, checkCallsign, 
         <div style={{ display: 'flex', justifyContent: step > 1 ? 'space-between' : 'flex-end', alignItems: 'center', marginTop: 28 }}>
           {step > 1 && (
             <button
-              onClick={() => setStep(step - 1)}
+              onClick={() => { SFX.back(); setStep(step - 1); }}
               style={{
                 padding: '11px 20px', fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 13,
                 textTransform: 'uppercase', letterSpacing: '0.04em', cursor: 'pointer',
@@ -302,7 +306,7 @@ export default function OnboardingFlow({ profile, updateProfile, checkCallsign, 
             {/* Skip button only on optional banner step */}
             {step === 3 && banner !== null && (
               <button
-                onClick={() => { setBanner(null); setStep(step + 1); }}
+                onClick={() => { SFX.back(); setBanner(null); setStep(step + 1); }}
                 style={{
                   padding: '11px 20px', fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 13,
                   textTransform: 'uppercase', letterSpacing: '0.04em', cursor: 'pointer',
@@ -312,7 +316,7 @@ export default function OnboardingFlow({ profile, updateProfile, checkCallsign, 
             )}
             {step === 3 && banner === null && (
               <button
-                onClick={() => setStep(step + 1)}
+                onClick={() => { SFX.boop(); setStep(step + 1); }}
                 style={{
                   padding: '11px 20px', fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 13,
                   textTransform: 'uppercase', letterSpacing: '0.04em', cursor: 'pointer',
@@ -321,12 +325,12 @@ export default function OnboardingFlow({ profile, updateProfile, checkCallsign, 
               >Skip</button>
             )}
             {step < TOTAL_STEPS && step !== 3 && (
-              <button style={btnPrimary(!canNext())} onClick={() => canNext() && setStep(step + 1)}>
+              <button style={btnPrimary(!canNext())} onClick={() => { if (canNext()) { SFX.boop(); setStep(step + 1); } }}>
                 Next →
               </button>
             )}
             {step === 3 && banner !== null && (
-              <button style={btnPrimary(false)} onClick={() => setStep(step + 1)}>
+              <button style={btnPrimary(false)} onClick={() => { SFX.boop(); setStep(step + 1); }}>
                 Next →
               </button>
             )}

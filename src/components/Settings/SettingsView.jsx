@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
 import { supabase } from '@/lib/supabase.js';
+import { useIsMobile } from '../../hooks/useIsMobile.js';
 import LandingZoneBadge, { AlphaBadge } from '../shared/LandingZoneBadge.jsx';
 import { getBanner } from '../../data/profileBanners.js';
 import { useBanners } from '../../hooks/useBanners.js';
@@ -122,6 +123,7 @@ function LastChangedNote({ ts }) {
 }
 
 export default function SettingsView({ profile, updateProfile, checkCallsign }) {
+  const isMobile = useIsMobile();
   // ── Colour ─────────────────────────────────────────────────────────────────
   const [color,      setColor]      = useState(profile?.color || '#3b82f6');
   const [colorSaved, setColorSaved] = useState(false);
@@ -550,7 +552,7 @@ export default function SettingsView({ profile, updateProfile, checkCallsign }) 
           >↻ refresh</button>
         </div>
 
-        <div style={{ display: 'flex', gap: 24, alignItems: 'flex-start' }}>
+        <div style={{ display: 'flex', flexDirection: isMobile ? 'column' : 'row', gap: 24, alignItems: 'flex-start' }}>
 
           {/* Left: picker */}
           <div style={{ flex: 1, minWidth: 0 }}>
@@ -621,7 +623,7 @@ export default function SettingsView({ profile, updateProfile, checkCallsign }) 
 
                   {/* Thumbnails */}
                   {expanded && (
-                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 10, padding: '12px 0 6px 0' }}>
+                    <div style={{ display: 'grid', gridTemplateColumns: `repeat(${isMobile ? 2 : 4}, 1fr)`, gap: 10, padding: '12px 0 6px 0' }}>
                       {set.banners.map(b => {
                         const selected = bannerPanel === b.id;
                         const displayName = bannerItemMeta[b.id]?.displayName;
