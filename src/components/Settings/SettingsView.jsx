@@ -578,13 +578,16 @@ export default function SettingsView({ profile, updateProfile, checkCallsign }) 
 
           {/* Right: preview + save */}
           <div style={{ flexShrink: 0, display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 12 }}>
-            {bannerPanel && getBanner(bannerPanel) && (
+            {bannerPanel && (() => {
+              const signedSrc = bannerSets.flatMap(s => s.banners).find(b => b.id === bannerPanel)?.src
+                ?? getBanner(bannerPanel)?.src;
+              return signedSrc ? (
               <div>
                 <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: 8, textAlign: 'right' }}>Preview</div>
                 <div style={{ width: 200, height: 200, position: 'relative', overflow: 'hidden', border: '2px solid #ccc', background: '#111' }}>
                   <div style={{
                     position: 'absolute', inset: 0,
-                    backgroundImage: `url(${getBanner(bannerPanel).src})`,
+                    backgroundImage: `url(${signedSrc})`,
                     backgroundSize: 'cover', backgroundPosition: 'center',
                   }} />
                   <div style={{
@@ -593,7 +596,8 @@ export default function SettingsView({ profile, updateProfile, checkCallsign }) 
                   }} />
                 </div>
               </div>
-            )}
+              ) : null;
+            })()}
             <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
               {saveBtn(saveBanner, false)}
               <SavedBadge visible={bannerSaved} />
