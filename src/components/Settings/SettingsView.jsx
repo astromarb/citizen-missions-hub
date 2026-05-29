@@ -552,180 +552,181 @@ export default function SettingsView({ profile, updateProfile, checkCallsign }) 
           >↻ refresh</button>
         </div>
 
-        <div style={{ display: 'flex', flexDirection: isMobile ? 'column' : 'row', gap: 24, alignItems: 'flex-start' }}>
+        {/* None option (small) */}
+        <div style={{ marginBottom: 16 }}>
+          <button
+            onClick={() => setBannerPanel(null)}
+            style={{
+              width: 80, height: 80, flexShrink: 0,
+              border: `2px solid ${bannerPanel === null ? '#c41e3a' : '#ccc'}`,
+              background: bannerPanel === null ? 'rgba(196,30,58,0.04)' : '#fafafa',
+              cursor: 'pointer', display: 'inline-flex', flexDirection: 'column',
+              alignItems: 'center', justifyContent: 'center', gap: 4,
+              position: 'relative', verticalAlign: 'top',
+            }}
+          >
+            <span style={{ fontSize: 20, color: '#bbb' }}>✕</span>
+            <span style={{ fontFamily: 'var(--font-mono)', fontSize: 8, color: '#bbb', textTransform: 'uppercase', letterSpacing: '0.08em' }}>None</span>
+            {bannerPanel === null && (
+              <div style={{ position: 'absolute', top: -4, right: -4, width: 16, height: 16, borderRadius: '50%', background: '#c41e3a', border: '2px solid #fff', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <span style={{ color: '#fff', fontSize: 8, lineHeight: 1 }}>✓</span>
+              </div>
+            )}
+          </button>
+        </div>
 
-          {/* Left: picker */}
-          <div style={{ flex: 1, minWidth: 0 }}>
+        {/* Preview — above accordion sets */}
+        {bannerPanel && (() => {
+          const signedSrc = bannerSets.flatMap(s => s.banners).find(b => b.id === bannerPanel)?.src
+            ?? getBanner(bannerPanel)?.src;
+          return signedSrc ? (
+            <div style={{ marginBottom: 16 }}>
+              <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: 8 }}>Preview</div>
+              <div style={{ width: 270, height: 270, position: 'relative', overflow: 'hidden', border: '2px solid #ccc', background: '#111' }}>
+                <div style={{
+                  position: 'absolute', inset: 0,
+                  backgroundImage: `url(${signedSrc})`,
+                  backgroundSize: 'cover', backgroundPosition: 'center',
+                }} />
+                <div style={{
+                  position: 'absolute', inset: 0, pointerEvents: 'none',
+                  background: 'radial-gradient(ellipse at center, transparent 38%, rgba(0,0,0,0.55) 100%)',
+                }} />
+              </div>
+            </div>
+          ) : null;
+        })()}
 
-            {/* None option */}
-            <div style={{ marginBottom: 20 }}>
+        {/* Save */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 20 }}>
+          {saveBtn(saveBanner, false)}
+          <SavedBadge visible={bannerSaved} />
+        </div>
+        <SaveError msg={bannerError} />
+
+        {bannersLoading && (
+          <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--muted)', marginBottom: 16 }}>Loading banners…</div>
+        )}
+
+        {/* Collapsible banner sets */}
+        {!bannersLoading && bannerSets.map(set => {
+          const accessible = canAccessSet(set.name, profile?.badges);
+          if (!accessible) return null;
+          const expanded = !!expandedSets[set.name];
+          const hasSelected = set.banners.some(b => b.id === bannerPanel);
+          const setDescription = bannerSetMeta[set.name]?.description;
+
+          return (
+            <div key={set.name} style={{ marginBottom: 10 }}>
+              {/* Set header / toggle */}
               <button
-                onClick={() => setBannerPanel(null)}
+                onClick={() => toggleSet(set.name)}
                 style={{
-                  width: 106, height: 106, flexShrink: 0,
-                  border: `2px solid ${bannerPanel === null ? '#c41e3a' : '#ccc'}`,
-                  background: bannerPanel === null ? 'rgba(196,30,58,0.04)' : '#fafafa',
-                  cursor: 'pointer', display: 'inline-flex', flexDirection: 'column',
-                  alignItems: 'center', justifyContent: 'center', gap: 4,
-                  position: 'relative', verticalAlign: 'top',
+                  width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                  padding: '8px 10px', background: 'none',
+                  border: `2px solid ${hasSelected ? '#c41e3a' : '#e8e8e8'}`,
+                  cursor: 'pointer', textAlign: 'left', gap: 8,
                 }}
               >
-                <span style={{ fontSize: 24, color: '#bbb' }}>✕</span>
-                {bannerPanel === null && (
-                  <div style={{ position: 'absolute', top: -4, right: -4, width: 16, height: 16, borderRadius: '50%', background: '#c41e3a', border: '2px solid #fff', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                    <span style={{ color: '#fff', fontSize: 8, lineHeight: 1 }}>✓</span>
-                  </div>
-                )}
-              </button>
-            </div>
-
-            {bannersLoading && (
-              <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--muted)', marginBottom: 16 }}>Loading banners…</div>
-            )}
-
-            {/* Collapsible banner sets */}
-            {!bannersLoading && bannerSets.map(set => {
-              const accessible = canAccessSet(set.name, profile?.badges);
-              if (!accessible) return null;
-              const expanded = !!expandedSets[set.name];
-              const hasSelected = set.banners.some(b => b.id === bannerPanel);
-              const setDescription = bannerSetMeta[set.name]?.description;
-
-              return (
-                <div key={set.name} style={{ marginBottom: 10 }}>
-                  {/* Set header / toggle */}
-                  <button
-                    onClick={() => toggleSet(set.name)}
-                    style={{
-                      width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                      padding: '8px 10px', background: 'none',
-                      border: `2px solid ${hasSelected ? '#c41e3a' : '#e8e8e8'}`,
-                      cursor: 'pointer', textAlign: 'left', gap: 8,
-                    }}
-                  >
-                    <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: 3 }}>
-                      <span style={{
-                        fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 13,
-                        letterSpacing: '0.08em', textTransform: 'uppercase',
-                        color: hasSelected ? '#c41e3a' : '#444',
-                      }}>
-                        {set.name}
-                        {hasSelected && <span style={{ marginLeft: 6, fontSize: 9 }}>✓</span>}
-                      </span>
-                      {setDescription && (
-                        <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: '#555', fontStyle: 'italic' }}>
-                          {setDescription}
-                        </span>
-                      )}
-                    </div>
-                    <span style={{ fontSize: 10, color: '#aaa', fontFamily: 'var(--font-mono)', flexShrink: 0 }}>{expanded ? '▲' : '▼'}</span>
-                  </button>
-
-                  {/* Thumbnails */}
-                  {expanded && (
-                    <div style={{ display: 'grid', gridTemplateColumns: `repeat(${isMobile ? 2 : 4}, 1fr)`, gap: 10, padding: '12px 0 6px 0' }}>
-                      {set.banners.map(b => {
-                        const selected = bannerPanel === b.id;
-                        const displayName = bannerItemMeta[b.id]?.displayName;
-                        const description = bannerItemMeta[b.id]?.description;
-                        return (
-                          <button
-                            key={b.id}
-                            onClick={() => setBannerPanel(b.id)}
-                            title={displayName || b.id}
-                            style={{
-                              padding: 0,
-                              border: `2px solid ${selected ? '#c41e3a' : 'transparent'}`,
-                              cursor: 'pointer', position: 'relative', overflow: 'visible',
-                              outline: 'none', background: 'none',
-                              boxShadow: selected ? '0 0 0 1px #c41e3a' : 'none',
-                              display: 'flex', flexDirection: 'column', alignItems: 'stretch', gap: 6,
-                            }}
-                          >
-                            <div style={{ width: '100%', aspectRatio: '1 / 1', position: 'relative', overflow: 'hidden', background: '#111' }}>
-                              <div style={{
-                                position: 'absolute', inset: 0,
-                                backgroundImage: `url(${b.src})`,
-                                backgroundSize: 'cover', backgroundPosition: 'center',
-                              }} />
-                              <div style={{
-                                position: 'absolute', inset: 0, pointerEvents: 'none',
-                                background: 'radial-gradient(ellipse at center, transparent 38%, rgba(0,0,0,0.55) 100%)',
-                              }} />
-                              {selected && (
-                                <div style={{ position: 'absolute', top: -4, right: -4, width: 16, height: 16, borderRadius: '50%', background: '#c41e3a', border: '2px solid #fff', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 2 }}>
-                                  <span style={{ color: '#fff', fontSize: 8, lineHeight: 1 }}>✓</span>
-                                </div>
-                              )}
-                            </div>
-                            <div style={{ display: 'flex', flexDirection: 'column', gap: 2, paddingBottom: 4 }}>
-                              {displayName && (
-                                <span style={{
-                                  fontFamily: 'var(--font-mono)', fontSize: 10, fontWeight: 600,
-                                  color: selected ? '#c41e3a' : '#444',
-                                  overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
-                                  textAlign: 'center',
-                                }}>
-                                  {displayName}
-                                </span>
-                              )}
-                              {description && (
-                                <span style={{
-                                  fontFamily: 'var(--font-mono)', fontSize: 9, fontStyle: 'italic',
-                                  color: '#666', textAlign: 'center', lineHeight: 1.4,
-                                  display: '-webkit-box', WebkitLineClamp: 2,
-                                  WebkitBoxOrient: 'vertical', overflow: 'hidden',
-                                }}>
-                                  "{description}"
-                                </span>
-                              )}
-                            </div>
-                          </button>
-                        );
-                      })}
-                    </div>
+                <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: 3 }}>
+                  <span style={{
+                    fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 13,
+                    letterSpacing: '0.08em', textTransform: 'uppercase',
+                    color: hasSelected ? '#c41e3a' : '#444',
+                  }}>
+                    {set.name}
+                    {hasSelected && <span style={{ marginLeft: 6, fontSize: 9 }}>✓</span>}
+                  </span>
+                  {setDescription && (
+                    <span style={{ fontFamily: 'var(--font-mono)', fontSize: 13, color: '#555', fontStyle: 'italic' }}>
+                      {setDescription}
+                    </span>
                   )}
                 </div>
-              );
-            })}
+                <span style={{ fontSize: 10, color: '#aaa', fontFamily: 'var(--font-mono)', flexShrink: 0 }}>{expanded ? '▲' : '▼'}</span>
+              </button>
 
-            {!bannersLoading && bannerSets.length === 0 && (
-              <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--muted)', marginBottom: 16 }}>
-                No banners in storage yet.
-              </div>
-            )}
-          </div>
-
-          {/* Right: preview + save */}
-          <div style={{ flexShrink: 0, display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 12 }}>
-            {bannerPanel && (() => {
-              const signedSrc = bannerSets.flatMap(s => s.banners).find(b => b.id === bannerPanel)?.src
-                ?? getBanner(bannerPanel)?.src;
-              return signedSrc ? (
-              <div>
-                <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: 8, textAlign: 'right' }}>Preview</div>
-                <div style={{ width: 270, height: 270, position: 'relative', overflow: 'hidden', border: '2px solid #ccc', background: '#111' }}>
-                  <div style={{
-                    position: 'absolute', inset: 0,
-                    backgroundImage: `url(${signedSrc})`,
-                    backgroundSize: 'cover', backgroundPosition: 'center',
-                  }} />
-                  <div style={{
-                    position: 'absolute', inset: 0, pointerEvents: 'none',
-                    background: 'radial-gradient(ellipse at center, transparent 38%, rgba(0,0,0,0.55) 100%)',
-                  }} />
+              {/* Thumbnails — 4-col desktop, 1-col mobile */}
+              {expanded && (
+                <div style={{ display: 'grid', gridTemplateColumns: `repeat(${isMobile ? 1 : 4}, 1fr)`, gap: 16, padding: '14px 0 8px 0' }}>
+                  {set.banners.map(b => {
+                    const selected = bannerPanel === b.id;
+                    const displayName = bannerItemMeta[b.id]?.displayName;
+                    const description = bannerItemMeta[b.id]?.description;
+                    return (
+                      <button
+                        key={b.id}
+                        onClick={() => setBannerPanel(b.id)}
+                        title={displayName || b.id}
+                        style={{
+                          padding: 0,
+                          border: `2px solid ${selected ? '#c41e3a' : 'transparent'}`,
+                          cursor: 'pointer', position: 'relative', overflow: 'visible',
+                          outline: 'none', background: 'none',
+                          boxShadow: selected ? '0 0 0 1px #c41e3a' : 'none',
+                          display: 'flex', flexDirection: 'column', alignItems: 'stretch',
+                        }}
+                      >
+                        {/* Image */}
+                        <div style={{ width: '100%', aspectRatio: '1 / 1', position: 'relative', overflow: 'hidden', background: '#111', zIndex: 0 }}>
+                          <div style={{
+                            position: 'absolute', inset: 0,
+                            backgroundImage: `url(${b.src})`,
+                            backgroundSize: 'cover', backgroundPosition: 'center',
+                          }} />
+                          <div style={{
+                            position: 'absolute', inset: 0, pointerEvents: 'none',
+                            background: 'radial-gradient(ellipse at center, transparent 38%, rgba(0,0,0,0.45) 100%)',
+                          }} />
+                          {selected && (
+                            <div style={{ position: 'absolute', top: -4, right: -4, width: 16, height: 16, borderRadius: '50%', background: '#c41e3a', border: '2px solid #fff', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 2 }}>
+                              <span style={{ color: '#fff', fontSize: 8, lineHeight: 1 }}>✓</span>
+                            </div>
+                          )}
+                        </div>
+                        {/* Nametag — bites 14px into image above */}
+                        {displayName && (
+                          <div style={{
+                            marginTop: -14, marginLeft: 6, marginRight: 6,
+                            background: 'rgba(255,255,255,0.92)',
+                            padding: '5px 8px 3px',
+                            position: 'relative', zIndex: 2,
+                          }}>
+                            <span style={{
+                              fontFamily: 'var(--font-mono)', fontSize: 12, fontWeight: 700,
+                              color: selected ? '#c41e3a' : '#111',
+                              display: 'block',
+                              overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+                            }}>
+                              {displayName}
+                            </span>
+                          </div>
+                        )}
+                        {/* Description below nametag */}
+                        {description && (
+                          <div style={{ padding: '4px 6px 8px' }}>
+                            <span style={{
+                              fontFamily: 'var(--font-mono)', fontSize: 11, fontStyle: 'italic',
+                              color: '#666', lineHeight: 1.4, display: 'block',
+                            }}>
+                              "{description}"
+                            </span>
+                          </div>
+                        )}
+                      </button>
+                    );
+                  })}
                 </div>
-              </div>
-              ) : null;
-            })()}
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-              {saveBtn(saveBanner, false)}
-              <SavedBadge visible={bannerSaved} />
+              )}
             </div>
-            <SaveError msg={bannerError} />
-          </div>
+          );
+        })}
 
-        </div>
+        {!bannersLoading && bannerSets.length === 0 && (
+          <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--muted)', marginBottom: 16 }}>
+            No banners in storage yet.
+          </div>
+        )}
       </div>
 
       {/* ── Callsign ────────────────────────────────────────────────────────── */}

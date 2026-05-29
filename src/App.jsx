@@ -337,9 +337,13 @@ function AppInner() {
   const handleToggleDone = (sessionId, contractId) => {
     const contract = sessions[sessionId]?.contracts.find(c => c.id === contractId);
     const wasDone = contract?.done ?? false;
+    const wasPartial = contract?.partial ?? false;
     toggleDone(sessionId, contractId);
+    // pending → complete
     if (!wasDone) SFX.complete();
+    // complete → partial, or partial → pending
     else SFX.boop();
+    if (wasDone && wasPartial) SFX.back();
   };
 
   const handleDeleteContract = (sessionId, contractId) => {

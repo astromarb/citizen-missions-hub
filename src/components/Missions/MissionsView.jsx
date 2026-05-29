@@ -204,13 +204,25 @@ function SessionDebrief({ session, myProfileId, onOpenSession }) {
                   letterSpacing: '0.04em', flex: 1, minWidth: isMobile ? '60px' : 0,
                   overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', color: 'var(--text)',
                 }}>{c.system}</span>
-                {/* Payout + checkbox grouped so they always wrap together, never split */}
+                {/* Payout + status grouped so they always wrap together, never split */}
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0, marginLeft: isMobile ? 'auto' : 0 }}>
                   <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--muted)', fontWeight: 600, whiteSpace: 'nowrap' }}>{cSCU.toLocaleString()} SCU</span>
                   {c.payout > 0 && (
                     <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: '#2d8659', fontWeight: 700, whiteSpace: 'nowrap' }}>{c.payout.toLocaleString()} aUEC</span>
                   )}
-                  <span style={{ fontSize: 14 }}>{c.done ? '✅' : '⬜'}</span>
+                  {c.done ? (
+                    <span style={{
+                      fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 10,
+                      color: c.partial ? '#d97706' : '#2d8659',
+                      letterSpacing: '0.06em', textTransform: 'uppercase',
+                      border: `1.5px solid ${c.partial ? '#d97706' : '#2d8659'}`,
+                      padding: '2px 6px', whiteSpace: 'nowrap', flexShrink: 0,
+                    }}>
+                      {c.partial ? 'PARTIAL' : 'COMPLETE'}
+                    </span>
+                  ) : (
+                    <span style={{ fontSize: 14 }}>⬜</span>
+                  )}
                 </div>
               </div>
             );

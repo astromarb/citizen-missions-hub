@@ -826,7 +826,7 @@ export default function SessionView({
                   )}
                 </div>
 
-                {/* Middle: separator + system + LOCAL tag */}
+                {/* Middle: separator + system + LOCAL tag + completion status */}
                 <div style={{ flex: 1, display: 'flex', alignItems: 'center', gap: 10, flexWrap: contract.done ? 'nowrap' : 'wrap', minWidth: 0 }}>
                   <span style={{ color: 'var(--border)', fontSize: contract.done ? 20 : 14, flexShrink: 0 }}>|</span>
                   <span style={{
@@ -834,6 +834,7 @@ export default function SessionView({
                     fontSize: contract.done ? 18 : 12,
                     color: 'var(--text)', letterSpacing: '0.06em', textTransform: 'uppercase',
                     overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: contract.done ? 'nowrap' : 'normal',
+                    flexShrink: contract.done ? 1 : 0,
                   }}>
                     {contract.system}
                   </span>
@@ -844,6 +845,19 @@ export default function SessionView({
                       border: '1.5px solid #2e7d32', color: '#2e7d32',
                       padding: '1px 5px', whiteSpace: 'nowrap', flexShrink: 0,
                     }}>LOCAL</span>
+                  )}
+                  {contract.done && (
+                    <>
+                      <span style={{ color: '#bbb', fontSize: 16, flexShrink: 0, letterSpacing: '-0.04em' }}>——</span>
+                      <span style={{
+                        fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 14,
+                        color: contract.partial ? '#d97706' : '#2d8659',
+                        letterSpacing: '0.06em', textTransform: 'uppercase', flexShrink: 0,
+                        whiteSpace: 'nowrap',
+                      }}>
+                        {contract.partial ? 'COMPLETE — PARTIAL' : 'COMPLETE'}
+                      </span>
+                    </>
                   )}
                 </div>
 
@@ -888,17 +902,17 @@ export default function SessionView({
                     )}
                     <button
                       onClick={() => isSessionMember && onToggleDone(session.id, contract.id)}
-                      title={contract.done ? 'Complete' : 'Pending'}
+                      title={!contract.done ? 'Mark complete' : contract.partial ? 'Click to reset' : 'Mark as partial'}
                       style={{
                         width: contract.done ? 28 : 24, height: contract.done ? 28 : 24,
-                        border: `2px solid ${contract.done ? '#2d8659' : '#000'}`,
-                        background: contract.done ? '#2d8659' : 'transparent',
+                        border: `2px solid ${contract.done ? (contract.partial ? '#d97706' : '#2d8659') : '#000'}`,
+                        background: contract.done ? (contract.partial ? '#d97706' : '#2d8659') : 'transparent',
                         cursor: isSessionMember ? 'pointer' : 'default',
                         display: 'flex', alignItems: 'center', justifyContent: 'center',
                         flexShrink: 0,
                       }}
                     >
-                      {contract.done && <span style={{ fontSize: 14, color: '#fff', fontWeight: 800 }}>✓</span>}
+                      {contract.done && <span style={{ fontSize: 14, color: '#fff', fontWeight: 800 }}>{contract.partial ? '~' : '✓'}</span>}
                     </button>
                   </div>
                 </div>

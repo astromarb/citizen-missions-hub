@@ -183,24 +183,29 @@ export function useSessions(enabled = true, userId) {
   }, [load]);
 
   // ── toggleDone ─────────────────────────────────────────────
+  // Cycles: pending → complete → partial complete → pending
   const toggleDone = async (sessionId, contractId) => {
-    let currentDone = false;
+    let currentDone = false, currentPartial = false;
     for (const sess of Object.values(sessions)) {
       if (sess.id === sessionId) {
         const c = sess.contracts.find(c => c.id === contractId);
-        if (c) { currentDone = c.done; break; }
+        if (c) { currentDone = c.done; currentPartial = c.partial || false; break; }
       }
     }
+    let nextDone, nextPartial;
+    if (!currentDone) { nextDone = true; nextPartial = false; }
+    else if (!currentPartial) { nextDone = true; nextPartial = true; }
+    else { nextDone = false; nextPartial = false; }
     setSessions(prev => {
       const next = {};
       for (const [k, s] of Object.entries(prev)) {
         next[k] = s.id === sessionId
-          ? { ...s, contracts: s.contracts.map(c => c.id === contractId ? { ...c, done: !c.done } : c) }
+          ? { ...s, contracts: s.contracts.map(c => c.id === contractId ? { ...c, done: nextDone, partial: nextPartial } : c) }
           : s;
       }
       return next;
     });
-    const { error } = await supabase.from('contracts').update({ done: !currentDone }).eq('id', contractId);
+    const { error } = await supabase.from('contracts').update({ done: nextDone, partial: nextPartial }).eq('id', contractId);
     if (error) { console.error('toggleDone:', error); load(); }
   };
 
