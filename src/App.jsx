@@ -260,6 +260,10 @@ function AppInner() {
   const { incoming: sessionInvites, createInvite, respondToInvite } = useSessionInvites(userId, !!authSession);
   const [joinToken, setJoinToken] = useState(() => new URLSearchParams(window.location.search).get('join'));
 
+  // Declared early so they're available in useEffect dependency arrays below
+  const myProfileId = profile?.id || null;
+  const myCallsign  = profile?.callsign || null;
+
   useEffect(() => {
     const timeout = new Promise((_, rej) => setTimeout(() => rej(new Error('auth-timeout')), 12000));
     Promise.race([supabase.auth.getSession(), timeout])
@@ -553,8 +557,6 @@ function AppInner() {
 
   const userName  = getUserName(authSession.user);
   const avatarUrl = authSession.user?.user_metadata?.avatar_url;
-  const myProfileId = profile?.id || null;
-  const myCallsign  = profile?.callsign || null;
 
   const switchTab = (tab) => {
     SFX.tab(tab);
