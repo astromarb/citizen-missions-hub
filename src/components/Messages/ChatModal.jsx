@@ -92,7 +92,7 @@ function SystemBubble({ msg, isMobile }) {
         padding: '8px 14px', maxWidth: '80%',
         background: 'rgba(196,30,58,0.08)', border: '1.5px solid rgba(196,30,58,0.3)',
         ...mono, fontSize: isMobile ? 11 : 13, color: 'var(--text)', lineHeight: 1.55,
-        textAlign: 'center', wordBreak: 'break-word', whiteSpace: 'pre-wrap',
+        textAlign: 'center', wordBreak: 'break-word',
       }}>
         <div style={{ fontSize: 8, color: '#c41e3a', letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: 4 }}>⚡ Nexus Hub System</div>
         <ReactMarkdown
@@ -104,7 +104,7 @@ function SystemBubble({ msg, isMobile }) {
             h5:     ({children}) => <span style={{ display: 'block', fontFamily: 'var(--font-mono)',    fontWeight: 700, fontSize: 10, textTransform: 'uppercase', letterSpacing: '0.1em', margin: '4px 0 2px' }}>{children}</span>,
             h6:     ({children}) => <span style={{ display: 'block', fontFamily: 'var(--font-mono)',    fontWeight: 700, fontSize: 9,  textTransform: 'uppercase', letterSpacing: '0.1em', opacity: 0.6, margin: '3px 0 2px' }}>{children}</span>,
             p:      ({children}) => <span style={{ display: 'block', marginBottom: '0.35em' }}>{children}</span>,
-            strong: ({children}) => <strong style={{ fontWeight: 700 }}>{children}</strong>,
+            strong: ({children}) => <strong style={{ fontWeight: 800, letterSpacing: '-0.01em' }}>{children}</strong>,
             em:     ({children}) => <em style={{ fontStyle: 'italic' }}>{children}</em>,
             ul:     ({children}) => <ul style={{ margin: '4px 0', paddingLeft: 18, textAlign: 'left' }}>{children}</ul>,
             ol:     ({children}) => <ol style={{ margin: '4px 0', paddingLeft: 18, textAlign: 'left' }}>{children}</ol>,
