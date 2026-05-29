@@ -58,7 +58,15 @@ export function useMessages(myProfileId, enabled = true) {
     setInbox(prev => prev.map(m => m.id === messageId ? { ...m, read_at: new Date().toISOString() } : m));
   }, []);
 
+  const deleteMessage = useCallback(async (messageId) => {
+    const { error } = await supabase.from('messages').delete().eq('id', messageId);
+    if (error) { console.error('deleteMessage:', error); return false; }
+    setInbox(prev => prev.filter(m => m.id !== messageId));
+    setSent(prev  => prev.filter(m => m.id !== messageId));
+    return true;
+  }, []);
+
   const unreadCount = inbox.filter(m => !m.read_at).length;
 
-  return { inbox, sent, sendMessage, markRead, unreadCount };
+  return { inbox, sent, sendMessage, markRead, deleteMessage, unreadCount };
 }

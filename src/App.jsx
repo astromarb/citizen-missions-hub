@@ -258,7 +258,7 @@ function AppInner() {
   const myCallsign  = profile?.callsign || null;
 
   const { incoming: sessionInvites, createInvite, respondToInvite } = useSessionInvites(myProfileId, !!authSession);
-  const { inbox: msgInbox, sent: msgSent, sendMessage, markRead, unreadCount: msgUnread } = useMessages(myProfileId, !!authSession);
+  const { inbox: msgInbox, sent: msgSent, sendMessage, markRead, deleteMessage, unreadCount: msgUnread } = useMessages(myProfileId, !!authSession);
 
   useEffect(() => {
     const timeout = new Promise((_, rej) => setTimeout(() => rej(new Error('auth-timeout')), 12000));
@@ -840,6 +840,7 @@ function AppInner() {
                 msgSent={msgSent}
                 sendMessage={sendMessage}
                 markRead={markRead}
+                deleteMessage={deleteMessage}
               />
             </div>
           )}

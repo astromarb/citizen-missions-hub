@@ -532,7 +532,56 @@ function BroadcastsPanel() {
 }
 
 // ── Main AdminView ────────────────────────────────────────────────────────────
+// ── Sub-panel: Stats ──────────────────────────────────────────────────────────
+function StatsPanel() {
+  const [stats, setStats] = useState(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    Promise.all([
+      supabase.from('profiles').select('*', { count: 'exact', head: true }),
+      supabase.from('sessions').select('*', { count: 'exact', head: true }),
+      supabase.from('contracts').select('*', { count: 'exact', head: true }),
+      supabase.from('messages').select('*', { count: 'exact', head: true }),
+    ]).then(([p, s, c, m]) => {
+      setStats({
+        pilots:   p.count ?? 0,
+        sessions: s.count ?? 0,
+        contracts: c.count ?? 0,
+        messages: m.count ?? 0,
+      });
+      setLoading(false);
+    });
+  }, []);
+
+  const cards = stats ? [
+    ['Registered Pilots',  stats.pilots],
+    ['Total Sessions',     stats.sessions],
+    ['Total Contracts',    stats.contracts],
+    ['Messages Sent',      stats.messages],
+  ] : [];
+
+  if (loading) return <div style={{ ...mono, fontSize: 11, ...muted, padding: 20 }}>Loading stats…</div>;
+
+  return (
+    <div>
+      <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap' }}>
+        {cards.map(([label, val]) => (
+          <div key={label} style={{ border: '2px solid #000', background: '#fff', padding: '16px 22px', minWidth: 130 }}>
+            <div style={{ ...mono, fontSize: 9, ...muted, textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: 6 }}>{label}</div>
+            <div style={{ ...display, fontWeight: 800, fontSize: 26, letterSpacing: '-0.02em' }}>{val.toLocaleString()}</div>
+          </div>
+        ))}
+      </div>
+      <div style={{ ...mono, fontSize: 9, ...muted, marginTop: 14, lineHeight: 1.6 }}>
+        Messages Sent counts every stored message row including system broadcasts — a broadcast to 5 pilots adds 5 to the total.
+      </div>
+    </div>
+  );
+}
+
 const PANELS = [
+  { key: 'stats',      label: 'Stats' },
   { key: 'users',      label: 'Users' },
   { key: 'sessions',   label: 'Sessions & Contracts' },
   { key: 'banners',    label: 'Banner Manager' },
@@ -540,7 +589,7 @@ const PANELS = [
 ];
 
 export default function AdminView() {
-  const [panel, setPanel] = useState('users');
+  const [panel, setPanel] = useState('stats');
 
   return (
     <div style={{ padding: '20px' }}>
@@ -565,6 +614,7 @@ export default function AdminView() {
         ))}
       </div>
 
+      {panel === 'stats'      && <StatsPanel />}
       {panel === 'users'      && <UsersPanel />}
       {panel === 'sessions'   && <SessionsPanel />}
       {panel === 'banners'    && <BannerManagerPanel />}

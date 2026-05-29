@@ -27,24 +27,38 @@ function SystemAvatar({ size = 32 }) {
 
 function fmtTime(ts) {
   const d = new Date(ts);
-  const now = new Date();
-  const diffMs = now - d;
+  const diffMs = Date.now() - d;
   if (diffMs < 60000) return 'just now';
   if (diffMs < 3600000) return `${Math.floor(diffMs / 60000)}m ago`;
   if (diffMs < 86400000) return `${Math.floor(diffMs / 3600000)}h ago`;
   return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
 }
 
-function MessageRow({ msg, side, onExpand, expanded, onMarkRead }) {
-  const isSystem = msg.is_system;
-  const senderProfile = side === 'inbox' ? msg.sender : null;
-  const otherProfile  = side === 'sent'  ? msg.recipient : null;
-  const profile       = senderProfile || otherProfile;
-  const isUnread = side === 'inbox' && !msg.read_at;
+function MessageRow({ msg, side, onExpand, expanded, onMarkRead, onDelete }) {
+  const [confirmDelete, setConfirmDelete] = useState(false);
+  const isSystem  = msg.is_system;
+  const profile   = side === 'inbox' ? msg.sender : msg.recipient;
+  const isUnread  = side === 'inbox' && !msg.read_at;
+  const isRead    = side === 'inbox' && !!msg.read_at;
 
   const handleExpand = () => {
     onExpand(msg.id);
-    if (isUnread && side === 'inbox') onMarkRead(msg.id);
+    if (isUnread) onMarkRead(msg.id);
+  };
+
+  const handleDeleteClick = (e) => {
+    e.stopPropagation();
+    setConfirmDelete(true);
+  };
+
+  const handleConfirm = (e) => {
+    e.stopPropagation();
+    onDelete(msg.id);
+  };
+
+  const handleCancel = (e) => {
+    e.stopPropagation();
+    setConfirmDelete(false);
   };
 
   return (
@@ -54,31 +68,61 @@ function MessageRow({ msg, side, onExpand, expanded, onMarkRead }) {
         padding: '12px 16px',
         borderBottom: '1px solid var(--border)',
         cursor: 'pointer',
-        background: expanded ? 'var(--bg-2)' : isUnread ? 'rgba(196,30,58,0.04)' : 'transparent',
+        background: expanded ? 'var(--bg-2)' : isUnread ? 'rgba(96,165,250,0.06)' : 'transparent',
         transition: 'background 0.1s',
+        position: 'relative',
       }}
       onMouseEnter={e => { if (!expanded) e.currentTarget.style.background = 'var(--bg-2)'; }}
-      onMouseLeave={e => { if (!expanded) e.currentTarget.style.background = isUnread ? 'rgba(196,30,58,0.04)' : 'transparent'; }}
+      onMouseLeave={e => { if (!expanded) e.currentTarget.style.background = isUnread ? 'rgba(96,165,250,0.06)' : 'transparent'; }}
     >
       <div style={{ display: 'flex', alignItems: 'flex-start', gap: 10 }}>
         {isSystem ? <SystemAvatar size={32} /> : <Avatar profile={profile} size={32} />}
+
         <div style={{ flex: 1, minWidth: 0 }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: 8 }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-              <span style={{ ...display, fontWeight: 700, fontSize: 12, textTransform: 'uppercase', letterSpacing: '0.04em', color: 'var(--text)' }}>
+          {/* Header row */}
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 8 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 6, minWidth: 0 }}>
+              <span style={{ ...display, fontWeight: 700, fontSize: 12, textTransform: 'uppercase', letterSpacing: '0.04em', color: 'var(--text)', whiteSpace: 'nowrap' }}>
                 {isSystem ? 'Nexus Hub System' : (profile?.callsign || '—')}
               </span>
               {isSystem && (
-                <span style={{ ...mono, fontSize: 8, background: '#c41e3a', color: '#fff', padding: '1px 5px', letterSpacing: '0.08em', textTransform: 'uppercase' }}>System</span>
+                <span style={{ ...mono, fontSize: 8, background: '#c41e3a', color: '#fff', padding: '1px 5px', letterSpacing: '0.08em', textTransform: 'uppercase', flexShrink: 0 }}>System</span>
               )}
+              {/* Unread: light blue dot */}
               {isUnread && (
-                <span style={{ width: 7, height: 7, borderRadius: '50%', background: '#c41e3a', flexShrink: 0, display: 'inline-block' }} />
+                <span style={{ width: 7, height: 7, borderRadius: '50%', background: '#60a5fa', flexShrink: 0, display: 'inline-block' }} title="Unread" />
               )}
             </div>
-            <span style={{ ...mono, fontSize: 9, color: 'var(--muted)', whiteSpace: 'nowrap', flexShrink: 0 }}>{fmtTime(msg.created_at)}</span>
+
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 }}>
+              {/* Read indicator */}
+              {isRead && (
+                <span style={{ ...mono, fontSize: 9, color: 'var(--muted)', letterSpacing: '0.04em' }}>✓ read</span>
+              )}
+              <span style={{ ...mono, fontSize: 9, color: 'var(--muted)' }}>{fmtTime(msg.created_at)}</span>
+
+              {/* Delete controls */}
+              {confirmDelete ? (
+                <span style={{ display: 'flex', alignItems: 'center', gap: 4 }} onClick={e => e.stopPropagation()}>
+                  <span style={{ ...mono, fontSize: 9, color: 'var(--muted)' }}>Delete?</span>
+                  <button onClick={handleConfirm} style={{ ...mono, fontSize: 9, padding: '2px 7px', cursor: 'pointer', border: '1.5px solid #c41e3a', background: '#c41e3a', color: '#fff', letterSpacing: '0.04em' }}>Yes</button>
+                  <button onClick={handleCancel} style={{ ...mono, fontSize: 9, padding: '2px 7px', cursor: 'pointer', border: '1.5px solid var(--border)', background: 'var(--bg-1)', color: 'var(--muted)', letterSpacing: '0.04em' }}>No</button>
+                </span>
+              ) : (
+                <button
+                  onClick={handleDeleteClick}
+                  title="Delete message"
+                  style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--muted)', fontSize: 14, lineHeight: 1, padding: '0 2px', opacity: 0.5 }}
+                  onMouseEnter={e => { e.currentTarget.style.opacity = '1'; e.currentTarget.style.color = '#c41e3a'; }}
+                  onMouseLeave={e => { e.currentTarget.style.opacity = '0.5'; e.currentTarget.style.color = 'var(--muted)'; }}
+                >×</button>
+              )}
+            </div>
           </div>
+
+          {/* Message body */}
           <div style={{
-            ...mono, fontSize: 11, color: 'var(--muted)', marginTop: 3, lineHeight: 1.5,
+            ...mono, fontSize: 11, color: isRead ? 'var(--muted)' : 'var(--text)', marginTop: 4, lineHeight: 1.5,
             overflow: expanded ? 'visible' : 'hidden',
             whiteSpace: expanded ? 'pre-wrap' : 'nowrap',
             textOverflow: expanded ? 'unset' : 'ellipsis',
@@ -126,11 +170,10 @@ function ComposePane({ friends, onSend, onClose }) {
         <button onClick={onClose} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--muted)', fontSize: 16, lineHeight: 1, padding: '2px 4px' }}>×</button>
       </div>
 
-      {/* To field */}
       <div style={{ marginBottom: 10 }}>
         <div style={{ ...mono, fontSize: 9, color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: 5 }}>To</div>
         {target ? (
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '8px 10px', border: '2px solid #c41e3a', background: 'rgba(196,30,58,0.05)' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '8px 10px', border: '2px solid #60a5fa', background: 'rgba(96,165,250,0.06)' }}>
             <Avatar profile={target} size={22} />
             <span style={{ ...display, fontWeight: 700, fontSize: 12, textTransform: 'uppercase', color: 'var(--text)' }}>{target.callsign}</span>
             <button onClick={() => { setTarget(null); setQuery(''); }} style={{ marginLeft: 'auto', background: 'none', border: 'none', cursor: 'pointer', color: 'var(--muted)', fontSize: 14, lineHeight: 1 }}>×</button>
@@ -169,7 +212,6 @@ function ComposePane({ friends, onSend, onClose }) {
         )}
       </div>
 
-      {/* Message body */}
       <textarea
         ref={textRef}
         value={text}
@@ -194,7 +236,8 @@ function ComposePane({ friends, onSend, onClose }) {
             disabled={!target || !text.trim() || sending}
             style={{
               padding: '8px 20px', ...display, fontWeight: 700, fontSize: 11,
-              textTransform: 'uppercase', letterSpacing: '0.06em', cursor: (!target || !text.trim()) ? 'default' : 'pointer',
+              textTransform: 'uppercase', letterSpacing: '0.06em',
+              cursor: (!target || !text.trim()) ? 'default' : 'pointer',
               border: `2px solid ${(!target || !text.trim()) ? 'var(--border)' : '#c41e3a'}`,
               background: (!target || !text.trim()) ? 'var(--bg-2)' : '#c41e3a',
               color: (!target || !text.trim()) ? 'var(--muted)' : '#fff',
@@ -206,9 +249,9 @@ function ComposePane({ friends, onSend, onClose }) {
   );
 }
 
-export default function MessagesSection({ inbox, sent, sendMessage, markRead, friends }) {
-  const [tab,      setTab]      = useState('inbox');
-  const [expanded, setExpanded] = useState(null);
+export default function MessagesSection({ inbox, sent, sendMessage, markRead, deleteMessage, friends }) {
+  const [tab,       setTab]       = useState('inbox');
+  const [expanded,  setExpanded]  = useState(null);
   const [composing, setComposing] = useState(false);
 
   const unread = (inbox || []).filter(m => !m.read_at).length;
@@ -223,18 +266,14 @@ export default function MessagesSection({ inbox, sent, sendMessage, markRead, fr
         background: 'transparent',
         color: tab === key ? '#c41e3a' : 'var(--muted)',
         borderBottom: tab === key ? '3px solid #c41e3a' : '3px solid transparent',
-        marginBottom: -2,
-        transition: 'color 0.15s',
-        whiteSpace: 'nowrap',
-        position: 'relative',
+        marginBottom: -2, transition: 'color 0.15s', whiteSpace: 'nowrap',
       }}
     >
       {label}
       {badge > 0 && (
-        <span style={{
-          marginLeft: 5, background: '#c41e3a', color: '#fff',
-          ...mono, fontSize: 8, padding: '1px 5px', borderRadius: 2,
-        }}>{badge}</span>
+        <span style={{ marginLeft: 5, background: '#60a5fa', color: '#fff', ...mono, fontSize: 8, padding: '1px 5px', borderRadius: 2 }}>
+          {badge}
+        </span>
       )}
     </button>
   );
@@ -243,13 +282,12 @@ export default function MessagesSection({ inbox, sent, sendMessage, markRead, fr
 
   return (
     <div>
-      {/* Header row */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
         <div style={{ ...mono, fontSize: 9, letterSpacing: '0.12em', textTransform: 'uppercase', color: 'var(--muted)', fontWeight: 700 }}>
           Messages
         </div>
         <button
-          onClick={() => { setComposing(c => !c); }}
+          onClick={() => setComposing(c => !c)}
           style={{
             padding: '5px 12px', cursor: 'pointer',
             border: '2px solid var(--border)', background: composing ? 'var(--bg-2)' : 'var(--bg-1)',
@@ -267,12 +305,8 @@ export default function MessagesSection({ inbox, sent, sendMessage, markRead, fr
         </div>
       )}
 
-      {/* Tabs */}
       <div style={{ border: '2px solid var(--border)', background: 'var(--bg-1)' }}>
-        <div style={{
-          display: 'flex', borderBottom: '2px solid var(--border)',
-          background: 'var(--bg-0)', padding: '0 4px',
-        }}>
+        <div style={{ display: 'flex', borderBottom: '2px solid var(--border)', background: 'var(--bg-0)', padding: '0 4px' }}>
           {tabBtn('inbox', 'Inbox', unread)}
           {tabBtn('sent',  'Sent',  0)}
         </div>
@@ -282,18 +316,17 @@ export default function MessagesSection({ inbox, sent, sendMessage, markRead, fr
             {tab === 'inbox' ? 'No messages received yet.' : 'No messages sent yet.'}
           </div>
         ) : (
-          <div>
-            {messages.map(msg => (
-              <MessageRow
-                key={msg.id}
-                msg={msg}
-                side={tab}
-                expanded={expanded === msg.id}
-                onExpand={id => setExpanded(prev => prev === id ? null : id)}
-                onMarkRead={markRead}
-              />
-            ))}
-          </div>
+          messages.map(msg => (
+            <MessageRow
+              key={msg.id}
+              msg={msg}
+              side={tab}
+              expanded={expanded === msg.id}
+              onExpand={id => setExpanded(prev => prev === id ? null : id)}
+              onMarkRead={markRead}
+              onDelete={deleteMessage}
+            />
+          ))
         )}
       </div>
     </div>

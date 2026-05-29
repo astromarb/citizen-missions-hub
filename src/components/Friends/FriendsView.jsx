@@ -70,7 +70,7 @@ function FriendBubbles({ friends, onViewProfile }) {
   );
 }
 
-export default function FriendsView({ friends, pending, sent, sessionInvites, searchUsers, sendRequest, respond, remove, onViewProfile, onRespondToSessionInvite, inbox: msgInbox, msgSent, sendMessage, markRead }) {
+export default function FriendsView({ friends, pending, sent, sessionInvites, searchUsers, sendRequest, respond, remove, onViewProfile, onRespondToSessionInvite, inbox: msgInbox, msgSent, sendMessage, markRead, deleteMessage }) {
   const [query, setQuery] = useState('');
   const [results, setResults] = useState([]);
   const [searching, setSearching] = useState(false);
@@ -273,6 +273,7 @@ export default function FriendsView({ friends, pending, sent, sessionInvites, se
           sent={msgSent}
           sendMessage={sendMessage}
           markRead={markRead}
+          deleteMessage={deleteMessage}
           friends={friends}
         />
       </div>

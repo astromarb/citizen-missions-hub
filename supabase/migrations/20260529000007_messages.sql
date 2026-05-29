@@ -11,10 +11,17 @@ CREATE TABLE IF NOT EXISTS public.messages (
 
 ALTER TABLE public.messages ENABLE ROW LEVEL SECURITY;
 
--- Sender and recipient can read
+-- Sender and recipient can read their own messages
 CREATE POLICY "messages_select" ON public.messages
   FOR SELECT TO authenticated
   USING (sender_id = auth.uid() OR recipient_id = auth.uid());
+
+-- Admins can read all messages (needed for platform stats)
+CREATE POLICY "messages_admin_select" ON public.messages
+  FOR SELECT TO authenticated
+  USING (
+    EXISTS (SELECT 1 FROM public.profiles WHERE id = auth.uid() AND is_admin = true)
+  );
 
 -- Authenticated users can insert as themselves
 CREATE POLICY "messages_insert" ON public.messages
@@ -34,6 +41,11 @@ CREATE POLICY "messages_admin_broadcast" ON public.messages
 CREATE POLICY "messages_update" ON public.messages
   FOR UPDATE TO authenticated
   USING (recipient_id = auth.uid());
+
+-- Sender or recipient can permanently delete a message
+CREATE POLICY "messages_delete" ON public.messages
+  FOR DELETE TO authenticated
+  USING (sender_id = auth.uid() OR recipient_id = auth.uid());
 
 CREATE INDEX IF NOT EXISTS messages_recipient_idx ON public.messages(recipient_id, created_at DESC);
 CREATE INDEX IF NOT EXISTS messages_sender_idx    ON public.messages(sender_id,    created_at DESC);
