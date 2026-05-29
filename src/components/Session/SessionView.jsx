@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import TypeBadge from '../shared/TypeBadge.jsx';
+import SessionChat from './SessionChat.jsx';
 import { keyToLabel } from '../../utils/dateUtils.js';
 import { getContractSize } from '../../utils/contractSize.js';
 import { A } from '../../styles/animations.js';
@@ -783,7 +784,9 @@ export default function SessionView({
           </div>
         )}
 
-        {[...session.contracts].sort((a, b) => (a.done === b.done ? 0 : a.done ? 1 : -1)).map(contract => {
+        {[...session.contracts]
+          .sort((a, b) => (a.done === b.done ? 0 : a.done ? 1 : -1))
+          .map(contract => {
           const isMine    = contract.creatorId === myProfileId;
           const myVoted   = contract.removalVotes?.includes(myProfileId);
           const voteCount = contract.removalVotes?.length || 0;
@@ -1294,6 +1297,14 @@ export default function SessionView({
             </div>
           );
         })}
+        {/* ── Session Chat ── */}
+        {isSessionMember && (
+          <SessionChat
+            session={session}
+            myProfileId={myProfileId}
+            isSessionMember={isSessionMember}
+          />
+        )}
       </div>
     </div>
   );
