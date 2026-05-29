@@ -167,5 +167,16 @@ export function useMessages(myProfileId, enabled = true, onNewMessage = null) {
     return true;
   }, []);
 
-  return { conversations, sendMessage, markRead, deleteMessage, unreadCount };
+  const deleteAllSystemMessages = useCallback(async () => {
+    const sysIds = allMessages
+      .filter(m => m.is_system && m._dir === 'inbox')
+      .map(m => m.id);
+    if (sysIds.length === 0) return true;
+    const { error } = await supabase.from('messages').delete().in('id', sysIds);
+    if (error) { console.error('deleteAllSystemMessages:', error); return false; }
+    setAllMessages(prev => prev.filter(m => !sysIds.includes(m.id)));
+    return true;
+  }, [allMessages]);
+
+  return { conversations, sendMessage, markRead, deleteMessage, deleteAllSystemMessages, unreadCount };
 }

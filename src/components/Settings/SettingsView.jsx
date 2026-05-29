@@ -123,7 +123,7 @@ function LastChangedNote({ ts }) {
   );
 }
 
-export default function SettingsView({ profile, updateProfile, checkCallsign }) {
+export default function SettingsView({ profile, updateProfile, checkCallsign, systemMsgCount = 0, deleteAllSystemMessages }) {
   const isMobile = useIsMobile();
   // ── Colour ─────────────────────────────────────────────────────────────────
   const [color,      setColor]      = useState(profile?.color || '#3b82f6');
@@ -183,6 +183,10 @@ export default function SettingsView({ profile, updateProfile, checkCallsign }) 
   const [shipResults,  setShipResults]  = useState([]);
   const [shipsSaved,   setShipsSaved]   = useState(false);
   const [shipsError,   setShipsError]   = useState(null);
+
+  // ── Messages & Privacy ───────────────────────────────────────────────────────
+  const [confirmClearSys, setConfirmClearSys] = useState(false);
+  const [clearSysSaved,   setClearSysSaved]   = useState(false);
 
   const [saving, setSaving] = useState(false);
 
@@ -1019,6 +1023,62 @@ export default function SettingsView({ profile, updateProfile, checkCallsign }) 
         {shipsSaved && <div style={{ marginTop: 10, fontFamily: 'var(--font-mono)', fontSize: 10, color: '#2d8659' }}>Fleet saved ✓</div>}
         <div style={{ marginTop: 14, fontFamily: 'var(--font-mono)', fontSize: 9, color: 'var(--muted)', lineHeight: 1.7, letterSpacing: '0.02em' }}>
           Ship values are approximate aUEC equivalents. Net Worth is public on your profile.
+        </div>
+      </div>
+
+      {/* ── Messages & Privacy ──────────────────────────────────────────────── */}
+      <div style={{ border: '2px solid #000', background: '#fff', padding: '20px', marginTop: 16 }}>
+        {sectionTitle('Messages & Privacy')}
+        <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--muted)', marginBottom: 16, lineHeight: 1.7 }}>
+          Manage messages sent to your inbox by Nexus Hub system broadcasts.
+        </div>
+
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
+          <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: systemMsgCount > 0 ? 'var(--text)' : 'var(--muted)' }}>
+            {systemMsgCount === 0
+              ? 'No system messages in your inbox.'
+              : `${systemMsgCount} system message${systemMsgCount !== 1 ? 's' : ''} in your inbox`}
+          </span>
+
+          {systemMsgCount > 0 && (
+            confirmClearSys ? (
+              <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                <span style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--muted)' }}>Delete all {systemMsgCount}?</span>
+                <button
+                  onClick={async () => {
+                    await deleteAllSystemMessages?.();
+                    setConfirmClearSys(false);
+                    flash(setClearSysSaved);
+                  }}
+                  style={{
+                    padding: '7px 16px', fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 11,
+                    textTransform: 'uppercase', letterSpacing: '0.04em', cursor: 'pointer',
+                    border: '2px solid #c41e3a', background: '#c41e3a', color: '#fff',
+                  }}
+                >Yes, Delete All</button>
+                <button
+                  onClick={() => setConfirmClearSys(false)}
+                  style={{
+                    padding: '7px 14px', fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 11,
+                    textTransform: 'uppercase', letterSpacing: '0.04em', cursor: 'pointer',
+                    border: '2px solid #ccc', background: '#f5f5f5', color: '#999',
+                  }}
+                >Cancel</button>
+              </span>
+            ) : (
+              <button
+                onClick={() => setConfirmClearSys(true)}
+                style={{
+                  padding: '7px 16px', fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 11,
+                  textTransform: 'uppercase', letterSpacing: '0.04em', cursor: 'pointer',
+                  border: '2px solid #000', background: '#fff', color: '#000',
+                }}
+                onMouseEnter={e => { e.currentTarget.style.background = '#f5f5f5'; }}
+                onMouseLeave={e => { e.currentTarget.style.background = '#fff'; }}
+              >Delete All System Messages</button>
+            )
+          )}
+          <SavedBadge visible={clearSysSaved} />
         </div>
       </div>
     </div>

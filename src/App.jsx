@@ -278,7 +278,7 @@ function AppInner() {
     if (activeTabRef.current !== 'friends') SFX.notify();
   }, [showToast]);
 
-  const { conversations, sendMessage, markRead, deleteMessage, unreadCount: msgUnread } = useMessages(myProfileId, !!authSession, handleNewMessage);
+  const { conversations, sendMessage, markRead, deleteMessage, deleteAllSystemMessages, unreadCount: msgUnread } = useMessages(myProfileId, !!authSession, handleNewMessage);
 
   useEffect(() => {
     const timeout = new Promise((_, rej) => setTimeout(() => rej(new Error('auth-timeout')), 12000));
@@ -864,6 +864,8 @@ function AppInner() {
                 profile={profile}
                 updateProfile={updateProfile}
                 checkCallsign={checkCallsign}
+                systemMsgCount={conversations.filter(c => c.isSystem).length}
+                deleteAllSystemMessages={deleteAllSystemMessages}
               />
             </div>
           )}
