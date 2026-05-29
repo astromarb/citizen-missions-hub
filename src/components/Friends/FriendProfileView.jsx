@@ -286,19 +286,36 @@ export default function FriendProfileView({ friend, sessions, myProfileId, onBac
       {/* ── Left sidebar ── */}
       <div style={{ width: isMobile ? '100%' : 275, flexShrink: 0, position: isMobile ? 'static' : 'sticky', top: 20 }}>
 
-        {/* Back button */}
-        <button
-          onClick={onBack}
-          style={{
-            width: '100%', marginBottom: 12, padding: '9px 14px', cursor: 'pointer',
-            border: '2px solid var(--border)', background: 'var(--bg-1)',
-            fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 12,
-            textTransform: 'uppercase', letterSpacing: '0.06em', color: 'var(--text)',
-            textAlign: 'left',
-          }}
+        {/* Back + Copy Link row */}
+        <div style={{ display: 'flex', gap: 8, marginBottom: 12 }}>
+          <button
+            onClick={onBack}
+            style={{
+              flex: 1, padding: '9px 14px', cursor: 'pointer',
+              border: '2px solid var(--border)', background: 'var(--bg-1)',
+              fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 12,
+              textTransform: 'uppercase', letterSpacing: '0.06em', color: 'var(--text)',
+              textAlign: 'left',
+            }}
           onMouseEnter={e => { e.currentTarget.style.background = 'var(--bg-2)'; }}
           onMouseLeave={e => { e.currentTarget.style.background = 'var(--bg-1)'; }}
         >← Back to Crew</button>
+          <button
+            onClick={() => {
+              const url = `${window.location.origin}${window.location.pathname}?user=${encodeURIComponent(callsign.toLowerCase())}`;
+              navigator.clipboard?.writeText(url);
+            }}
+            title="Copy shareable link to this profile"
+            style={{
+              flexShrink: 0, padding: '9px 10px', cursor: 'pointer',
+              border: '2px solid var(--border)', background: 'var(--bg-1)',
+              fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--muted)',
+              letterSpacing: '0.04em',
+            }}
+            onMouseEnter={e => { e.currentTarget.style.background = 'var(--bg-2)'; }}
+            onMouseLeave={e => { e.currentTarget.style.background = 'var(--bg-1)'; }}
+          >⎘</button>
+        </div>
 
         {/* Profile card */}
         {isMobile ? (
