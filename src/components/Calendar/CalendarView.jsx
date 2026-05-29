@@ -14,43 +14,65 @@ function sessionAccent(session) {
   return null;
 }
 
-function SessionBar({ session, onClick }) {
-  const accent  = sessionAccent(session);
-  const members = session.members || [];
+function SessionBar({ session, onClick, showContracts }) {
+  const accent    = sessionAccent(session);
+  const members   = session.members || [];
+  const contracts = session.contracts || [];
 
   let dots = members.map(m => m.color || PLAYER_COLORS[m.callsign] || '#8b949e');
   if (dots.length === 0 && session.players) {
     dots = session.players.map(cs => PLAYER_COLORS[cs] || '#8b949e');
   }
-  const overflow = dots.length > 5 ? dots.length - 4 : 0;
-  const visible  = overflow ? dots.slice(0, 4) : dots;
+  const dotOverflow = dots.length > 5 ? dots.length - 4 : 0;
+  const visibleDots = dotOverflow ? dots.slice(0, 4) : dots;
+
+  const MAX_C = 8;
+  const visContracts = contracts.slice(0, MAX_C);
+  const extraC = contracts.length - visContracts.length;
 
   return (
     <div
       onClick={e => { e.stopPropagation(); onClick(); }}
       style={{
         display: 'flex', alignItems: 'center', gap: 2,
-        padding: '1px 3px 1px 3px',
+        padding: '1px 4px 1px 3px',
         background: accent ? `${accent}18` : 'var(--bg-2)',
         borderLeft: `2px solid ${accent || 'var(--border)'}`,
-        height: 12, minHeight: 12,
+        height: 14, minHeight: 14,
         overflow: 'hidden', cursor: 'pointer', flexShrink: 0,
         transition: 'filter 0.1s',
       }}
       onMouseEnter={e => { e.currentTarget.style.filter = 'brightness(0.82)'; }}
       onMouseLeave={e => { e.currentTarget.style.filter = 'none'; }}
     >
-      {visible.map((col, i) => (
+      {/* Member dots */}
+      {visibleDots.map((col, i) => (
         <div key={i} style={{
           width: 7, height: 7, borderRadius: '50%',
           background: col, border: '1px solid rgba(0,0,0,0.18)',
           flexShrink: 0,
         }} />
       ))}
-      {overflow > 0 && (
+      {dotOverflow > 0 && (
         <span style={{ fontSize: 6, color: 'var(--muted)', fontFamily: 'var(--font-mono)', lineHeight: 1, flexShrink: 0 }}>
-          +{overflow}
+          +{dotOverflow}
         </span>
+      )}
+
+      {/* Contract numbers */}
+      {showContracts && contracts.length > 0 && (
+        <div style={{ marginLeft: 4, display: 'flex', alignItems: 'center', gap: 2, flexShrink: 0, overflow: 'hidden' }}>
+          {visContracts.map((_, i) => (
+            <span key={i} style={{
+              fontSize: 7, fontFamily: 'var(--font-mono)', fontWeight: 700,
+              color: accent || '#888',
+              lineHeight: 1, whiteSpace: 'nowrap', flexShrink: 0,
+            }}>#{i + 1}</span>
+          ))}
+          {extraC > 0 && (
+            <span style={{ fontSize: 6, color: 'var(--muted)', fontFamily: 'var(--font-mono)', lineHeight: 1, flexShrink: 0 }}>+{extraC}</span>
+          )}
+        </div>
       )}
     </div>
   );
@@ -63,18 +85,19 @@ export default function CalendarView({ sessionsByDate, viewDate, myProfileId, on
   for (let i = 0; i < firstWeekday(year, month); i++) cells.push(null);
   for (let d = 1; d <= daysInMonth(year, month); d++) cells.push(d);
 
-  const MAX_BARS = isMobile ? 3 : 6;
+  const MAX_BARS   = isMobile ? 3 : 6;
+  const cellHeight = isMobile ? 56 : 104;
 
   return (
-    <div style={{ padding: isMobile ? '0 8px 16px' : '0 20px 24px' }}>
+    <div style={{ padding: isMobile ? '0 8px 16px' : '0 24px 24px' }}>
       <div style={{ border: '2px solid var(--border)', background: 'var(--bg-1)' }}>
 
         {/* Day-of-week headers */}
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', borderBottom: '2px solid var(--border)', background: 'var(--bg-2)' }}>
           {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map((d, i) => (
             <div key={d} style={{
-              padding: isMobile ? '7px 2px' : '10px 4px', textAlign: 'center',
-              fontFamily: 'var(--font-display)', fontSize: isMobile ? 7 : 9, fontWeight: 800,
+              padding: isMobile ? '7px 2px' : '11px 6px', textAlign: 'center',
+              fontFamily: 'var(--font-display)', fontSize: isMobile ? 7 : 10, fontWeight: 800,
               letterSpacing: '0.10em', textTransform: 'uppercase', color: 'var(--text)',
               borderRight: i < 6 ? '1px solid var(--border)' : 'none',
             }}>{isMobile ? d[0] : d}</div>
@@ -86,7 +109,7 @@ export default function CalendarView({ sessionsByDate, viewDate, myProfileId, on
           {cells.map((day, i) => {
             if (!day) return (
               <div key={'e' + i} style={{
-                minHeight: isMobile ? 52 : 82,
+                minHeight: cellHeight,
                 background: 'var(--bg-2)', opacity: 0.4,
                 borderRight: '1px solid var(--bg-3)', borderBottom: '1px solid var(--bg-3)',
               }} />
@@ -114,8 +137,8 @@ export default function CalendarView({ sessionsByDate, viewDate, myProfileId, on
               <div key={key}
                 onClick={handleCellClick}
                 style={{
-                  minHeight: isMobile ? 52 : 82,
-                  padding: isMobile ? '3px 2px' : '5px 3px 3px 3px',
+                  minHeight: cellHeight,
+                  padding: isMobile ? '3px 2px' : '6px 4px 4px 4px',
                   cursor: isFuture ? 'default' : 'pointer',
                   border: isToday ? '2px solid #c41e3a' : '1px solid var(--bg-3)',
                   background: isToday ? 'rgba(196,30,58,0.05)' : 'var(--bg-1)',
@@ -130,9 +153,9 @@ export default function CalendarView({ sessionsByDate, viewDate, myProfileId, on
                 {/* Day number */}
                 <div style={{
                   fontFamily: 'var(--font-display)', fontWeight: 800,
-                  fontSize: isMobile ? 9 : 11,
+                  fontSize: isMobile ? 9 : 12,
                   color: isToday ? '#c41e3a' : 'var(--text)',
-                  lineHeight: 1, marginBottom: 3, paddingLeft: 1, flexShrink: 0,
+                  lineHeight: 1, marginBottom: 4, paddingLeft: 1, flexShrink: 0,
                 }}>{day}</div>
 
                 {/* Session bars */}
@@ -142,6 +165,7 @@ export default function CalendarView({ sessionsByDate, viewDate, myProfileId, on
                       key={session.id}
                       session={session}
                       onClick={() => onSelectDate(session.id)}
+                      showContracts={!isMobile}
                     />
                   ))}
                   {extraCount > 0 && (
