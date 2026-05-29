@@ -100,6 +100,7 @@ export function useMessages(myProfileId, enabled = true, onNewMessage = null) {
     const map = {};
 
     allMessages.forEach(msg => {
+      if (msg._dir === 'sent' && msg.is_system) return;
       let key;
       if (msg._dir === 'inbox') {
         // Each system broadcast gets its own card so they don't pile into one thread

@@ -222,7 +222,7 @@ export default function ChatModal({ conversation, myProfileId, onClose, onSend, 
           {messages.map(msg => {
             const isMine = msg._dir === 'sent';
             const msgWithDelete = { ...msg, _onDelete: onDelete };
-            if (msg.is_system && !msg.sender_id) return <SystemBubble key={msg.id} msg={msg} isMobile={isMobile} />;
+            if (msg.is_system) return <SystemBubble key={msg.id} msg={msg} isMobile={isMobile} />;
             return <Bubble key={msg.id} msg={msgWithDelete} isMine={isMine} isMobile={isMobile} />;
           })}
         </div>
