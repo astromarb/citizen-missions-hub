@@ -684,21 +684,19 @@ export default function SettingsView({ profile, updateProfile, checkCallsign }) 
                             </div>
                           )}
                         </div>
-                        {/* Nametag — bites 14px into image, auto-width centered */}
+                        {/* Nametag — bites 14px into image, shrinks to text width, centered */}
                         {displayName && (
-                          <div style={{
-                            marginTop: -14,
-                            alignSelf: 'center',
-                            background: 'rgba(255,255,255,0.92)',
-                            padding: '5px 10px 3px',
-                            position: 'relative', zIndex: 2,
-                            maxWidth: 'calc(100% - 12px)',
-                          }}>
+                          <div style={{ marginTop: -14, textAlign: 'center', position: 'relative', zIndex: 2, lineHeight: 0 }}>
                             <span style={{
-                              fontFamily: 'var(--font-mono)', fontSize: 14, fontWeight: 700,
-                              color: selected ? '#c41e3a' : '#111',
-                              display: 'block',
+                              display: 'inline-block',
+                              background: 'rgba(255,255,255,0.92)',
+                              padding: '5px 10px 4px',
+                              maxWidth: 'calc(100% - 12px)',
                               overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+                              verticalAlign: 'top',
+                              fontFamily: 'var(--font-mono)', fontSize: 14, fontWeight: 700,
+                              lineHeight: 1.2,
+                              color: selected ? '#c41e3a' : '#111',
                             }}>
                               {displayName}
                             </span>

@@ -219,6 +219,8 @@ function AppInner() {
   const [activeTab, setActiveTab] = useState(() => {
     const urlTab = new URLSearchParams(window.location.search).get('tab');
     if (urlTab) return urlTab;
+    const urlUser = new URLSearchParams(window.location.search).get('user');
+    if (urlUser) return 'friends'; // will redirect to missions if it's own callsign
     try { return localStorage.getItem('cmh-active-tab') || 'missions'; } catch { return 'missions'; }
   });
   const [view, setView] = useState('calendar');
@@ -228,6 +230,8 @@ function AppInner() {
   const [viewingFriend, setViewingFriend] = useState(null);
   const [manageMode, setManageMode] = useState(false);
   const restoredRef = useRef(false);
+  const urlUserOnLoad = useRef(new URLSearchParams(window.location.search).get('user')?.toLowerCase() ?? null);
+  const urlUserProcessed = useRef(false);
 
   const userId = authSession?.user?.id || null;
 
@@ -289,6 +293,49 @@ function AppInner() {
       setViewDate(new Date(sess.date + 'T12:00:00').setDate(1) && new Date(new Date(sess.date + 'T12:00:00').getFullYear(), new Date(sess.date + 'T12:00:00').getMonth(), 1));
     }
   }, [sessions, sessionsLoading]);
+
+  // ── Deep-link: ?user=callsign ──────────────────────────────────────────────
+  useEffect(() => {
+    if (urlUserProcessed.current) return;
+    if (!urlUserOnLoad.current) { urlUserProcessed.current = true; return; }
+    if (profileLoading || sessionsLoading) return;
+
+    const target = urlUserOnLoad.current;
+    urlUserProcessed.current = true;
+
+    if (myCallsign?.toLowerCase() === target) {
+      setActiveTab('missions');
+      window.history.replaceState(null, '', `?tab=missions`);
+      return;
+    }
+
+    const knownFriend = (friends || []).find(f => f.callsign?.toLowerCase() === target);
+    if (knownFriend) {
+      setViewingFriend(knownFriend);
+      setActiveTab('friends');
+      return;
+    }
+
+    supabase.from('profiles')
+      .select('id, callsign, color, avatar_url, home_region, badges, banner_panel')
+      .ilike('callsign', target)
+      .maybeSingle()
+      .then(({ data }) => {
+        if (data) { setViewingFriend(data); setActiveTab('friends'); }
+      });
+  }, [profileLoading, sessionsLoading, myCallsign, friends]);
+
+  const openFriendProfile = (f) => {
+    SFX.open();
+    setViewingFriend(f);
+    window.history.replaceState(null, '', `?user=${encodeURIComponent(f.callsign?.toLowerCase() ?? '')}`);
+  };
+
+  const closeFriendProfile = () => {
+    SFX.back();
+    setViewingFriend(null);
+    window.history.replaceState(null, '', `?tab=friends`);
+  };
 
   const navMonth = (dir) => setViewDate(new Date(viewDate.getFullYear(), viewDate.getMonth() + dir, 1));
 
@@ -762,7 +809,7 @@ function AppInner() {
                 sendRequest={handleFriendRequest}
                 respond={handleFriendRespond}
                 remove={handleRemoveFriend}
-                onViewProfile={f => { SFX.open(); setViewingFriend(f); }}
+                onViewProfile={openFriendProfile}
                 onRespondToSessionInvite={handleRespondToSessionInvite}
               />
             </div>
@@ -773,7 +820,7 @@ function AppInner() {
                 friend={viewingFriend}
                 sessions={sessions}
                 myProfileId={myProfileId}
-                onBack={() => { SFX.back(); setViewingFriend(null); }}
+                onBack={closeFriendProfile}
                 onOpenSession={handleOpenSession}
               />
             </div>

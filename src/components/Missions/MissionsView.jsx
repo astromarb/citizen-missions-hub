@@ -375,11 +375,26 @@ export default function MissionsView({ sessions, myProfileId, profile, avatarUrl
 
       {/* ── Sessions panel ── */}
       <div style={{ flex: 1, minWidth: 0 }}>
-        <div style={{ display: 'flex', alignItems: 'baseline', gap: 12, marginBottom: 20 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 20, flexWrap: 'wrap' }}>
           <div style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 20, letterSpacing: '-0.02em' }}>Mission Log</div>
-          <div style={{ fontFamily: 'var(--font-mono)', fontSize: 13, color: 'var(--muted)', letterSpacing: '0.08em' }}>
+          <div style={{ fontFamily: 'var(--font-mono)', fontSize: 13, color: 'var(--muted)', letterSpacing: '0.08em', flex: 1 }}>
             {mySessions.length} session{mySessions.length !== 1 ? 's' : ''}
           </div>
+          {callsign && callsign !== 'Pilot' && (
+            <button
+              onClick={() => {
+                const url = `${window.location.origin}${window.location.pathname}?user=${encodeURIComponent(callsign.toLowerCase())}`;
+                navigator.clipboard?.writeText(url).then(() => {}).catch(() => {});
+              }}
+              title="Copy shareable profile link"
+              style={{
+                fontFamily: 'var(--font-mono)', fontSize: 9, color: 'var(--muted)',
+                background: 'none', border: '1px solid var(--border)', cursor: 'pointer',
+                padding: '4px 8px', letterSpacing: '0.06em', textTransform: 'uppercase',
+                flexShrink: 0,
+              }}
+            >⎘ Copy Profile Link</button>
+          )}
         </div>
 
         {mySessions.length === 0 ? (
