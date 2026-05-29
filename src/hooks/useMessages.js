@@ -20,26 +20,36 @@ function checkSpam() {
     return { blocked: true, message: `Messaging blocked for ${mins} more minute${mins !== 1 ? 's' : ''} (spam limit reached).` };
   }
 
-  // Rate window: 3 messages within 30 seconds
-  const recent = (s.recentSends || []).filter(t => now - t < 30000);
+  // Rate window: 12 messages within 60 seconds
+  const recent = (s.recentSends || []).filter(t => now - t < 60000);
   recent.push(now);
 
-  if (recent.length >= 3) {
+  if (recent.length >= 12) {
     const strikes = (s.strikes || 0) + 1;
     saveSpamState({
       strikes,
       recentSends: recent,
-      blockedUntil: strikes >= 3 ? now + 3_600_000 : null, // 1-hour block on 3rd strike
+      blockedUntil: strikes >= 5 ? now + 600_000 : null, // 10-minute block on 5th strike
     });
-    if (strikes >= 3) {
-      return { spam: true, blocked: true, message: 'You have been blocked from messaging for 1 hour due to repeated spam.' };
+    if (strikes >= 5) {
+      return { spam: true, blocked: true, message: 'Messaging paused for 10 minutes (rate limit reached).' };
     }
-    return { spam: true, warning: `Spam warning (${strikes}/3 strikes). A third violation will block messaging for 1 hour.` };
+    return { spam: true, warning: `Slow down — sending too many messages too quickly (${strikes}/5 warnings).` };
   }
 
   saveSpamState({ ...s, recentSends: recent });
   return { ok: true };
 }
+
+// Clear any overly-aggressive legacy blocks from the old 3-msg/30s rule
+;(() => {
+  try {
+    const s = JSON.parse(localStorage.getItem('cmh-spam') || '{}');
+    if (s.blockedUntil || (s.strikes && s.strikes >= 3)) {
+      localStorage.removeItem('cmh-spam');
+    }
+  } catch {}
+})();
 
 // ── Hook ──────────────────────────────────────────────────────────────────────
 export function useMessages(myProfileId, enabled = true, onNewMessage = null) {
