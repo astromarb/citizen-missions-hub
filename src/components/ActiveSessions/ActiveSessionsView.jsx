@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useIsMobile } from '../../hooks/useIsMobile.js';
+import { CONTRACT_TYPES } from '../../data/contractTypes.js';
 
 const DAY_COLORS = [
   { bg: '#e8db7d', text: '#000' },
@@ -150,6 +151,110 @@ function ActiveSessionCard({ session, myProfileId, onOpen, now }) {
   );
 }
 
+function TrophyCabinet({ contracts }) {
+  if (contracts.length === 0) return null;
+
+  return (
+    <div style={{ marginTop: 32 }}>
+      <div style={{ display: 'flex', alignItems: 'baseline', gap: 10, marginBottom: 12 }}>
+        <div style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 16, letterSpacing: '-0.01em' }}>
+          Trophy Cabinet
+        </div>
+        <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--muted)', letterSpacing: '0.08em' }}>
+          {contracts.length} contract{contracts.length !== 1 ? 's' : ''} completed
+        </div>
+      </div>
+
+      <div style={{
+        overflowX: 'auto', paddingBottom: 12,
+        scrollbarWidth: 'thin', scrollbarColor: 'var(--border) transparent',
+      }}>
+        <div style={{
+          display: 'flex', gap: 10, alignItems: 'flex-end',
+          paddingBottom: 4, paddingLeft: 2, paddingRight: 2,
+          minWidth: 'max-content',
+        }}>
+          {contracts.map((c, i) => {
+            const typeInfo = CONTRACT_TYPES[c.type] || { bg: '#555', color: '#fff' };
+            const rot = i % 3 === 0 ? -2 : i % 3 === 1 ? 1.5 : -1;
+            const yShift = i % 2 === 0 ? 0 : 5;
+            const d = new Date((c.sessionDate || '') + 'T12:00:00');
+            const dateLabel = c.sessionDate
+              ? d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+              : '—';
+            const typeLine = c.type?.split(' - ');
+            const typeShort = typeLine?.[0] || c.type || '?';
+            const typeSub = typeLine?.[1] || null;
+
+            return (
+              <div
+                key={`${c.id || i}`}
+                title={`${c.type} · ${dateLabel}${c.payout ? ` · ${c.payout.toLocaleString()} aUEC` : ''}`}
+                style={{
+                  flexShrink: 0,
+                  width: 78, height: 100,
+                  border: '2px solid var(--border)',
+                  background: 'var(--bg-1)',
+                  display: 'flex', flexDirection: 'column',
+                  transform: `rotate(${rot}deg) translateY(${yShift}px)`,
+                  boxShadow: '2px 4px 10px rgba(0,0,0,0.22)',
+                  position: 'relative',
+                  cursor: 'default',
+                  transition: 'transform 0.15s, box-shadow 0.15s',
+                }}
+                onMouseEnter={e => {
+                  e.currentTarget.style.transform = 'rotate(0deg) translateY(-4px)';
+                  e.currentTarget.style.boxShadow = '4px 8px 18px rgba(0,0,0,0.35)';
+                  e.currentTarget.style.zIndex = '10';
+                }}
+                onMouseLeave={e => {
+                  e.currentTarget.style.transform = `rotate(${rot}deg) translateY(${yShift}px)`;
+                  e.currentTarget.style.boxShadow = '2px 4px 10px rgba(0,0,0,0.22)';
+                  e.currentTarget.style.zIndex = '';
+                }}
+              >
+                {/* Type color strip */}
+                <div style={{ height: 20, background: typeInfo.bg, flexShrink: 0, display: 'flex', alignItems: 'center', paddingLeft: 6, gap: 4 }}>
+                  <span style={{ fontFamily: 'var(--font-mono)', fontSize: 8, fontWeight: 800, color: typeInfo.color, letterSpacing: '0.04em', lineHeight: 1 }}>★</span>
+                </div>
+
+                {/* Card content */}
+                <div style={{ padding: '5px 6px', flex: 1, display: 'flex', flexDirection: 'column', gap: 3, overflow: 'hidden' }}>
+                  <div style={{ fontFamily: 'var(--font-mono)', fontSize: 7, color: 'var(--muted)', lineHeight: 1, letterSpacing: '0.04em' }}>
+                    {dateLabel}
+                  </div>
+                  <div style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 9, color: typeInfo.bg, lineHeight: 1.1, textTransform: 'uppercase', wordBreak: 'break-word' }}>
+                    {typeShort}
+                  </div>
+                  {typeSub && (
+                    <div style={{ fontFamily: 'var(--font-mono)', fontSize: 7, color: 'var(--muted)', lineHeight: 1, textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+                      {typeSub}
+                    </div>
+                  )}
+                  {c.payout > 0 && (
+                    <div style={{ marginTop: 'auto', fontFamily: 'var(--font-mono)', fontWeight: 700, fontSize: 7, color: '#2e7d32', lineHeight: 1 }}>
+                      {c.payout >= 1000000
+                        ? `${(c.payout / 1000000).toFixed(1)}M`
+                        : c.payout >= 1000
+                          ? `${(c.payout / 1000).toFixed(1)}k`
+                          : c.payout} aUEC
+                    </div>
+                  )}
+                  {c.cargo?.length > 0 && (
+                    <div style={{ fontFamily: 'var(--font-mono)', fontSize: 7, color: 'var(--muted)', lineHeight: 1 }}>
+                      {c.cargo.reduce((t, ci) => t + Number(ci.scu || 0), 0)} SCU
+                    </div>
+                  )}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function ActiveSessionsView({ sessions, myProfileId, onOpenSession }) {
   const isMobile = useIsMobile();
   const now = useTick();
@@ -158,6 +263,18 @@ export default function ActiveSessionsView({ sessions, myProfileId, onOpenSessio
     .filter(s => s.startedAt && !s.endedAt)
     .sort((a, b) => new Date(a.startedAt) - new Date(b.startedAt))
     .slice(0, 6);
+
+  const completedContracts = Object.values(sessions)
+    .flatMap(s =>
+      (s.contracts || [])
+        .filter(c => c.done)
+        .map(c => ({ ...c, sessionDate: s.date, sessionId: s.id }))
+    )
+    .sort((a, b) => {
+      if (a.sessionDate > b.sessionDate) return -1;
+      if (a.sessionDate < b.sessionDate) return 1;
+      return 0;
+    });
 
   return (
     <div style={{ padding: isMobile ? 12 : 20 }}>
@@ -199,6 +316,9 @@ export default function ActiveSessionsView({ sessions, myProfileId, onOpenSessio
           Showing 6 most recently started sessions
         </div>
       )}
+
+      {/* ── Trophy Cabinet ── */}
+      <TrophyCabinet contracts={completedContracts} />
     </div>
   );
 }

@@ -14,10 +14,9 @@ function sessionAccent(session) {
   return null;
 }
 
-function SessionBar({ session, onClick, showContracts }) {
-  const accent    = sessionAccent(session);
-  const members   = session.members || [];
-  const contracts = session.contracts || [];
+function SessionBar({ session, onClick, sessionIndex }) {
+  const accent  = sessionAccent(session);
+  const members = session.members || [];
 
   let dots = members.map(m => m.color || PLAYER_COLORS[m.callsign] || '#8b949e');
   if (dots.length === 0 && session.players) {
@@ -25,10 +24,6 @@ function SessionBar({ session, onClick, showContracts }) {
   }
   const dotOverflow = dots.length > 5 ? dots.length - 4 : 0;
   const visibleDots = dotOverflow ? dots.slice(0, 4) : dots;
-
-  const MAX_C = 8;
-  const visContracts = contracts.slice(0, MAX_C);
-  const extraC = contracts.length - visContracts.length;
 
   return (
     <div
@@ -45,7 +40,6 @@ function SessionBar({ session, onClick, showContracts }) {
       onMouseEnter={e => { e.currentTarget.style.filter = 'brightness(0.82)'; }}
       onMouseLeave={e => { e.currentTarget.style.filter = 'none'; }}
     >
-      {/* Member dots */}
       {visibleDots.map((col, i) => (
         <div key={i} style={{
           width: 7, height: 7, borderRadius: '50%',
@@ -58,22 +52,10 @@ function SessionBar({ session, onClick, showContracts }) {
           +{dotOverflow}
         </span>
       )}
-
-      {/* Contract numbers */}
-      {showContracts && contracts.length > 0 && (
-        <div style={{ marginLeft: 4, display: 'flex', alignItems: 'center', gap: 2, flexShrink: 0, overflow: 'hidden' }}>
-          {visContracts.map((_, i) => (
-            <span key={i} style={{
-              fontSize: 7, fontFamily: 'var(--font-mono)', fontWeight: 700,
-              color: accent || '#888',
-              lineHeight: 1, whiteSpace: 'nowrap', flexShrink: 0,
-            }}>#{i + 1}</span>
-          ))}
-          {extraC > 0 && (
-            <span style={{ fontSize: 6, color: 'var(--muted)', fontFamily: 'var(--font-mono)', lineHeight: 1, flexShrink: 0 }}>+{extraC}</span>
-          )}
-        </div>
-      )}
+      <span style={{
+        marginLeft: 3, fontSize: 9, fontFamily: 'var(--font-mono)', fontWeight: 700,
+        color: accent || '#888', lineHeight: 1, whiteSpace: 'nowrap', flexShrink: 0,
+      }}>Session #{sessionIndex}</span>
     </div>
   );
 }
@@ -85,8 +67,8 @@ export default function CalendarView({ sessionsByDate, viewDate, myProfileId, on
   for (let i = 0; i < firstWeekday(year, month); i++) cells.push(null);
   for (let d = 1; d <= daysInMonth(year, month); d++) cells.push(d);
 
-  const MAX_BARS   = isMobile ? 3 : 6;
-  const cellHeight = isMobile ? 56 : 104;
+  const MAX_BARS   = isMobile ? 3 : 4;
+  const cellHeight = isMobile ? 68 : 130;
 
   return (
     <div style={{ padding: isMobile ? '0 8px 16px' : '0 24px 24px' }}>
@@ -122,11 +104,7 @@ export default function CalendarView({ sessionsByDate, viewDate, myProfileId, on
 
             const handleCellClick = () => {
               if (isFuture) return;
-              const mine = myProfileId
-                ? dateSessions.filter(s => s.members?.some(m => m.id === myProfileId))
-                : dateSessions;
-              if (mine.length === 1) onSelectDate(mine[0].id);
-              else if (mine.length > 1) onShowPicker(key, mine);
+              if (dateSessions.length > 0) onShowPicker(key, dateSessions);
               else onNewSession(key);
             };
 
@@ -159,22 +137,32 @@ export default function CalendarView({ sessionsByDate, viewDate, myProfileId, on
                 }}>{day}</div>
 
                 {/* Session bars */}
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 2, flex: 1 }}>
-                  {visibleBars.map(session => (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 2, flex: 1, position: 'relative' }}>
+                  {visibleBars.map((session, idx) => (
                     <SessionBar
                       key={session.id}
                       session={session}
                       onClick={() => onSelectDate(session.id)}
-                      showContracts={!isMobile}
+                      sessionIndex={idx + 1}
                     />
                   ))}
+
+                  {/* "+" badge overlay on last bar when sessions are hidden */}
                   {extraCount > 0 && (
-                    <div style={{
-                      fontSize: 7, color: 'var(--muted)',
-                      fontFamily: 'var(--font-mono)', lineHeight: 1,
-                      paddingLeft: 3, flexShrink: 0,
-                    }}>+{extraCount}</div>
+                    <div
+                      onClick={e => { e.stopPropagation(); onShowPicker(key, dateSessions); }}
+                      style={{
+                        position: 'absolute', bottom: 0, right: 0,
+                        width: 10, height: 10,
+                        background: '#c41e3a',
+                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        cursor: 'pointer',
+                      }}
+                    >
+                      <span style={{ fontSize: 8, fontFamily: 'var(--font-mono)', fontWeight: 800, color: '#fff', lineHeight: 1 }}>+</span>
+                    </div>
                   )}
+
                   {dateSessions.length === 0 && !isFuture && (
                     <div style={{
                       marginTop: 'auto',

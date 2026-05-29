@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useIsMobile } from '../../hooks/useIsMobile.js';
 import { A } from '../../styles/animations.js';
 import AnimatedNumber from '../shared/AnimatedNumber.jsx';
+import { calcFleetValue } from '../../data/ships.js';
 
 const rankMedal = (i) => i === 0 ? '#c41e3a' : i === 1 ? '#555' : i === 2 ? '#7a5c00' : 'var(--muted)';
 const fmtSCU  = (n) => `${n.toLocaleString()} SCU`;
@@ -44,14 +45,12 @@ function Board({ title, rows, valueKey, format, myProfileId }) {
         </span>
       </button>
 
-      {/* Empty state */}
       {open && rows.length === 0 && (
         <div style={{ padding: '20px 16px', fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--muted)', textAlign: 'center', animation: A.fadeIn() }}>
           No data yet.
         </div>
       )}
 
-      {/* Sequential row reveal — each slides out from behind the one above */}
       {open && top5.map((p, i) => {
         const isMe = p.id === myProfileId;
         return (
@@ -115,7 +114,7 @@ function Section({ title, open, onToggle, children }) {
   );
 }
 
-function WalletBoard({ rows, myProfileId, emptyMsg }) {
+function WalletBoard({ rows, myProfileId, emptyMsg, title = 'Verified Balance', subtitle }) {
   const [open, setOpen] = useState(false);
   const top5 = rows.slice(0, 5);
 
@@ -133,8 +132,10 @@ function WalletBoard({ rows, myProfileId, emptyMsg }) {
         onMouseLeave={e => { e.currentTarget.style.background = open ? '#222' : '#1a1a1a'; }}
       >
         <div style={{ display: 'flex', alignItems: 'baseline', gap: 10 }}>
-          <div style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 12, color: '#fff', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Verified Balance</div>
-          <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: 'rgba(255,255,255,0.35)', letterSpacing: '0.08em' }}>self-reported · {rows.length} pilot{rows.length !== 1 ? 's' : ''}</div>
+          <div style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 12, color: '#fff', textTransform: 'uppercase', letterSpacing: '0.06em' }}>{title}</div>
+          <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: 'rgba(255,255,255,0.35)', letterSpacing: '0.08em' }}>
+            {subtitle || `self-reported · ${rows.length} pilot${rows.length !== 1 ? 's' : ''}`}
+          </div>
         </div>
         <span style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
           {rows.length > 0 && (
@@ -190,10 +191,10 @@ export default function LeaderboardView({ sessions, myProfileId, profiles = [], 
   const [scope, setScope] = useState('global');
   const [haulingOpen, setHaulingOpen] = useState(true);
   const [walletOpen, setWalletOpen] = useState(true);
+  const [netWorthOpen, setNetWorthOpen] = useState(true);
 
   const friendIds = new Set(friends.map(f => f.id));
 
-  // Aggregate per-player hauling stats from all sessions
   const statsMap = {};
   Object.values(sessions).forEach(sess => {
     const mc = sess.members?.length || 1;
@@ -232,6 +233,17 @@ export default function LeaderboardView({ sessions, myProfileId, profiles = [], 
     .sort((a, b) => b.auec_balance - a.auec_balance)
     .map(p => ({ id: p.id, callsign: p.callsign, color: p.color || '#8b949e', balance: p.auec_balance }));
 
+  const netWorthRows = profiles
+    .filter(p => inScope(p.id))
+    .map(p => ({
+      id: p.id,
+      callsign: p.callsign,
+      color: p.color || '#8b949e',
+      balance: (Number(p.auec_balance) || 0) + calcFleetValue(p.owned_ships || []),
+    }))
+    .filter(p => p.balance > 0)
+    .sort((a, b) => b.balance - a.balance);
+
   const scopeTab = (key, label) => (
     <button
       key={key}
@@ -251,10 +263,8 @@ export default function LeaderboardView({ sessions, myProfileId, profiles = [], 
   return (
     <div style={{ padding: isMobile ? '12px' : '20px' }}>
 
-      {/* Page title */}
       <div style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 20, letterSpacing: '-0.02em', marginBottom: 0 }}>Leaderboards</div>
 
-      {/* Secondary scope tabs */}
       <div style={{ display: 'flex', borderBottom: '2px solid var(--border)', marginBottom: 24, marginTop: 6 }}>
         {scopeTab('global',  'Global')}
         {scopeTab('friends', 'Friends')}
@@ -267,7 +277,7 @@ export default function LeaderboardView({ sessions, myProfileId, profiles = [], 
             {isFriendsScope ? 'No friends have session data yet.' : 'No session data yet.'}
           </div>
         ) : (
-          <div key={scope} style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: 12, marginBottom: 16 }}>
+          <div key={scope} style={{ display: 'flex', flexDirection: 'column', gap: 12, marginBottom: 16 }}>
             <Board title="SCU Hauled"          rows={bySCU}        valueKey="scu"       format={fmtSCU}  myProfileId={myProfileId} />
             <Board title="aUEC Earned"         rows={byPayout}     valueKey="payout"    format={fmtAUEC} myProfileId={myProfileId} />
             <Board title="Sessions Flown"      rows={bySessions}   valueKey="sessions"  format={fmt}     myProfileId={myProfileId} />
@@ -278,7 +288,24 @@ export default function LeaderboardView({ sessions, myProfileId, profiles = [], 
 
       {/* ── WALLET section ── */}
       <Section title="Wallet" open={walletOpen} onToggle={() => setWalletOpen(v => !v)}>
-        <WalletBoard key={scope} rows={walletRows} myProfileId={myProfileId} emptyMsg={isFriendsScope ? 'No friends have verified their wallet yet.' : 'No verified wallets yet.'} />
+        <WalletBoard
+          key={scope}
+          rows={walletRows}
+          myProfileId={myProfileId}
+          emptyMsg={isFriendsScope ? 'No friends have verified their wallet yet.' : 'No verified wallets yet.'}
+        />
+      </Section>
+
+      {/* ── NET WORTH section ── */}
+      <Section title="Net Worth" open={netWorthOpen} onToggle={() => setNetWorthOpen(v => !v)}>
+        <WalletBoard
+          key={scope + '-nw'}
+          rows={netWorthRows}
+          myProfileId={myProfileId}
+          title="Net Worth"
+          subtitle={`fleet + balance · ${netWorthRows.length} pilot${netWorthRows.length !== 1 ? 's' : ''}`}
+          emptyMsg={isFriendsScope ? 'No friends have set up their fleet yet.' : 'No net worth data yet.'}
+        />
       </Section>
 
     </div>
