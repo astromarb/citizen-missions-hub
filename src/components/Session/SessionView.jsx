@@ -403,7 +403,7 @@ export default function SessionView({
   const totalPayout = session.contracts.reduce((t, c) => t + (c.payout || 0), 0);
 
   const memberCount     = session.members?.length || session.players?.length || 0;
-  const threshold       = Math.ceil(memberCount / 2 + 0.01);
+  const threshold       = memberCount >= 4 ? Math.floor(memberCount / 2) : (memberCount <= 1 ? 1 : 2);
   const members         = session.members || [];
   const isSessionMember  = !!myProfileId && members.some(m => m.id === myProfileId);
   const isSessionCreator = !!myProfileId && myProfileId === session.createdBy;

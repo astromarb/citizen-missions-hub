@@ -22,6 +22,7 @@ import OnboardingFlow from '@/components/Onboarding/OnboardingFlow.jsx';
 import MissionsView from '@/components/Missions/MissionsView.jsx';
 import LeaderboardView from '@/components/Leaderboard/LeaderboardView.jsx';
 import FriendProfileView from '@/components/Friends/FriendProfileView.jsx';
+import PublicProfileView from '@/components/Public/PublicProfileView.jsx';
 import ActiveSessionsView from '@/components/ActiveSessions/ActiveSessionsView.jsx';
 import AdminView from '@/components/Admin/AdminView.jsx';
 import { ToastProvider, useToast } from '@/components/shared/Toast.jsx';
@@ -211,6 +212,7 @@ function AppInner() {
   // ── Auth ──
   const [authSession, setAuthSession] = useState(null);
   const [authLoading, setAuthLoading] = useState(true);
+  const [forceLogin, setForceLogin] = useState(false);
 
   // ── Profiles ──
   const [profiles, setProfiles] = useState([]);
@@ -491,7 +493,21 @@ function AppInner() {
     );
   }
 
-  if (!authSession) return <LoginScreen />;
+  if (!authSession) {
+    const publicUser = new URLSearchParams(window.location.search).get('user');
+    if (publicUser && !forceLogin) {
+      return (
+        <PublicProfileView
+          callsign={publicUser}
+          onSignIn={() => {
+            window.history.replaceState(null, '', '/');
+            setForceLogin(true);
+          }}
+        />
+      );
+    }
+    return <LoginScreen />;
+  }
 
   if (sessionsLoading || profileLoading) {
     return (

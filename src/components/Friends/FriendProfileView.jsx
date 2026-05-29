@@ -302,19 +302,19 @@ export default function FriendProfileView({ friend, sessions, myProfileId, onBac
         >← Back to Crew</button>
           <button
             onClick={() => {
-              const url = `${window.location.origin}${window.location.pathname}?user=${encodeURIComponent(callsign.toLowerCase())}`;
-              navigator.clipboard?.writeText(url);
+              const url = `${window.location.origin}${window.location.pathname}?user=${encodeURIComponent((friend.callsign || '').toLowerCase())}`;
+              navigator.clipboard?.writeText(url).catch(() => {});
             }}
             title="Copy shareable link to this profile"
             style={{
               flexShrink: 0, padding: '9px 10px', cursor: 'pointer',
               border: '2px solid var(--border)', background: 'var(--bg-1)',
-              fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--muted)',
-              letterSpacing: '0.04em',
+              fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--muted)',
+              letterSpacing: '0.04em', whiteSpace: 'nowrap',
             }}
             onMouseEnter={e => { e.currentTarget.style.background = 'var(--bg-2)'; }}
             onMouseLeave={e => { e.currentTarget.style.background = 'var(--bg-1)'; }}
-          >⎘</button>
+          >⎘ Copy Link</button>
         </div>
 
         {/* Profile card */}

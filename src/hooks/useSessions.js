@@ -19,6 +19,7 @@ const xf = (s) => ({
     type: c.type,
     system: c.system,
     done: c.done,
+    partial: c.partial || false,
     payout: Number(c.payout) || 0,
     creatorId: c.creator_id || null,
     creatorCallsign: c.creator?.callsign || null,
@@ -205,8 +206,14 @@ export function useSessions(enabled = true, userId) {
       }
       return next;
     });
-    const { error } = await supabase.from('contracts').update({ done: nextDone, partial: nextPartial }).eq('id', contractId);
-    if (error) { console.error('toggleDone:', error); load(); }
+    let { error } = await supabase.from('contracts').update({ done: nextDone, partial: nextPartial }).eq('id', contractId);
+    if (error) {
+      // Fallback: partial column may not exist yet (migration pending)
+      if (error.code === '42703' || error.message?.includes('partial')) {
+        ({ error } = await supabase.from('contracts').update({ done: nextDone }).eq('id', contractId));
+      }
+      if (error) { console.error('toggleDone:', error); load(); }
+    }
   };
 
   // ── deleteContract ─────────────────────────────────────────
@@ -247,7 +254,7 @@ export function useSessions(enabled = true, userId) {
 
     const sess = Object.values(sessions).find(s => s.id === sessionId);
     const memberCount = sess?.members?.length || sess?.players?.length || 1;
-    const threshold = Math.ceil(memberCount / 2 + 0.01);
+    const threshold = memberCount >= 4 ? Math.floor(memberCount / 2) : (memberCount <= 1 ? 1 : 2);
 
     const { data: votes } = await supabase
       .from('contract_removal_votes')

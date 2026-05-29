@@ -575,28 +575,6 @@ export default function SettingsView({ profile, updateProfile, checkCallsign }) 
           </button>
         </div>
 
-        {/* Preview — mobile only, above accordion sets */}
-        {isMobile && bannerPanel && (() => {
-          const signedSrc = bannerSets.flatMap(s => s.banners).find(b => b.id === bannerPanel)?.src
-            ?? getBanner(bannerPanel)?.src;
-          return signedSrc ? (
-            <div style={{ marginBottom: 16 }}>
-              <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: 8 }}>Preview</div>
-              <div style={{ width: 270, height: 270, position: 'relative', overflow: 'hidden', border: '2px solid #ccc', background: '#111' }}>
-                <div style={{
-                  position: 'absolute', inset: 0,
-                  backgroundImage: `url(${signedSrc})`,
-                  backgroundSize: 'cover', backgroundPosition: 'center',
-                }} />
-                <div style={{
-                  position: 'absolute', inset: 0, pointerEvents: 'none',
-                  background: 'radial-gradient(ellipse at center, transparent 38%, rgba(0,0,0,0.55) 100%)',
-                }} />
-              </div>
-            </div>
-          ) : null;
-        })()}
-
         {/* Save */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 20 }}>
           {saveBtn(saveBanner, false)}
@@ -648,7 +626,7 @@ export default function SettingsView({ profile, updateProfile, checkCallsign }) 
 
               {/* Thumbnails — 4-col desktop, 1-col mobile */}
               {expanded && (
-                <div style={{ display: 'grid', gridTemplateColumns: `repeat(${isMobile ? 1 : 4}, 1fr)`, gap: 16, padding: '14px 0 8px 0' }}>
+                <div style={{ display: 'grid', gridTemplateColumns: `repeat(${isMobile ? 1 : 4}, 1fr)`, columnGap: 16, rowGap: 20, padding: '14px 0 8px 0' }}>
                   {set.banners.map(b => {
                     const selected = bannerPanel === b.id;
                     const displayName = bannerItemMeta[b.id]?.displayName;
@@ -706,7 +684,7 @@ export default function SettingsView({ profile, updateProfile, checkCallsign }) 
                         {description && (
                           <div style={{ padding: '4px 6px 8px' }}>
                             <span style={{
-                              fontFamily: 'var(--font-mono)', fontSize: 14,
+                              fontFamily: 'var(--font-mono)', fontSize: isMobile ? 16 : 14,
                               color: '#555', lineHeight: 1.4, display: 'block',
                             }}>
                               "{description}"
