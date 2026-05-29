@@ -198,7 +198,6 @@ export default function SettingsView({ profile, updateProfile, checkCallsign }) 
   }, [bannerPanel, bannerSets]);
 
   // ── Rate limit computed values ────────────────────────────────────────────
-  const callsignCountdown  = timeUntilAllowed(profile?.callsign_changed_at);
   const regionCountdown    = timeUntilAllowed(profile?.home_region_changed_at);
   const rsiHandleCountdown = timeUntilAllowed(profile?.rsi_handle_changed_at);
   const recentAuecChecks   = recentTimestamps(profile?.auec_verification_timestamps);
@@ -281,7 +280,7 @@ export default function SettingsView({ profile, updateProfile, checkCallsign }) 
   };
 
   const saveCallsign = async () => {
-    if (!callsignRegex.test(callsign) || callsignStatus !== 'available' || callsignCountdown) return;
+    if (!callsignRegex.test(callsign) || callsignStatus !== 'available') return;
     setCallsignError(null);
     setSaving(true);
     const { error } = await updateProfile({ callsign, callsign_changed_at: new Date().toISOString() });
@@ -733,7 +732,6 @@ export default function SettingsView({ profile, updateProfile, checkCallsign }) 
           value={callsign}
           onChange={e => { setCallsign(e.target.value); setCallsignStatus(null); }}
           onBlur={handleCallsignBlur}
-          disabled={!!callsignCountdown}
           maxLength={20}
           placeholder="New callsign"
         />
@@ -744,9 +742,8 @@ export default function SettingsView({ profile, updateProfile, checkCallsign }) 
           {!checking && callsignStatus === 'invalid' && <span style={{ color: '#c41e3a' }}>✗ 2–20 chars, letters/numbers/_/- only</span>}
         </div>
         <LastChangedNote ts={profile?.callsign_changed_at} />
-        <RateLimitNote countdown={callsignCountdown} />
         <div style={{ display: 'flex', alignItems: 'center', marginTop: 10 }}>
-          {saveBtn(saveCallsign, callsignStatus !== 'available' || !!callsignCountdown)}
+          {saveBtn(saveCallsign, callsignStatus !== 'available')}
           <SavedBadge visible={callsignSaved} />
         </div>
         <SaveError msg={callsignError} />
