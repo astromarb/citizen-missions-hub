@@ -5,6 +5,7 @@ import LandingZoneBadge, { AlphaBadge } from '../shared/LandingZoneBadge.jsx';
 import { typeBg } from '../../data/contractTypes.js';
 import { getContractSize } from '../../utils/contractSize.js';
 import { getBanner } from '../../data/profileBanners.js';
+import { useBannerUrl } from '../../hooks/useBanners.js';
 
 // M  T  W  Th  F  Sa  Su  (JS getDay: 0=Sun)
 const DAY_COLORS = [
@@ -271,6 +272,7 @@ export default function MissionsView({ sessions, myProfileId, profile, avatarUrl
   ];
 
   const bannerObj = profile?.banner_panel ? getBanner(profile.banner_panel) : null;
+  const bannerSrc = useBannerUrl(profile?.banner_panel ?? null);
 
   const txtCol = bannerObj?.textColor ?? '#fff';
   const lblCol = bannerObj ? (txtCol === '#fff' ? 'rgba(255,255,255,0.72)' : 'rgba(0,0,0,0.6)') : 'var(--muted)';
@@ -289,7 +291,7 @@ export default function MissionsView({ sessions, myProfileId, profile, avatarUrl
               <div style={{
                 position: 'absolute', top: 0, left: 0, right: 0,
                 height: isMobile ? 190 : '100%',
-                backgroundImage: `url(${bannerObj.src})`,
+                backgroundImage: `url(${bannerSrc ?? bannerObj.src})`,
                 backgroundSize: 'cover', backgroundPosition: 'top center',
                 backgroundColor: bannerObj.fallbackBg, zIndex: 0,
               }} />

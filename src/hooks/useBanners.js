@@ -1,6 +1,26 @@
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '../lib/supabase.js';
 
+// Returns a fresh signed URL for a single banner filename, falling back to the
+// public URL while the sign call is in flight. Signed URLs bypass CDN caching
+// so replacing a file with the same name is always reflected immediately.
+export function useBannerUrl(filename) {
+  const [src, setSrc] = useState(() =>
+    filename ? supabase.storage.from('images').getPublicUrl(filename).data.publicUrl : null
+  );
+
+  useEffect(() => {
+    if (!filename) { setSrc(null); return; }
+    supabase.storage.from('images')
+      .createSignedUrl(filename, 31536000)
+      .then(({ data, error }) => {
+        if (!error && data?.signedUrl) setSrc(data.signedUrl);
+      });
+  }, [filename]);
+
+  return src;
+}
+
 // "alpha-1.png"        → "Alpha Set"
 // "Beta-Players-2.png" → "Beta Players Set"
 function setNameFromFile(filename) {

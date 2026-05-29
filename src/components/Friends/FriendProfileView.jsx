@@ -3,6 +3,7 @@ import LandingZoneBadge, { AlphaBadge } from '../shared/LandingZoneBadge.jsx';
 import { typeBg } from '../../data/contractTypes.js';
 import { getContractSize } from '../../utils/contractSize.js';
 import { getBanner } from '../../data/profileBanners.js';
+import { useBannerUrl } from '../../hooks/useBanners.js';
 
 const DAY_COLORS = [
   { bg: '#e8db7d', text: '#000' }, // Sunday
@@ -261,7 +262,8 @@ export default function FriendProfileView({ friend, sessions, myProfileId, onBac
     ['aUEC Earned', lifetimePayout > 0 ? lifetimePayout.toLocaleString() : '—'],
   ];
 
-  const bannerObj = friend?.banner_panel ? getBanner(friend.banner_panel) : null;
+  const bannerObj  = friend?.banner_panel ? getBanner(friend.banner_panel) : null;
+  const bannerSrc  = useBannerUrl(friend?.banner_panel ?? null);
   const txtCol = bannerObj?.textColor ?? '#fff';
   const lblCol = bannerObj ? (txtCol === '#fff' ? 'rgba(255,255,255,0.72)' : 'rgba(0,0,0,0.6)') : 'var(--muted)';
   const shadow = bannerObj ? '0 1px 4px rgba(0,0,0,0.75)' : 'none';
@@ -295,7 +297,7 @@ export default function FriendProfileView({ friend, sessions, myProfileId, onBac
               <div style={{
                 position: 'absolute', top: 0, left: 0, right: 0,
                 height: isMobile ? 190 : '100%',
-                backgroundImage: `url(${bannerObj.src})`,
+                backgroundImage: `url(${bannerSrc ?? bannerObj.src})`,
                 backgroundSize: 'cover', backgroundPosition: 'top center',
                 backgroundColor: bannerObj.fallbackBg, zIndex: 0,
               }} />
