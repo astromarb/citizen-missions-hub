@@ -46,7 +46,15 @@ export function useFriends(userId, enabled = true) {
     setLoading(false);
   }, [userId, enabled]);
 
-  useEffect(() => { load(); }, [load]);
+  useEffect(() => {
+    if (!userId || !enabled) return;
+    load();
+    const channel = supabase
+      .channel('friendships-' + userId)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'friendships' }, () => load())
+      .subscribe();
+    return () => supabase.removeChannel(channel);
+  }, [load, userId, enabled]);
 
   const searchUsers = useCallback(async (query) => {
     if (!query || query.length < 1) return [];

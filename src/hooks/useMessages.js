@@ -51,22 +51,14 @@ export function useMessages(myProfileId, enabled = true, onNewMessage = null) {
 
   const load = useCallback(async () => {
     if (!myProfileId) { setAllMessages([]); return; }
-
-    const [inboxRes, sentRes] = await Promise.all([
-      supabase.from('messages')
-        .select('id, content, subject, is_system, is_spam, created_at, read_at, sender_id, recipient_id, sender:profiles!sender_id(id, callsign, color, avatar_url)')
-        .eq('recipient_id', myProfileId)
-        .order('created_at', { ascending: true }),
-      supabase.from('messages')
-        .select('id, content, subject, is_system, is_spam, created_at, read_at, sender_id, recipient_id, recipient:profiles!recipient_id(id, callsign, color, avatar_url)')
-        .eq('sender_id', myProfileId)
-        .order('created_at', { ascending: true }),
-    ]);
-
-    const inbox = (inboxRes.data || []).map(m => ({ ...m, _dir: 'inbox' }));
-    const sent  = (sentRes.data  || []).map(m => ({ ...m, _dir: 'sent' }));
-    const merged = [...inbox, ...sent].sort((a, b) => new Date(a.created_at) - new Date(b.created_at));
-    setAllMessages(merged);
+    const { data, error } = await supabase.from('messages')
+      .select(`id, content, subject, is_system, is_spam, created_at, read_at, sender_id, recipient_id,
+        sender:profiles!sender_id(id, callsign, color, avatar_url),
+        recipient:profiles!recipient_id(id, callsign, color, avatar_url)`)
+      .or(`sender_id.eq.${myProfileId},recipient_id.eq.${myProfileId}`)
+      .order('created_at', { ascending: true });
+    if (error) { console.error('useMessages load:', error); return; }
+    setAllMessages((data || []).map(m => ({ ...m, _dir: m.sender_id === myProfileId ? 'sent' : 'inbox' })));
   }, [myProfileId]);
 
   useEffect(() => {
@@ -80,11 +72,10 @@ export function useMessages(myProfileId, enabled = true, onNewMessage = null) {
         const row       = payload.new;
         const isForMe   = row.recipient_id === myProfileId;
         const notFromMe = row.sender_id !== myProfileId;
-        load().then(() => {
-          if (initialLoadedRef.current && isForMe && notFromMe && onNewMessageRef.current) {
-            onNewMessageRef.current(row);
-          }
-        });
+        if (initialLoadedRef.current && isForMe && notFromMe && onNewMessageRef.current) {
+          onNewMessageRef.current(row);
+        }
+        load();
       })
       .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'messages' }, load)
       .on('postgres_changes', { event: 'DELETE', schema: 'public', table: 'messages' }, load)

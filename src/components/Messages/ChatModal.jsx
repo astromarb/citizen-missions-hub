@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
+import { SFX } from '@/hooks/useSound.js';
 
 const mono    = { fontFamily: 'var(--font-mono)' };
 const display = { fontFamily: 'var(--font-display)' };
@@ -103,7 +104,8 @@ export default function ChatModal({ conversation, myProfileId, onClose, onSend, 
   const [text,    setText]    = useState('');
   const [sending, setSending] = useState(false);
   const [warn,    setWarn]    = useState(null);
-  const scrollRef = useRef(null);
+  const scrollRef    = useRef(null);
+  const prevLenRef   = useRef(conversation.messages.length);
 
   // Mark all unread as read when modal opens
   useEffect(() => {
@@ -113,10 +115,16 @@ export default function ChatModal({ conversation, myProfileId, onClose, onSend, 
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [conversation.key]);
 
-  // Scroll to bottom on open and on new messages
+  // Scroll to bottom on open and on new messages; play sound for incoming
   useEffect(() => {
+    const prev = prevLenRef.current;
+    prevLenRef.current = conversation.messages.length;
     if (scrollRef.current) {
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
+    }
+    if (conversation.messages.length > prev) {
+      const newest = conversation.messages[conversation.messages.length - 1];
+      if (newest?._dir === 'inbox') SFX.msgIn();
     }
   }, [conversation.messages.length]);
 
