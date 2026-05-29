@@ -237,6 +237,13 @@ function AppInner() {
 
   const userId = authSession?.user?.id || null;
 
+  // Non-blocking Discord DM notification — never throws, never blocks the calling action
+  const notifyDiscord = (type, recipientUserId, payload) => {
+    supabase.functions.invoke('discord-notify', {
+      body: { type, recipientUserId, ...payload },
+    }).catch(() => {});
+  };
+
   // ── Data hooks ──
   const {
     sessions, loading: sessionsLoading,
@@ -357,7 +364,17 @@ function AppInner() {
 
   const saveSession = async ({ date: dateKey, players }) => {
     const sess = await createSession(dateKey, players);
-    if (sess) { setModal(null); openSession(sess.id); }
+    if (sess) {
+      setModal(null);
+      openSession(sess.id);
+      if (profile?.callsign && players.length) {
+        const dateLabel = new Date(dateKey + 'T12:00:00').toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
+        for (const callsign of players) {
+          const friend = (friends || []).find(f => f.callsign === callsign);
+          if (friend?.id) notifyDiscord('session_invite', friend.id, { inviterCallsign: profile.callsign, sessionDate: dateLabel });
+        }
+      }
+    }
   };
 
   const addContract = async (contract) => {
@@ -424,6 +441,11 @@ function AppInner() {
     const ok = await createInvite(sessionId, profileId);
     SFX.boop();
     showToast(ok ? 'Session invite sent' : 'Could not send invite — pilot may already be in session', ok ? 'success' : 'error');
+    if (ok && myCallsign) {
+      const sess = sessions[sessionId];
+      const dateLabel = sess ? new Date(sess.date + 'T12:00:00').toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' }) : '';
+      notifyDiscord('session_invite', profileId, { inviterCallsign: myCallsign, sessionDate: dateLabel });
+    }
   };
 
   const handleRespondToSessionInvite = async (inviteId, accept, sessionId) => {
@@ -462,6 +484,7 @@ function AppInner() {
     await sendRequest(id);
     SFX.plus();
     showToast('Friend request sent', 'success');
+    if (myCallsign) notifyDiscord('friend_request', id, { senderCallsign: myCallsign });
   };
 
   const handleFriendRespond = async (fid, accept) => {
