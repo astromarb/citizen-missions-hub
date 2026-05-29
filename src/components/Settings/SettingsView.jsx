@@ -399,9 +399,9 @@ export default function SettingsView({ profile, updateProfile, checkCallsign }) 
     <div style={{ padding: '20px' }}>
       <div style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 20, letterSpacing: '-0.02em', marginBottom: 24 }}>Settings</div>
 
-      {/* ── Crew Color ──────────────────────────────────────────────────────── */}
+      {/* ── Display Color ───────────────────────────────────────────────────── */}
       <div style={{ border: '2px solid #000', background: '#fff', padding: '20px', marginBottom: 16 }}>
-        {sectionTitle('Crew Color')}
+        {sectionTitle('Display Color')}
 
         {/* Preview */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 14 }}>
@@ -575,8 +575,8 @@ export default function SettingsView({ profile, updateProfile, checkCallsign }) 
           </button>
         </div>
 
-        {/* Preview — above accordion sets */}
-        {bannerPanel && (() => {
+        {/* Preview — mobile only, above accordion sets */}
+        {isMobile && bannerPanel && (() => {
           const signedSrc = bannerSets.flatMap(s => s.banners).find(b => b.id === bannerPanel)?.src
             ?? getBanner(bannerPanel)?.src;
           return signedSrc ? (
@@ -638,7 +638,7 @@ export default function SettingsView({ profile, updateProfile, checkCallsign }) 
                     {hasSelected && <span style={{ marginLeft: 6, fontSize: 9 }}>✓</span>}
                   </span>
                   {setDescription && (
-                    <span style={{ fontFamily: 'var(--font-mono)', fontSize: 13, color: '#555', fontStyle: 'italic' }}>
+                    <span style={{ fontFamily: 'var(--font-mono)', fontSize: 14, color: '#333' }}>
                       {setDescription}
                     </span>
                   )}
@@ -684,16 +684,18 @@ export default function SettingsView({ profile, updateProfile, checkCallsign }) 
                             </div>
                           )}
                         </div>
-                        {/* Nametag — bites 14px into image above */}
+                        {/* Nametag — bites 14px into image, auto-width centered */}
                         {displayName && (
                           <div style={{
-                            marginTop: -14, marginLeft: 6, marginRight: 6,
+                            marginTop: -14,
+                            alignSelf: 'center',
                             background: 'rgba(255,255,255,0.92)',
-                            padding: '5px 8px 3px',
+                            padding: '5px 10px 3px',
                             position: 'relative', zIndex: 2,
+                            maxWidth: 'calc(100% - 12px)',
                           }}>
                             <span style={{
-                              fontFamily: 'var(--font-mono)', fontSize: 12, fontWeight: 700,
+                              fontFamily: 'var(--font-mono)', fontSize: 14, fontWeight: 700,
                               color: selected ? '#c41e3a' : '#111',
                               display: 'block',
                               overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
@@ -706,8 +708,8 @@ export default function SettingsView({ profile, updateProfile, checkCallsign }) 
                         {description && (
                           <div style={{ padding: '4px 6px 8px' }}>
                             <span style={{
-                              fontFamily: 'var(--font-mono)', fontSize: 11, fontStyle: 'italic',
-                              color: '#666', lineHeight: 1.4, display: 'block',
+                              fontFamily: 'var(--font-mono)', fontSize: 14,
+                              color: '#555', lineHeight: 1.4, display: 'block',
                             }}>
                               "{description}"
                             </span>
