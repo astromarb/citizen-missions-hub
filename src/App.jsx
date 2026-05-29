@@ -259,9 +259,17 @@ function AppInner() {
 
   const { incoming: sessionInvites, createInvite, respondToInvite } = useSessionInvites(myProfileId, !!authSession);
 
+  const friendsRef = useRef(friends);
+  friendsRef.current = friends;
+
   const handleNewMessage = useCallback((row) => {
-    const senderName = row.is_system ? 'Nexus Hub System' : null;
-    const label = senderName || 'New message';
+    let label;
+    if (row.is_system) {
+      label = 'New message from Nexus Hub System';
+    } else {
+      const sender = friendsRef.current?.find(f => f.id === row.sender_id);
+      label = sender ? `New message from ${sender.callsign}` : 'New message received';
+    }
     showToast(label, 'message', 8000);
     SFX.notify();
   }, [showToast]);
