@@ -134,46 +134,53 @@ export default function FriendsView({ friends, pending, sent, sessionInvites, se
       {/* ── 1. Friend Bubbles ── */}
       <FriendBubbles friends={friends} onViewProfile={onViewProfile} />
 
+      {/* ── Divider ── */}
+      <div style={{ borderTop: '2px solid #000', margin: '24px 0' }} />
+
       {/* ── 2. Messages ── */}
-      <div style={{ marginTop: friends.length > 0 ? 20 : 0 }}>
-        <MessagesSection
-          conversations={conversations}
-          sendMessage={sendMessage}
-          markRead={markRead}
-          deleteMessage={deleteMessage}
-          friends={friends}
-          myProfileId={myProfileId}
-          isMobile={isMobile}
+      <MessagesSection
+        conversations={conversations}
+        sendMessage={sendMessage}
+        markRead={markRead}
+        deleteMessage={deleteMessage}
+        friends={friends}
+        myProfileId={myProfileId}
+        isMobile={isMobile}
+      />
+
+      {/* ── 3. Search ── */}
+      <div style={{ border: '2px solid #000', background: '#fff', padding: 16, marginTop: 20 }}>
+        <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, textTransform: 'uppercase', letterSpacing: '0.1em', color: 'var(--muted)', marginBottom: 8 }}>Search Pilots</div>
+        <input
+          style={{ width: '100%', padding: '9px 12px', border: '2px solid #000', fontFamily: 'var(--font-mono)', fontSize: 13, outline: 'none', boxSizing: 'border-box' }}
+          placeholder="Search by callsign…"
+          value={query}
+          onChange={e => setQuery(e.target.value)}
         />
-      </div>
-
-      {/* ── 3. All Friends list ── */}
-      {friends.length > 0 && (
-        <div>
-          <div style={sectionLabel}>All Friends ({friends.length})</div>
-          <div style={{ border: '2px solid #000', background: '#fff', padding: '0 16px' }}>
-            {friends.map(f => (
-              <ProfileRow key={f.friendshipId} profile={f} actions={
-                confirmRemoveId === f.friendshipId ? [
-                  <span key="lbl" style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: 'var(--muted)', whiteSpace: 'nowrap' }}>Remove friend?</span>,
-                  <button key="confirm" onClick={() => { remove(f.friendshipId); setConfirmRemoveId(null); }} style={{ border: '2px solid #c41e3a', background: '#c41e3a', color: '#fff', padding: '5px 12px', cursor: 'pointer', fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.04em' }}>Confirm</button>,
-                  <button key="cancel" onClick={() => setConfirmRemoveId(null)} style={{ border: '2px solid #ccc', background: '#f5f5f5', color: '#999', padding: '5px 12px', cursor: 'pointer', fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.04em' }}>Cancel</button>,
-                ] : [
-                  onViewProfile && actionBtn('View Profile', () => onViewProfile(f), 'default'),
-                  actionBtn('Remove', () => setConfirmRemoveId(f.friendshipId), 'danger'),
-                ].filter(Boolean)
-              } />
-            ))}
+        {searching && (
+          <div style={{ marginTop: 8, fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--muted)' }}>Searching…</div>
+        )}
+        {results.length > 0 && (
+          <div style={{ marginTop: 8 }}>
+            {results.map(p => {
+              const isFriend = friendIds.has(p.id);
+              const isPending = pendingIds.has(p.id);
+              const isSent = sentIds.has(p.id);
+              return (
+                <ProfileRow key={p.id} profile={p} actions={
+                  isFriend ? [<span key="f" style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: '#2D7A1F' }}>Friends ✓</span>]
+                  : isSent ? [<span key="p" style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--muted)' }}>Pending</span>]
+                  : isPending ? [<span key="i" style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--muted)' }}>Incoming request</span>]
+                  : [actionBtn('+ Add Friend', () => sendRequest(p.id), 'primary')]
+                } />
+              );
+            })}
           </div>
-        </div>
-      )}
-
-      {friends.length === 0 && (
-        <div style={{ textAlign: 'center', padding: '40px 20px', border: '2px dashed #000', background: '#fff', marginTop: 8 }}>
-          <div style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 16, marginBottom: 6 }}>No crew yet</div>
-          <div style={{ color: 'var(--muted)', fontSize: 12 }}>Search for pilots below to send friend requests.</div>
-        </div>
-      )}
+        )}
+        {query && !searching && results.length === 0 && (
+          <div style={{ marginTop: 8, fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--muted)' }}>No pilots found.</div>
+        )}
+      </div>
 
       {/* ── 4. Sent requests ── */}
       {sent.length > 0 && (
@@ -245,39 +252,31 @@ export default function FriendsView({ friends, pending, sent, sessionInvites, se
         </div>
       )}
 
-      {/* ── 6. Search (bottom) ── */}
-      <div style={{ border: '2px solid #000', background: '#fff', padding: 16, marginTop: hasPending ? 4 : 16 }}>
-        <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, textTransform: 'uppercase', letterSpacing: '0.1em', color: 'var(--muted)', marginBottom: 8 }}>Search Pilots</div>
-        <input
-          style={{ width: '100%', padding: '9px 12px', border: '2px solid #000', fontFamily: 'var(--font-mono)', fontSize: 13, outline: 'none', boxSizing: 'border-box' }}
-          placeholder="Search by callsign…"
-          value={query}
-          onChange={e => setQuery(e.target.value)}
-        />
-        {searching && (
-          <div style={{ marginTop: 8, fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--muted)' }}>Searching…</div>
-        )}
-        {results.length > 0 && (
-          <div style={{ marginTop: 8 }}>
-            {results.map(p => {
-              const isFriend = friendIds.has(p.id);
-              const isPending = pendingIds.has(p.id);
-              const isSent = sentIds.has(p.id);
-              return (
-                <ProfileRow key={p.id} profile={p} actions={
-                  isFriend ? [<span key="f" style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: '#2D7A1F' }}>Friends ✓</span>]
-                  : isSent ? [<span key="p" style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--muted)' }}>Pending</span>]
-                  : isPending ? [<span key="i" style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--muted)' }}>Incoming request</span>]
-                  : [actionBtn('+ Add Friend', () => sendRequest(p.id), 'primary')]
-                } />
-              );
-            })}
+      {/* ── 6. All Friends list (bottom) ── */}
+      {friends.length > 0 ? (
+        <div>
+          <div style={sectionLabel}>All Friends ({friends.length})</div>
+          <div style={{ border: '2px solid #000', background: '#fff', padding: '0 16px' }}>
+            {friends.map(f => (
+              <ProfileRow key={f.friendshipId} profile={f} actions={
+                confirmRemoveId === f.friendshipId ? [
+                  <span key="lbl" style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: 'var(--muted)', whiteSpace: 'nowrap' }}>Remove friend?</span>,
+                  <button key="confirm" onClick={() => { remove(f.friendshipId); setConfirmRemoveId(null); }} style={{ border: '2px solid #c41e3a', background: '#c41e3a', color: '#fff', padding: '5px 12px', cursor: 'pointer', fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.04em' }}>Confirm</button>,
+                  <button key="cancel" onClick={() => setConfirmRemoveId(null)} style={{ border: '2px solid #ccc', background: '#f5f5f5', color: '#999', padding: '5px 12px', cursor: 'pointer', fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.04em' }}>Cancel</button>,
+                ] : [
+                  onViewProfile && actionBtn('View Profile', () => onViewProfile(f), 'default'),
+                  actionBtn('Remove', () => setConfirmRemoveId(f.friendshipId), 'danger'),
+                ].filter(Boolean)
+              } />
+            ))}
           </div>
-        )}
-        {query && !searching && results.length === 0 && (
-          <div style={{ marginTop: 8, fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--muted)' }}>No pilots found.</div>
-        )}
-      </div>
+        </div>
+      ) : (
+        <div style={{ textAlign: 'center', padding: '40px 20px', border: '2px dashed #000', background: '#fff', marginTop: 20 }}>
+          <div style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 16, marginBottom: 6 }}>No crew yet</div>
+          <div style={{ color: 'var(--muted)', fontSize: 12 }}>Search for pilots above to send friend requests.</div>
+        </div>
+      )}
     </div>
   );
 }
