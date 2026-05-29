@@ -11,7 +11,6 @@ Deno.serve(async (req) => {
   }
 
   try {
-    // Service-role client bypasses RLS so we can always list the bucket
     const admin = createClient(
       Deno.env.get('SUPABASE_URL')!,
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!,
@@ -28,12 +27,33 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Return name + updated_at so the client can append a cache-buster query param.
-    // When a file is deleted and re-uploaded with the same name, updated_at changes,
-    // making the URL unique and bypassing both browser and CDN cache.
-    const files = (data ?? [])
-      .filter(f => /\.(png|jpg|jpeg|webp|gif)$/i.test(f.name))
-      .map(f => ({ name: f.name, updatedAt: f.updated_at ?? f.created_at ?? '' }));
+    const imageFiles = (data ?? [])
+      .filter(f => /\.(png|jpg|jpeg|webp|gif)$/i.test(f.name));
+
+    // Generate signed URLs (1 year expiry). Unlike public URLs, signed URLs have a
+    // unique token generated fresh each call, so the CDN always treats them as new
+    // requests — no stale image after delete-and-reupload with the same filename.
+    const paths = imageFiles.map(f => f.name);
+    const { data: signedData, error: signedError } = await admin.storage
+      .from('images')
+      .createSignedUrls(paths, 31536000);
+
+    if (signedError || !signedData) {
+      // Fall back to public URLs if signing fails
+      const files = imageFiles.map(f => ({
+        name: f.name,
+        url: admin.storage.from('images').getPublicUrl(f.name).data.publicUrl,
+      }));
+      return new Response(
+        JSON.stringify({ files }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
+      );
+    }
+
+    const files = signedData.map((s, i) => ({
+      name: imageFiles[i].name,
+      url: s.signedUrl,
+    }));
 
     return new Response(
       JSON.stringify({ files }),
