@@ -259,8 +259,10 @@ function AppInner() {
 
   const { incoming: sessionInvites, createInvite, respondToInvite } = useSessionInvites(myProfileId, !!authSession);
 
-  const friendsRef = useRef(friends);
+  const friendsRef   = useRef(friends);
   friendsRef.current = friends;
+  const activeTabRef   = useRef(activeTab);
+  activeTabRef.current = activeTab;
 
   const handleNewMessage = useCallback((row) => {
     let label;
@@ -271,7 +273,9 @@ function AppInner() {
       label = sender ? `New message from ${sender.callsign}` : 'New message received';
     }
     showToast(label, 'message', 8000);
-    SFX.notify();
+    // Skip the global notify sound when already on the Social tab — the
+    // ChatModal plays its own in-chat sound so the user hears it once.
+    if (activeTabRef.current !== 'friends') SFX.notify();
   }, [showToast]);
 
   const { conversations, sendMessage, markRead, deleteMessage, unreadCount: msgUnread } = useMessages(myProfileId, !!authSession, handleNewMessage);
