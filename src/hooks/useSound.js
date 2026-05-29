@@ -44,6 +44,35 @@ const TAB_SOUNDS = {
   'active-sessions': 'active-sessions-switch',
 };
 
+// ── Shared AudioContext for synthesized sounds ────────────────────────────────
+// iOS Safari requires AudioContext to be created (or resumed) within a user
+// gesture. We create it lazily on first interaction so mobile sounds work.
+let _sharedCtx = null;
+
+function _getCtx() {
+  if (!_sharedCtx) {
+    try {
+      _sharedCtx = new (window.AudioContext || window.webkitAudioContext)();
+    } catch { return null; }
+  }
+  if (_sharedCtx.state === 'suspended') {
+    _sharedCtx.resume().catch(() => {});
+  }
+  return _sharedCtx;
+}
+
+function _unlockAudio() {
+  const ctx = _getCtx();
+  if (ctx && ctx.state === 'suspended') ctx.resume().catch(() => {});
+}
+
+if (typeof document !== 'undefined') {
+  document.addEventListener('touchstart', _unlockAudio, { once: true, passive: true });
+  document.addEventListener('mousedown',  _unlockAudio, { once: true, passive: true });
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+
 export const SFX = {
   back:     () => _play('back-tap'),
   boop:     () => _play('entry-boop'),
@@ -52,9 +81,11 @@ export const SFX = {
   halt:     () => _play('halt-screetch'),
   complete: () => _play('mission-complete'),
   tab:      (id) => _play(TAB_SOUNDS[id] || 'entry-boop'),
+
   msgIn: () => {
     try {
-      const ctx  = new (window.AudioContext || window.webkitAudioContext)();
+      const ctx = _getCtx();
+      if (!ctx) return;
       const osc  = ctx.createOscillator();
       const gain = ctx.createGain();
       osc.connect(gain);
@@ -66,12 +97,13 @@ export const SFX = {
       gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.35);
       osc.start(ctx.currentTime);
       osc.stop(ctx.currentTime + 0.35);
-      osc.onended = () => ctx.close();
     } catch {}
   },
-  notify:   () => {
+
+  notify: () => {
     try {
-      const ctx  = new (window.AudioContext || window.webkitAudioContext)();
+      const ctx = _getCtx();
+      if (!ctx) return;
       const osc  = ctx.createOscillator();
       const gain = ctx.createGain();
       osc.connect(gain);
@@ -83,7 +115,6 @@ export const SFX = {
       gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.55);
       osc.start(ctx.currentTime);
       osc.stop(ctx.currentTime + 0.55);
-      osc.onended = () => ctx.close();
     } catch {}
   },
 };

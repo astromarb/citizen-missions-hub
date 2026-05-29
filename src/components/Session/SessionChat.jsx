@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { useSessionChat } from '@/hooks/useSessionChat.js';
+import { useIsMobile } from '@/hooks/useIsMobile.js';
 import { SFX } from '@/hooks/useSound.js';
 
 const mono    = { fontFamily: 'var(--font-mono)' };
@@ -28,15 +29,17 @@ function SenderAvatar({ profile, size = 28 }) {
   );
 }
 
-function MessageBubble({ msg, isMine, onDelete }) {
+function MessageBubble({ msg, isMine, onDelete, isMobile }) {
   const [confirmDel, setConfirmDel] = useState(false);
+  const otherBorderColor = msg.sender?.color || 'var(--border)';
+  const fontSize = isMobile ? 12 : 14;
 
   return (
     <div style={{ display: 'flex', justifyContent: isMine ? 'flex-end' : 'flex-start', marginBottom: 8, gap: 6, alignItems: 'flex-end' }}>
       {!isMine && <SenderAvatar profile={msg.sender} size={26} />}
       <div style={{ maxWidth: '72%', display: 'flex', flexDirection: 'column', alignItems: isMine ? 'flex-end' : 'flex-start', gap: 2 }}>
         {!isMine && (
-          <span style={{ ...display, fontSize: 9, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', color: msg.sender?.color || 'var(--muted)', paddingLeft: 2 }}>
+          <span style={{ ...display, fontSize: isMobile ? 9 : 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', color: msg.sender?.color || 'var(--muted)', paddingLeft: 2 }}>
             {msg.sender?.callsign || '?'}
           </span>
         )}
@@ -44,8 +47,8 @@ function MessageBubble({ msg, isMine, onDelete }) {
           padding: '7px 11px',
           background:    isMine ? '#c41e3a' : 'var(--bg-2)',
           color:         isMine ? '#fff'    : 'var(--text)',
-          border:        `2px solid ${isMine ? '#a01830' : 'var(--border)'}`,
-          ...mono, fontSize: 12, lineHeight: 1.5, wordBreak: 'break-word',
+          border:        `2px solid ${isMine ? '#a01830' : otherBorderColor}`,
+          ...mono, fontSize, lineHeight: 1.5, wordBreak: 'break-word',
         }}>
           {msg.content}
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 8, marginTop: 4 }}>
@@ -73,6 +76,7 @@ function MessageBubble({ msg, isMine, onDelete }) {
 }
 
 export default function SessionChat({ session, myProfileId, isSessionMember }) {
+  const isMobile   = useIsMobile();
   const isActive   = !!session.startedAt && !session.endedAt;
   const isArchived = !!session.endedAt;
   const isPreFlight = !session.startedAt;
@@ -157,6 +161,7 @@ export default function SessionChat({ session, myProfileId, isSessionMember }) {
             msg={msg}
             isMine={msg.sender_id === myProfileId}
             onDelete={deleteMessage}
+            isMobile={isMobile}
           />
         ))}
       </div>
@@ -174,7 +179,7 @@ export default function SessionChat({ session, myProfileId, isSessionMember }) {
               style={{
                 flex: 1, padding: '7px 10px',
                 border: '2px solid var(--border)', background: 'var(--bg-1)',
-                color: 'var(--text)', ...mono, fontSize: 12,
+                color: 'var(--text)', ...mono, fontSize: isMobile ? 12 : 14,
                 outline: 'none', resize: 'none', lineHeight: 1.45, boxSizing: 'border-box',
               }}
             />

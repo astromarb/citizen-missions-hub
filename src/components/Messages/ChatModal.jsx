@@ -35,8 +35,9 @@ function SystemAvatar({ size = 36 }) {
   );
 }
 
-function Bubble({ msg, isMine }) {
+function Bubble({ msg, isMine, isMobile }) {
   const [confirmDelete, setConfirmDelete] = useState(false);
+  const fontSize = isMobile ? 12 : 14;
 
   return (
     <div style={{ display: 'flex', justifyContent: isMine ? 'flex-end' : 'flex-start', marginBottom: 10, gap: 0 }}>
@@ -46,7 +47,7 @@ function Bubble({ msg, isMine }) {
           background:    isMine ? '#c41e3a' : 'var(--bg-2)',
           color:         isMine ? '#fff'    : 'var(--text)',
           border:        `2px solid ${isMine ? '#a01830' : 'var(--border)'}`,
-          ...mono, fontSize: 12, lineHeight: 1.55,
+          ...mono, fontSize, lineHeight: 1.55,
           wordBreak: 'break-word',
         }}>
           {msg.content}
@@ -83,13 +84,13 @@ function Bubble({ msg, isMine }) {
   );
 }
 
-function SystemBubble({ msg }) {
+function SystemBubble({ msg, isMobile }) {
   return (
     <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 10 }}>
       <div style={{
         padding: '8px 14px', maxWidth: '80%',
         background: 'rgba(196,30,58,0.08)', border: '1.5px solid rgba(196,30,58,0.3)',
-        ...mono, fontSize: 11, color: 'var(--text)', lineHeight: 1.55,
+        ...mono, fontSize: isMobile ? 11 : 13, color: 'var(--text)', lineHeight: 1.55,
         textAlign: 'center', wordBreak: 'break-word',
       }}>
         <div style={{ fontSize: 8, color: '#c41e3a', letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: 4 }}>⚡ Nexus Hub System</div>
@@ -205,8 +206,8 @@ export default function ChatModal({ conversation, myProfileId, onClose, onSend, 
           {messages.map(msg => {
             const isMine = msg._dir === 'sent';
             const msgWithDelete = { ...msg, _onDelete: onDelete };
-            if (msg.is_system && !msg.sender_id) return <SystemBubble key={msg.id} msg={msg} />;
-            return <Bubble key={msg.id} msg={msgWithDelete} isMine={isMine} />;
+            if (msg.is_system && !msg.sender_id) return <SystemBubble key={msg.id} msg={msg} isMobile={isMobile} />;
+            return <Bubble key={msg.id} msg={msgWithDelete} isMine={isMine} isMobile={isMobile} />;
           })}
         </div>
 
@@ -231,7 +232,7 @@ export default function ChatModal({ conversation, myProfileId, onClose, onSend, 
                 style={{
                   flex: 1, padding: '8px 10px',
                   border: '2px solid var(--border)', background: 'var(--bg-1)',
-                  color: 'var(--text)', ...mono, fontSize: 12,
+                  color: 'var(--text)', ...mono, fontSize: isMobile ? 12 : 14,
                   outline: 'none', resize: 'none', lineHeight: 1.5, boxSizing: 'border-box',
                 }}
               />
