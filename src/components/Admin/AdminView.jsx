@@ -2,26 +2,6 @@ import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/lib/supabase.js';
 import { useBanners } from '../../hooks/useBanners.js';
 
-// ── Admin-actions edge function caller ──────────────────────────────────────
-async function adminAction(action, payload = {}) {
-  const { data: { session } } = await supabase.auth.getSession();
-  const token = session?.access_token;
-  const { data, error } = await supabase.functions.invoke('admin-actions', {
-    body: { action, ...payload },
-    headers: token ? { Authorization: `Bearer ${token}` } : {},
-  });
-  if (error) {
-    // Surface the actual response body if available (e.g. "Forbidden", "Unknown action")
-    let msg = error.message || String(error);
-    try {
-      const body = await error.context?.json?.();
-      if (body?.error) msg = body.error;
-    } catch {}
-    return { data: null, error: new Error(msg) };
-  }
-  return { data, error };
-}
-
 // ── Shared styles ─────────────────────────────────────────────────────────────
 const mono = { fontFamily: 'var(--font-mono)' };
 const display = { fontFamily: 'var(--font-display)' };
@@ -52,9 +32,13 @@ function UsersPanel() {
 
   const load = useCallback(async () => {
     setLoading(true);
-    const { data, error } = await adminAction('list_users');
-    if (error) setError(error.message || String(error));
-    else setUsers(data?.users ?? []);
+    setError(null);
+    const { data, error } = await supabase
+      .from('profiles')
+      .select('id, callsign, color, home_region, badges, banner_panel, onboarding_complete, is_admin, created_at')
+      .order('created_at', { ascending: false });
+    if (error) setError(error.message);
+    else setUsers(data ?? []);
     setLoading(false);
   }, []);
 
@@ -63,8 +47,16 @@ function UsersPanel() {
   const resetOnboarding = async (userId, callsign) => {
     if (!window.confirm(`Reset onboarding for ${callsign}? They will see the setup flow on next login.`)) return;
     setResetting(userId);
-    const { error } = await adminAction('reset_onboarding', { userId });
-    if (error) alert('Error: ' + (error.message || String(error)));
+    const { error } = await supabase
+      .from('profiles')
+      .update({
+        onboarding_complete: false,
+        callsign_changed_at: null,
+        home_region_changed_at: null,
+        rsi_handle_changed_at: null,
+      })
+      .eq('id', userId);
+    if (error) alert('Error: ' + error.message);
     else load();
     setResetting(null);
   };
@@ -78,7 +70,6 @@ function UsersPanel() {
         {users.length} registered pilot{users.length !== 1 ? 's' : ''}
       </div>
       <div style={{ border: '2px solid #000', background: '#fff' }}>
-        {/* Header */}
         <div style={{ display: 'grid', gridTemplateColumns: '28px 1fr 120px 100px 90px 110px 120px', gap: 0, borderBottom: '2px solid #000', padding: '6px 12px', background: '#f5f5f5' }}>
           {['', 'Callsign', 'Home Region', 'Badges', 'Status', 'Role', 'Action'].map(h => (
             <div key={h} style={{ ...mono, fontSize: 8, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.1em', ...muted }}>{h}</div>
@@ -137,11 +128,23 @@ function SessionsPanel() {
   const [error, setError] = useState(null);
 
   useEffect(() => {
-    adminAction('list_sessions').then(({ data, error }) => {
-      if (error) setError(error.message || String(error));
-      else setSessions(data?.sessions ?? []);
-      setLoading(false);
-    });
+    supabase
+      .from('sessions')
+      .select(`
+        id, date, created_at, started_at, ended_at,
+        session_players ( profiles ( id, callsign, color ) ),
+        contracts (
+          id, type, system, payout, done, claim_cost,
+          cargo_items ( scu )
+        )
+      `)
+      .order('date', { ascending: false })
+      .limit(200)
+      .then(({ data, error }) => {
+        if (error) setError(error.message);
+        else setSessions(data ?? []);
+        setLoading(false);
+      });
   }, []);
 
   if (loading) return <div style={{ ...mono, fontSize: 11, ...muted, padding: 20 }}>Loading sessions…</div>;
@@ -155,7 +158,6 @@ function SessionsPanel() {
 
   return (
     <div>
-      {/* Stats row */}
       <div style={{ display: 'flex', gap: 16, marginBottom: 16, flexWrap: 'wrap' }}>
         {[
           ['Sessions', sessions.length],
@@ -190,8 +192,8 @@ function SessionsPanel() {
               >
                 <span style={{ ...display, fontWeight: 700, fontSize: 13, flex: 1 }}>{dateStr}</span>
                 <div style={{ display: 'flex', gap: -4 }}>
-                  {members.slice(0, 5).map(m => (
-                    <ColorDot key={m.id} color={m.color} size={14} />
+                  {members.slice(0, 5).map((m, mi) => (
+                    <ColorDot key={mi} color={m.color} size={14} />
                   ))}
                   {members.length > 5 && <span style={{ ...mono, fontSize: 9, ...muted, marginLeft: 4 }}>+{members.length - 5}</span>}
                 </div>
@@ -248,10 +250,10 @@ function SessionsPanel() {
 // ── Sub-panel: Banner Manager ─────────────────────────────────────────────────
 function BannerManagerPanel() {
   const { sets, loading: setsLoading, refresh } = useBanners();
-  const [itemMeta, setItemMeta]   = useState({});  // { filename: { displayName, description } }
-  const [setMeta,  setSetMetaMap] = useState({});  // { setName: { description } }
+  const [itemMeta, setItemMeta]   = useState({});
+  const [setMeta,  setSetMetaMap] = useState({});
   const [metaLoading, setMetaLoading] = useState(true);
-  const [saving, setSaving] = useState(null); // key being saved
+  const [saving, setSaving] = useState(null);
   const [saved, setSaved]   = useState({});
   const [expanded, setExpanded] = useState({});
 
@@ -278,16 +280,25 @@ function BannerManagerPanel() {
 
   const saveItem = async (filename, displayName, description) => {
     setSaving(filename);
-    const { error } = await adminAction('upsert_banner_item', { filename, displayName, description });
-    if (error) alert('Save failed: ' + (error.message || error));
+    const { error } = await supabase.from('banner_items').upsert({
+      filename,
+      display_name: displayName ?? null,
+      description: description ?? null,
+      updated_at: new Date().toISOString(),
+    }, { onConflict: 'filename' });
+    if (error) alert('Save failed: ' + error.message);
     else { await loadMeta(); flashSaved(filename); }
     setSaving(null);
   };
 
   const saveSet = async (setName, description) => {
     setSaving('set_' + setName);
-    const { error } = await adminAction('upsert_banner_set', { setName, description });
-    if (error) alert('Save failed: ' + (error.message || error));
+    const { error } = await supabase.from('banner_sets_meta').upsert({
+      set_name: setName,
+      description: description ?? null,
+      updated_at: new Date().toISOString(),
+    }, { onConflict: 'set_name' });
+    if (error) alert('Save failed: ' + error.message);
     else { await loadMeta(); flashSaved('set_' + setName); }
     setSaving(null);
   };
@@ -317,7 +328,6 @@ function BannerManagerPanel() {
 
         return (
           <div key={set.name} style={{ border: '2px solid #000', background: '#fff', marginBottom: 12 }}>
-            {/* Set header */}
             <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 14px', borderBottom: isExp ? '2px solid #000' : 'none', background: '#f5f5f5' }}>
               <button onClick={() => setExpanded(prev => ({ ...prev, [set.name]: !isExp }))}
                 style={{ background: 'none', border: 'none', cursor: 'pointer', ...display, fontWeight: 800, fontSize: 14, padding: 0 }}>
@@ -326,7 +336,6 @@ function BannerManagerPanel() {
               <span style={{ ...mono, fontSize: 9, ...muted }}>{set.banners.length} banner{set.banners.length !== 1 ? 's' : ''}</span>
             </div>
 
-            {/* Set description editor */}
             <SetDescEditor
               key={'set_' + set.name}
               initialValue={sm.description}
@@ -335,7 +344,6 @@ function BannerManagerPanel() {
               onSave={(desc) => saveSet(set.name, desc)}
             />
 
-            {/* Individual banners */}
             {isExp && (
               <div style={{ padding: '14px' }}>
                 <div style={{ display: 'flex', flexWrap: 'wrap', gap: 12 }}>
@@ -399,7 +407,6 @@ function BannerItemEditor({ banner, initialDisplayName, initialDescription, savi
 
   return (
     <div style={{ width: 200, border: '1.5px solid #ccc', background: '#fafafa' }}>
-      {/* Thumbnail */}
       <div style={{ width: '100%', height: 120, position: 'relative', overflow: 'hidden', background: '#111' }}>
         <div style={{
           position: 'absolute', inset: 0,
@@ -407,11 +414,9 @@ function BannerItemEditor({ banner, initialDisplayName, initialDescription, savi
           backgroundSize: 'cover', backgroundPosition: 'center',
         }} />
       </div>
-      {/* Filename */}
       <div style={{ padding: '6px 8px 0', ...mono, fontSize: 8, ...muted, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
         {banner.id}
       </div>
-      {/* Fields */}
       <div style={{ padding: '6px 8px 8px', display: 'flex', flexDirection: 'column', gap: 5 }}>
         <input
           value={dn}
@@ -455,8 +460,11 @@ function BroadcastsPanel() {
   const [saved, setSaved]     = useState(false);
 
   const load = useCallback(async () => {
-    const { data } = await adminAction('list_broadcasts');
-    setBroadcasts(data?.broadcasts ?? []);
+    const { data } = await supabase
+      .from('broadcasts')
+      .select('id, title, body, created_at, sent_at, created_by')
+      .order('created_at', { ascending: false });
+    setBroadcasts(data ?? []);
     setLoading(false);
   }, []);
 
@@ -465,8 +473,13 @@ function BroadcastsPanel() {
   const submit = async () => {
     if (!title.trim()) return;
     setSaving(true);
-    const { error } = await adminAction('create_broadcast', { title, bodyText: body });
-    if (error) alert('Error: ' + (error.message || error));
+    const { data: { user } } = await supabase.auth.getUser();
+    const { error } = await supabase.from('broadcasts').insert({
+      title: title.trim(),
+      body: body.trim(),
+      created_by: user?.id ?? null,
+    });
+    if (error) alert('Error: ' + error.message);
     else {
       setTitle(''); setBody('');
       setSaved(true); setTimeout(() => setSaved(false), 2000);
@@ -477,7 +490,6 @@ function BroadcastsPanel() {
 
   return (
     <div>
-      {/* Compose */}
       <div style={{ border: '2px solid #000', background: '#fff', padding: 20, marginBottom: 20 }}>
         <div style={{ ...display, fontWeight: 700, fontSize: 14, marginBottom: 14 }}>New Broadcast</div>
         <div style={{
@@ -524,7 +536,6 @@ function BroadcastsPanel() {
         </div>
       </div>
 
-      {/* Existing broadcasts */}
       {loading ? (
         <div style={{ ...mono, fontSize: 11, ...muted }}>Loading broadcasts…</div>
       ) : broadcasts.length === 0 ? (
@@ -558,10 +569,10 @@ function BroadcastsPanel() {
 
 // ── Main AdminView ────────────────────────────────────────────────────────────
 const PANELS = [
-  { key: 'users',     label: 'Users' },
-  { key: 'sessions',  label: 'Sessions & Contracts' },
-  { key: 'banners',   label: 'Banner Manager' },
-  { key: 'broadcasts',label: 'Broadcasts' },
+  { key: 'users',      label: 'Users' },
+  { key: 'sessions',   label: 'Sessions & Contracts' },
+  { key: 'banners',    label: 'Banner Manager' },
+  { key: 'broadcasts', label: 'Broadcasts' },
 ];
 
 export default function AdminView() {
@@ -569,13 +580,11 @@ export default function AdminView() {
 
   return (
     <div style={{ padding: '20px' }}>
-      {/* Header */}
       <div style={{ display: 'flex', alignItems: 'baseline', gap: 12, marginBottom: 20 }}>
         <div style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 20, letterSpacing: '-0.02em' }}>Admin Portal</div>
         <span style={{ ...pill('#7c3aed') }}>Admin Access</span>
       </div>
 
-      {/* Sub-nav */}
       <div style={{ display: 'flex', gap: 0, marginBottom: 20, borderBottom: '2px solid #000' }}>
         {PANELS.map(p => (
           <button key={p.key} onClick={() => setPanel(p.key)} style={{
@@ -592,7 +601,6 @@ export default function AdminView() {
         ))}
       </div>
 
-      {/* Panel content */}
       {panel === 'users'      && <UsersPanel />}
       {panel === 'sessions'   && <SessionsPanel />}
       {panel === 'banners'    && <BannerManagerPanel />}
