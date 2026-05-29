@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import ReactMarkdown from 'react-markdown';
+import remarkBreaks from 'remark-breaks';
 import { SFX } from '@/hooks/useSound.js';
 
 const mono    = { fontFamily: 'var(--font-mono)' };
@@ -49,9 +50,20 @@ function Bubble({ msg, isMine, isMobile }) {
           color:         isMine ? '#fff'    : 'var(--text)',
           border:        `2px solid ${isMine ? '#a01830' : 'var(--border)'}`,
           ...mono, fontSize, lineHeight: 1.55,
-          wordBreak: 'break-word', whiteSpace: 'pre-wrap',
+          wordBreak: 'break-word',
         }}>
-          {msg.content}
+          <ReactMarkdown remarkPlugins={[remarkBreaks]} components={{
+            p:      ({children}) => <span style={{ display: 'block' }}>{children}</span>,
+            strong: ({children}) => <strong style={{ fontWeight: 800 }}>{children}</strong>,
+            em:     ({children}) => <em style={{ fontStyle: 'italic' }}>{children}</em>,
+            h1:     ({children}) => <span style={{ display: 'block', fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: Math.round(fontSize * 1.4), letterSpacing: '-0.01em', margin: '4px 0 2px' }}>{children}</span>,
+            h2:     ({children}) => <span style={{ display: 'block', fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: Math.round(fontSize * 1.25), margin: '3px 0 2px' }}>{children}</span>,
+            h3:     ({children}) => <span style={{ display: 'block', fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: Math.round(fontSize * 1.1), margin: '3px 0 2px' }}>{children}</span>,
+            ul:     ({children}) => <ul style={{ margin: '4px 0', paddingLeft: 16 }}>{children}</ul>,
+            ol:     ({children}) => <ol style={{ margin: '4px 0', paddingLeft: 16 }}>{children}</ol>,
+            li:     ({children}) => <li style={{ marginBottom: 2 }}>{children}</li>,
+            code:   ({children}) => <code style={{ background: isMine ? 'rgba(255,255,255,0.2)' : 'rgba(0,0,0,0.08)', padding: '1px 4px', fontSize: '0.9em' }}>{children}</code>,
+          }}>{msg.content}</ReactMarkdown>
           <div style={{
             display: 'flex', justifyContent: 'space-between', alignItems: 'center',
             gap: 10, marginTop: 5,
@@ -95,8 +107,7 @@ function SystemBubble({ msg, isMobile }) {
         textAlign: 'center', wordBreak: 'break-word',
       }}>
         <div style={{ fontSize: 8, color: '#c41e3a', letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: 4 }}>⚡ Nexus Hub System</div>
-        <ReactMarkdown
-          components={{
+        <ReactMarkdown remarkPlugins={[remarkBreaks]} components={{
             h1:     ({children}) => <span style={{ display: 'block', fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 20, letterSpacing: '-0.01em', margin: '6px 0 4px' }}>{children}</span>,
             h2:     ({children}) => <span style={{ display: 'block', fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 17, letterSpacing: '-0.01em', margin: '5px 0 3px' }}>{children}</span>,
             h3:     ({children}) => <span style={{ display: 'block', fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 15, margin: '4px 0 3px' }}>{children}</span>,
