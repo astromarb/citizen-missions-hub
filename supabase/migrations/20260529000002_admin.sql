@@ -11,10 +11,10 @@ CREATE TABLE IF NOT EXISTS banner_items (
 );
 
 ALTER TABLE banner_items ENABLE ROW LEVEL SECURITY;
--- Everyone can read banner metadata (used in picker and onboarding)
+DROP POLICY IF EXISTS "public_read_banner_items"  ON banner_items;
+DROP POLICY IF EXISTS "admin_write_banner_items"   ON banner_items;
 CREATE POLICY "public_read_banner_items" ON banner_items
   FOR SELECT USING (true);
--- Admin can write
 CREATE POLICY "admin_write_banner_items" ON banner_items
   FOR ALL USING (
     EXISTS (SELECT 1 FROM profiles WHERE id = auth.uid() AND is_admin = true)
@@ -28,6 +28,8 @@ CREATE TABLE IF NOT EXISTS banner_sets_meta (
 );
 
 ALTER TABLE banner_sets_meta ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "public_read_banner_sets_meta" ON banner_sets_meta;
+DROP POLICY IF EXISTS "admin_write_banner_sets_meta"  ON banner_sets_meta;
 CREATE POLICY "public_read_banner_sets_meta" ON banner_sets_meta
   FOR SELECT USING (true);
 CREATE POLICY "admin_write_banner_sets_meta" ON banner_sets_meta
@@ -46,6 +48,7 @@ CREATE TABLE IF NOT EXISTS broadcasts (
 );
 
 ALTER TABLE broadcasts ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "admin_all_broadcasts" ON broadcasts;
 CREATE POLICY "admin_all_broadcasts" ON broadcasts
   FOR ALL USING (
     EXISTS (SELECT 1 FROM profiles WHERE id = auth.uid() AND is_admin = true)
