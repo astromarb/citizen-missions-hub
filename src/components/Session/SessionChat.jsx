@@ -48,7 +48,7 @@ function MessageBubble({ msg, isMine, onDelete, isMobile }) {
           background:    isMine ? '#c41e3a' : 'var(--bg-2)',
           color:         isMine ? '#fff'    : 'var(--text)',
           border:        `2px solid ${isMine ? '#a01830' : otherBorderColor}`,
-          ...mono, fontSize, lineHeight: 1.5, wordBreak: 'break-word',
+          ...mono, fontSize, lineHeight: 1.5, wordBreak: 'break-word', whiteSpace: 'pre-wrap',
         }}>
           {msg.content}
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 8, marginTop: 4 }}>
@@ -144,7 +144,7 @@ export default function SessionChat({ session, myProfileId, isSessionMember }) {
       {/* Messages */}
       <div
         ref={scrollRef}
-        style={{ minHeight: 80, maxHeight: isMobile ? 640 : 320, overflowY: 'auto', padding: '12px 14px', display: 'flex', flexDirection: 'column' }}
+        style={{ minHeight: isMobile ? 200 : 80, maxHeight: isMobile ? 640 : 320, overflowY: 'auto', padding: '12px 14px', display: 'flex', flexDirection: 'column' }}
       >
         {messages.length === 0 && (
           <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', ...mono, fontSize: 11, color: 'var(--muted)', textAlign: 'center', padding: '16px 0' }}>

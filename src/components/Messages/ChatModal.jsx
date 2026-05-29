@@ -48,7 +48,7 @@ function Bubble({ msg, isMine, isMobile }) {
           color:         isMine ? '#fff'    : 'var(--text)',
           border:        `2px solid ${isMine ? '#a01830' : 'var(--border)'}`,
           ...mono, fontSize, lineHeight: 1.55,
-          wordBreak: 'break-word',
+          wordBreak: 'break-word', whiteSpace: 'pre-wrap',
         }}>
           {msg.content}
           <div style={{
@@ -91,7 +91,7 @@ function SystemBubble({ msg, isMobile }) {
         padding: '8px 14px', maxWidth: '80%',
         background: 'rgba(196,30,58,0.08)', border: '1.5px solid rgba(196,30,58,0.3)',
         ...mono, fontSize: isMobile ? 11 : 13, color: 'var(--text)', lineHeight: 1.55,
-        textAlign: 'center', wordBreak: 'break-word',
+        textAlign: 'center', wordBreak: 'break-word', whiteSpace: 'pre-wrap',
       }}>
         <div style={{ fontSize: 8, color: '#c41e3a', letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: 4 }}>⚡ Nexus Hub System</div>
         {msg.content}
