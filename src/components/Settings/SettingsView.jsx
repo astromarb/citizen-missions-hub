@@ -525,14 +525,6 @@ export default function SettingsView({ profile, updateProfile, checkCallsign }) 
             </button>
           ))}
         </div>
-        {region && (
-          <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 14 }}>
-            <LandingZoneBadge region={region} size="lg" />
-            <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--muted)' }}>
-              Your landing zone badge — visible on your profile
-            </div>
-          </div>
-        )}
         <LastChangedNote ts={profile?.home_region_changed_at} />
         <RateLimitNote countdown={regionCountdown} />
         <div style={{ display: 'flex', alignItems: 'center', marginTop: 10 }}>
@@ -609,17 +601,17 @@ export default function SettingsView({ profile, updateProfile, checkCallsign }) 
                       cursor: 'pointer', textAlign: 'left', gap: 8,
                     }}
                   >
-                    <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: 3 }}>
                       <span style={{
-                        fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 10,
-                        letterSpacing: '0.14em', textTransform: 'uppercase',
-                        color: hasSelected ? '#c41e3a' : '#888',
+                        fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 13,
+                        letterSpacing: '0.08em', textTransform: 'uppercase',
+                        color: hasSelected ? '#c41e3a' : '#444',
                       }}>
                         {set.name}
-                        {hasSelected && <span style={{ marginLeft: 6, fontSize: 8 }}>✓</span>}
+                        {hasSelected && <span style={{ marginLeft: 6, fontSize: 9 }}>✓</span>}
                       </span>
                       {setDescription && (
-                        <span style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: 'var(--muted)', marginLeft: 8 }}>
+                        <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: '#555', fontStyle: 'italic' }}>
                           {setDescription}
                         </span>
                       )}
@@ -629,25 +621,26 @@ export default function SettingsView({ profile, updateProfile, checkCallsign }) 
 
                   {/* Thumbnails */}
                   {expanded && (
-                    <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', padding: '10px 0 4px 0' }}>
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 10, padding: '12px 0 6px 0' }}>
                       {set.banners.map(b => {
                         const selected = bannerPanel === b.id;
                         const displayName = bannerItemMeta[b.id]?.displayName;
+                        const description = bannerItemMeta[b.id]?.description;
                         return (
                           <button
                             key={b.id}
                             onClick={() => setBannerPanel(b.id)}
                             title={displayName || b.id}
                             style={{
-                              width: 106, padding: 0, flexShrink: 0,
+                              padding: 0,
                               border: `2px solid ${selected ? '#c41e3a' : 'transparent'}`,
                               cursor: 'pointer', position: 'relative', overflow: 'visible',
                               outline: 'none', background: 'none',
                               boxShadow: selected ? '0 0 0 1px #c41e3a' : 'none',
-                              display: 'flex', flexDirection: 'column', alignItems: 'stretch', gap: 4,
+                              display: 'flex', flexDirection: 'column', alignItems: 'stretch', gap: 6,
                             }}
                           >
-                            <div style={{ width: '100%', height: 106, position: 'relative', overflow: 'hidden', background: '#111' }}>
+                            <div style={{ width: '100%', aspectRatio: '1 / 1', position: 'relative', overflow: 'hidden', background: '#111' }}>
                               <div style={{
                                 position: 'absolute', inset: 0,
                                 backgroundImage: `url(${b.src})`,
@@ -663,16 +656,28 @@ export default function SettingsView({ profile, updateProfile, checkCallsign }) 
                                 </div>
                               )}
                             </div>
-                            {displayName && (
-                              <span style={{
-                                fontFamily: 'var(--font-mono)', fontSize: 8,
-                                color: selected ? '#c41e3a' : 'var(--muted)',
-                                overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
-                                textAlign: 'center',
-                              }}>
-                                {displayName}
-                              </span>
-                            )}
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: 2, paddingBottom: 4 }}>
+                              {displayName && (
+                                <span style={{
+                                  fontFamily: 'var(--font-mono)', fontSize: 10, fontWeight: 600,
+                                  color: selected ? '#c41e3a' : '#444',
+                                  overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+                                  textAlign: 'center',
+                                }}>
+                                  {displayName}
+                                </span>
+                              )}
+                              {description && (
+                                <span style={{
+                                  fontFamily: 'var(--font-mono)', fontSize: 9, fontStyle: 'italic',
+                                  color: '#666', textAlign: 'center', lineHeight: 1.4,
+                                  display: '-webkit-box', WebkitLineClamp: 2,
+                                  WebkitBoxOrient: 'vertical', overflow: 'hidden',
+                                }}>
+                                  "{description}"
+                                </span>
+                              )}
+                            </div>
                           </button>
                         );
                       })}
