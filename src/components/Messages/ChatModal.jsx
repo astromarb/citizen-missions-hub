@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
+import ReactMarkdown from 'react-markdown';
 import { SFX } from '@/hooks/useSound.js';
 
 const mono    = { fontFamily: 'var(--font-mono)' };
@@ -94,7 +95,16 @@ function SystemBubble({ msg, isMobile }) {
         textAlign: 'center', wordBreak: 'break-word', whiteSpace: 'pre-wrap',
       }}>
         <div style={{ fontSize: 8, color: '#c41e3a', letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: 4 }}>⚡ Nexus Hub System</div>
-        {msg.content}
+        <ReactMarkdown
+          components={{
+            p:      ({children}) => <span style={{ display: 'block', marginBottom: '0.35em' }}>{children}</span>,
+            strong: ({children}) => <strong style={{ fontWeight: 700 }}>{children}</strong>,
+            em:     ({children}) => <em style={{ fontStyle: 'italic' }}>{children}</em>,
+            ul:     ({children}) => <ul style={{ margin: '4px 0', paddingLeft: 18, textAlign: 'left' }}>{children}</ul>,
+            ol:     ({children}) => <ol style={{ margin: '4px 0', paddingLeft: 18, textAlign: 'left' }}>{children}</ol>,
+            li:     ({children}) => <li style={{ marginBottom: 2 }}>{children}</li>,
+          }}
+        >{msg.content}</ReactMarkdown>
         <div style={{ fontSize: 9, color: 'var(--muted)', marginTop: 4 }}>{fmtTime(msg.created_at)}</div>
       </div>
     </div>

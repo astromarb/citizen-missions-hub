@@ -451,17 +451,44 @@ function BannerItemEditor({ banner, initialDisplayName, initialDescription, savi
 }
 
 // ── Sub-panel: Broadcasts ─────────────────────────────────────────────────────
+function fmtRelative(ts) {
+  if (!ts) return '';
+  const diff = Date.now() - new Date(ts);
+  if (diff < 60000)    return 'just now';
+  if (diff < 3600000)  return `${Math.floor(diff / 60000)}m ago`;
+  if (diff < 86400000) return `${Math.floor(diff / 3600000)}h ago`;
+  return new Date(ts).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit' });
+}
+
 function BroadcastsPanel() {
-  const [body,     setBody]     = useState('');
-  const [sending,  setSending]  = useState(false);
-  const [result,   setResult]   = useState(null); // { sent: N } | { error: string }
+  const [body,    setBody]    = useState('');
+  const [sending, setSending] = useState(false);
+  const [result,  setResult]  = useState(null);
+  const [log,     setLog]     = useState([]);
+  const [adminId, setAdminId] = useState(null);
+
+  useEffect(() => {
+    supabase.auth.getUser().then(({ data }) => {
+      const uid = data?.user?.id;
+      if (!uid) return;
+      setAdminId(uid);
+      // Load broadcast log: admin's own copy of every system message
+      supabase
+        .from('messages')
+        .select('id, content, created_at, sender:profiles!sender_id(id, callsign, color)')
+        .eq('is_system', true)
+        .eq('recipient_id', uid)
+        .order('created_at', { ascending: false })
+        .limit(50)
+        .then(({ data: rows }) => setLog(rows || []));
+    });
+  }, []);
 
   const submit = async () => {
-    if (!body.trim() || sending) return;
+    if (!body.trim() || sending || !adminId) return;
     setSending(true);
     setResult(null);
 
-    // Fetch all profile IDs
     const { data: profiles, error: fetchErr } = await supabase
       .from('profiles')
       .select('id');
@@ -472,9 +499,8 @@ function BroadcastsPanel() {
       return;
     }
 
-    // Insert one system message per user
     const rows = profiles.map(p => ({
-      sender_id:    null,
+      sender_id:    adminId,
       recipient_id: p.id,
       content:      body.trim(),
       is_system:    true,
@@ -485,26 +511,36 @@ function BroadcastsPanel() {
     if (insertErr) {
       setResult({ error: insertErr.message });
     } else {
+      const sent = body.trim();
       setBody('');
       setResult({ sent: profiles.length });
-      setTimeout(() => setResult(null), 4000);
+      setTimeout(() => setResult(null), 5000);
+      // Prepend to local log immediately
+      setLog(prev => [{
+        id: Date.now(),
+        content: sent,
+        created_at: new Date().toISOString(),
+        sender: null, // will refresh on next load
+      }, ...prev]);
     }
   };
 
   return (
     <div>
+      {/* ── Compose ── */}
       <div style={{ border: '2px solid #000', background: '#fff', padding: 20, marginBottom: 20 }}>
-        <div style={{ ...display, fontWeight: 700, fontSize: 14, marginBottom: 6 }}>Broadcast System Message</div>
+        <div style={{ ...display, fontWeight: 700, fontSize: 14, marginBottom: 4 }}>Broadcast System Message</div>
         <div style={{ ...mono, fontSize: 10, color: '#888', marginBottom: 14, lineHeight: 1.6 }}>
-          Sends a message to <strong>all pilots</strong> from "Nexus Hub System". Recipients cannot reply.
+          Sends a post to <strong>all pilots</strong> from "Nexus Hub System". Recipients cannot reply.
+          Supports <strong>**bold**</strong>, <em>*italic*</em>, bullet lists, and other Markdown.
         </div>
         <div style={{ marginBottom: 14 }}>
-          <div style={{ ...mono, fontSize: 9, ...muted, textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: 6 }}>Message</div>
+          <div style={{ ...mono, fontSize: 9, ...muted, textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: 6 }}>Message (Markdown supported)</div>
           <textarea
             value={body}
             onChange={e => setBody(e.target.value.slice(0, 1000))}
-            placeholder="e.g. Server maintenance tonight at 22:00 UTC…"
-            rows={4}
+            placeholder={'e.g. **Alpha 0.2 is live!**\n\n- Salvaging overhaul\n- Bug fixes\n\nThank you for flying with us.'}
+            rows={5}
             style={{ width: '100%', padding: '9px 12px', border: '2px solid #000', fontFamily: 'var(--font-mono)', fontSize: 12, outline: 'none', resize: 'vertical', boxSizing: 'border-box', lineHeight: 1.5 }}
           />
           <div style={{ ...mono, fontSize: 9, ...muted, textAlign: 'right', marginTop: 3 }}>{body.length}/1000</div>
@@ -523,10 +559,39 @@ function BroadcastsPanel() {
             }}>
             {sending ? 'Sending…' : 'Send to All'}
           </button>
-          {result?.sent   && <span style={{ ...mono, fontSize: 10, color: '#2d8659' }}>Sent to {result.sent} pilots ✓</span>}
-          {result?.error  && <span style={{ ...mono, fontSize: 10, color: '#c41e3a' }}>Error: {result.error}</span>}
+          {result?.sent  && <span style={{ ...mono, fontSize: 10, color: '#2d8659' }}>Sent to {result.sent} pilots ✓</span>}
+          {result?.error && <span style={{ ...mono, fontSize: 10, color: '#c41e3a' }}>Error: {result.error}</span>}
         </div>
       </div>
+
+      {/* ── Broadcast log ── */}
+      <div style={{ ...mono, fontSize: 9, ...muted, textTransform: 'uppercase', letterSpacing: '0.12em', fontWeight: 700, marginBottom: 10 }}>
+        Broadcast History ({log.length})
+      </div>
+      {log.length === 0 ? (
+        <div style={{ ...mono, fontSize: 11, color: '#aaa', padding: '20px 0' }}>No broadcasts sent yet.</div>
+      ) : (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+          {log.map(entry => (
+            <div key={entry.id} style={{ border: '2px solid #e0e0e0', background: '#fafafa', padding: '12px 16px' }}>
+              <div style={{ display: 'flex', alignItems: 'baseline', gap: 10, marginBottom: 8, flexWrap: 'wrap' }}>
+                <span style={{ background: '#c41e3a', color: '#fff', ...mono, fontSize: 8, padding: '2px 6px', letterSpacing: '0.08em', textTransform: 'uppercase', flexShrink: 0 }}>⚡ SYS</span>
+                {entry.sender ? (
+                  <span style={{ ...display, fontWeight: 700, fontSize: 11, textTransform: 'uppercase', color: entry.sender.color || '#000' }}>
+                    {entry.sender.callsign}
+                  </span>
+                ) : (
+                  <span style={{ ...mono, fontSize: 10, color: '#aaa' }}>admin</span>
+                )}
+                <span style={{ ...mono, fontSize: 9, color: '#aaa', marginLeft: 'auto' }}>{fmtRelative(entry.created_at)}</span>
+              </div>
+              <div style={{ ...mono, fontSize: 11, color: '#333', lineHeight: 1.55, whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>
+                {entry.content}
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 }

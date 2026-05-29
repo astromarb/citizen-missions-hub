@@ -102,15 +102,16 @@ export function useMessages(myProfileId, enabled = true, onNewMessage = null) {
     allMessages.forEach(msg => {
       let key;
       if (msg._dir === 'inbox') {
-        key = (msg.is_system && !msg.sender_id) ? '_system' : (msg.sender_id || '_system');
+        // Each system broadcast gets its own card so they don't pile into one thread
+        key = msg.is_system ? `_system_${msg.id}` : (msg.sender_id || '_unknown');
       } else {
         key = msg.recipient_id;
       }
       if (!map[key]) {
         const profile = msg._dir === 'inbox'
-          ? (msg.is_system && !msg.sender_id ? null : msg.sender)
+          ? (msg.is_system ? null : msg.sender)
           : msg.recipient;
-        map[key] = { key, profile, isSystem: key === '_system', messages: [] };
+        map[key] = { key, profile, isSystem: !!msg.is_system, messages: [] };
       }
       map[key].messages.push(msg);
     });
