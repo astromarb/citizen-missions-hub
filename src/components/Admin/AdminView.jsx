@@ -460,6 +460,63 @@ function fmtRelative(ts) {
   return new Date(ts).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit' });
 }
 
+function BroadcastLogEntry({ entry, onDelete }) {
+  const [confirm, setConfirm] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+
+  const handleDelete = async () => {
+    setDeleting(true);
+    await onDelete(entry.broadcast_id);
+    setDeleting(false);
+    setConfirm(false);
+  };
+
+  return (
+    <div style={{ border: '2px solid #e0e0e0', background: '#fafafa', padding: '12px 16px' }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 8, flexWrap: 'wrap' }}>
+        <span style={{ background: '#c41e3a', color: '#fff', ...mono, fontSize: 8, padding: '2px 6px', letterSpacing: '0.08em', textTransform: 'uppercase', flexShrink: 0 }}>⚡ SYS</span>
+        {entry.sender ? (
+          <span style={{ ...display, fontWeight: 700, fontSize: 11, textTransform: 'uppercase', color: entry.sender.color || '#000' }}>
+            {entry.sender.callsign}
+          </span>
+        ) : (
+          <span style={{ ...mono, fontSize: 10, color: '#aaa' }}>admin</span>
+        )}
+        <span style={{ ...mono, fontSize: 9, color: '#aaa', marginLeft: 'auto' }}>{fmtRelative(entry.created_at)}</span>
+        {/* Delete control — only for entries that have a broadcast_id */}
+        {entry.broadcast_id && (
+          confirm ? (
+            <span style={{ display: 'flex', alignItems: 'center', gap: 5, flexShrink: 0 }}>
+              <span style={{ ...mono, fontSize: 9, color: '#c41e3a' }}>Remove from all inboxes?</span>
+              <button
+                onClick={handleDelete}
+                disabled={deleting}
+                style={{ ...mono, fontSize: 9, padding: '2px 8px', cursor: 'pointer', background: '#c41e3a', border: '1.5px solid #a01830', color: '#fff' }}
+              >{deleting ? '…' : 'Yes'}</button>
+              <button
+                onClick={() => setConfirm(false)}
+                disabled={deleting}
+                style={{ ...mono, fontSize: 9, padding: '2px 8px', cursor: 'pointer', background: 'transparent', border: '1.5px solid #ccc', color: '#555' }}
+              >No</button>
+            </span>
+          ) : (
+            <button
+              onClick={() => setConfirm(true)}
+              title="Delete broadcast from all inboxes"
+              style={{ background: 'none', border: 'none', cursor: 'pointer', ...mono, fontSize: 13, color: '#bbb', lineHeight: 1, padding: '0 2px', flexShrink: 0 }}
+              onMouseEnter={e => { e.currentTarget.style.color = '#c41e3a'; }}
+              onMouseLeave={e => { e.currentTarget.style.color = '#bbb'; }}
+            >×</button>
+          )
+        )}
+      </div>
+      <div style={{ ...mono, fontSize: 11, color: '#333', lineHeight: 1.55, whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>
+        {entry.content}
+      </div>
+    </div>
+  );
+}
+
 function BroadcastsPanel() {
   const [body,    setBody]    = useState('');
   const [sending, setSending] = useState(false);
@@ -467,22 +524,25 @@ function BroadcastsPanel() {
   const [log,     setLog]     = useState([]);
   const [adminId, setAdminId] = useState(null);
 
+  const loadLog = useCallback(async (uid) => {
+    const { data: rows } = await supabase
+      .from('messages')
+      .select('id, broadcast_id, content, created_at, sender:profiles!sender_id(id, callsign, color)')
+      .eq('is_system', true)
+      .eq('recipient_id', uid)
+      .order('created_at', { ascending: false })
+      .limit(50);
+    setLog(rows || []);
+  }, []);
+
   useEffect(() => {
     supabase.auth.getUser().then(({ data }) => {
       const uid = data?.user?.id;
       if (!uid) return;
       setAdminId(uid);
-      // Load broadcast log: admin's own copy of every system message
-      supabase
-        .from('messages')
-        .select('id, content, created_at, sender:profiles!sender_id(id, callsign, color)')
-        .eq('is_system', true)
-        .eq('recipient_id', uid)
-        .order('created_at', { ascending: false })
-        .limit(50)
-        .then(({ data: rows }) => setLog(rows || []));
+      loadLog(uid);
     });
-  }, []);
+  }, [loadLog]);
 
   const submit = async () => {
     if (!body.trim() || sending || !adminId) return;
@@ -499,11 +559,13 @@ function BroadcastsPanel() {
       return;
     }
 
+    const broadcastId = crypto.randomUUID();
     const rows = profiles.map(p => ({
       sender_id:    adminId,
       recipient_id: p.id,
       content:      body.trim(),
       is_system:    true,
+      broadcast_id: broadcastId,
     }));
 
     const { error: insertErr } = await supabase.from('messages').insert(rows);
@@ -515,15 +577,28 @@ function BroadcastsPanel() {
       setBody('');
       setResult({ sent: profiles.length });
       setTimeout(() => setResult(null), 5000);
-      // Prepend to local log immediately
       setLog(prev => [{
-        id: Date.now(),
+        id: broadcastId,
+        broadcast_id: broadcastId,
         content: sent,
         created_at: new Date().toISOString(),
-        sender: null, // will refresh on next load
+        sender: null,
       }, ...prev]);
     }
   };
+
+  const deleteBroadcast = useCallback(async (broadcastId) => {
+    if (!broadcastId) return;
+    const { error } = await supabase
+      .from('messages')
+      .delete()
+      .eq('broadcast_id', broadcastId);
+    if (error) {
+      alert('Delete failed: ' + error.message);
+    } else {
+      setLog(prev => prev.filter(e => e.broadcast_id !== broadcastId));
+    }
+  }, []);
 
   return (
     <div>
@@ -573,22 +648,7 @@ function BroadcastsPanel() {
       ) : (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
           {log.map(entry => (
-            <div key={entry.id} style={{ border: '2px solid #e0e0e0', background: '#fafafa', padding: '12px 16px' }}>
-              <div style={{ display: 'flex', alignItems: 'baseline', gap: 10, marginBottom: 8, flexWrap: 'wrap' }}>
-                <span style={{ background: '#c41e3a', color: '#fff', ...mono, fontSize: 8, padding: '2px 6px', letterSpacing: '0.08em', textTransform: 'uppercase', flexShrink: 0 }}>⚡ SYS</span>
-                {entry.sender ? (
-                  <span style={{ ...display, fontWeight: 700, fontSize: 11, textTransform: 'uppercase', color: entry.sender.color || '#000' }}>
-                    {entry.sender.callsign}
-                  </span>
-                ) : (
-                  <span style={{ ...mono, fontSize: 10, color: '#aaa' }}>admin</span>
-                )}
-                <span style={{ ...mono, fontSize: 9, color: '#aaa', marginLeft: 'auto' }}>{fmtRelative(entry.created_at)}</span>
-              </div>
-              <div style={{ ...mono, fontSize: 11, color: '#333', lineHeight: 1.55, whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>
-                {entry.content}
-              </div>
-            </div>
+            <BroadcastLogEntry key={entry.id} entry={entry} onDelete={deleteBroadcast} />
           ))}
         </div>
       )}
