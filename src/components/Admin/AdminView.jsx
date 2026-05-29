@@ -10,6 +10,15 @@ async function adminAction(action, payload = {}) {
     body: { action, ...payload },
     headers: token ? { Authorization: `Bearer ${token}` } : {},
   });
+  if (error) {
+    // Surface the actual response body if available (e.g. "Forbidden", "Unknown action")
+    let msg = error.message || String(error);
+    try {
+      const body = await error.context?.json?.();
+      if (body?.error) msg = body.error;
+    } catch {}
+    return { data: null, error: new Error(msg) };
+  }
   return { data, error };
 }
 
@@ -563,7 +572,7 @@ export default function AdminView() {
       {/* Header */}
       <div style={{ display: 'flex', alignItems: 'baseline', gap: 12, marginBottom: 20 }}>
         <div style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 20, letterSpacing: '-0.02em' }}>Admin Portal</div>
-        <span style={{ ...pill('#7c3aed') }}>Restricted</span>
+        <span style={{ ...pill('#7c3aed') }}>Admin Access</span>
       </div>
 
       {/* Sub-nav */}
