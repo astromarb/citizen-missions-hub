@@ -237,7 +237,7 @@ function AppInner() {
     setWaypointStatus, castRemovalVote, withdrawRemovalVote, addPlayerToSession,
     startSession, pauseSession, resumeSession, endSession,
     deleteSession, updateSession, updateContract,
-    updateWaypoint, updateCargoItem,
+    updateWaypoint, updateCargoItem, addCargoItemLive,
     leaveSession, removePlayerFromSession,
   } = useSessions(!!authSession, userId);
   const { commodities, systemsMap } = useRefData(!!authSession);
@@ -481,7 +481,7 @@ function AppInner() {
     ['active-sessions', 'Active Sessions'],
     ['stats',           'Stats'],
     ['leaderboard',     'Leaderboards'],
-    ['friends',         totalPendingRequests > 0 ? `Requests (${totalPendingRequests})` : 'Requests'],
+    ['friends',         totalPendingRequests > 0 ? `Friends (${totalPendingRequests})` : 'Friends'],
     ['settings',        'Settings'],
   ];
 
@@ -707,6 +707,7 @@ function AppInner() {
               onUpdateContract={updateContract}
               onUpdateWaypoint={updateWaypoint}
               onUpdateCargoItem={updateCargoItem}
+              onAddCargoItemLive={addCargoItemLive}
               onLeaveSession={handleLeaveSession}
               onRemovePlayer={handleRemovePlayer}
               commodities={commodities}

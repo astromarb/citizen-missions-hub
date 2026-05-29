@@ -44,6 +44,35 @@ const REGIONS = [
 
 const callsignRegex = /^[a-zA-Z0-9_-]{2,20}$/;
 
+const DAY_MS = 24 * 60 * 60 * 1000;
+
+// Returns formatted "Xh Ym" if locked, null if allowed
+function timeUntilAllowed(changedAt) {
+  if (!changedAt) return null;
+  const elapsed = Date.now() - new Date(changedAt).getTime();
+  if (elapsed >= DAY_MS) return null;
+  const remaining = DAY_MS - elapsed;
+  const h = Math.floor(remaining / (60 * 60 * 1000));
+  const m = Math.floor((remaining % (60 * 60 * 1000)) / 60000);
+  return h > 0 ? `${h}h ${m}m` : `${m}m`;
+}
+
+function recentTimestamps(tsArray) {
+  if (!Array.isArray(tsArray)) return [];
+  const cutoff = Date.now() - DAY_MS;
+  return tsArray.filter(t => new Date(t).getTime() > cutoff);
+}
+
+// Banner set access: 'Classic Collection' future base set for all users.
+// Alpha Set requires 'alpha' or 'alpha_tester' badge.
+function canAccessSet(setName, userBadges) {
+  if (setName === 'Classic Collection') return true;
+  if (/alpha/i.test(setName)) {
+    return (userBadges || []).some(b => b === 'alpha' || b === 'alpha_tester');
+  }
+  return false;
+}
+
 function SavedBadge({ visible }) {
   return (
     <span style={{
@@ -65,10 +94,35 @@ function SaveError({ msg }) {
   );
 }
 
+function RateLimitNote({ countdown }) {
+  if (!countdown) return null;
+  return (
+    <div style={{
+      fontFamily: 'var(--font-mono)', fontSize: 9, color: 'var(--muted)',
+      fontStyle: 'italic', marginTop: 6, letterSpacing: '0.02em',
+    }}>
+      Can change again in {countdown}
+    </div>
+  );
+}
+
+function LastChangedNote({ ts }) {
+  if (!ts) return null;
+  const d = new Date(ts);
+  const str = d.toLocaleString('en-US', { month: 'short', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit' });
+  return (
+    <div style={{
+      fontFamily: 'var(--font-mono)', fontSize: 9, color: 'var(--muted)',
+      fontStyle: 'italic', marginTop: 4,
+    }}>
+      Last changed {str}
+    </div>
+  );
+}
+
 export default function SettingsView({ profile, updateProfile, checkCallsign }) {
   // ── Colour ─────────────────────────────────────────────────────────────────
   const [color,      setColor]      = useState(profile?.color || '#3b82f6');
-  const [hexInput,   setHexInput]   = useState(profile?.color || '#3b82f6');
   const [colorSaved, setColorSaved] = useState(false);
   const [colorError, setColorError] = useState(null);
 
@@ -98,9 +152,10 @@ export default function SettingsView({ profile, updateProfile, checkCallsign }) 
   const [badgesError, setBadgesError] = useState(null);
 
   // ── Banner panel ─────────────────────────────────────────────────────────────
-  const [bannerPanel, setBannerPanel] = useState(profile?.banner_panel || null);
-  const [bannerSaved, setBannerSaved] = useState(false);
-  const [bannerError, setBannerError] = useState(null);
+  const [bannerPanel,   setBannerPanel]   = useState(profile?.banner_panel || null);
+  const [bannerSaved,   setBannerSaved]   = useState(false);
+  const [bannerError,   setBannerError]   = useState(null);
+  const [expandedSets,  setExpandedSets]  = useState({});
   const { sets: bannerSets, loading: bannersLoading, refresh: refreshBanners } = useBanners();
 
   // ── RSI handle ──────────────────────────────────────────────────────────────
@@ -121,19 +176,31 @@ export default function SettingsView({ profile, updateProfile, checkCallsign }) 
 
   const flash = (setter) => { setter(true); setTimeout(() => setter(false), 2000); };
 
-  // ── Re-sync local state when profile reloads (e.g. after a successful save) ─
+  // ── Re-sync local state when profile reloads ─
   useEffect(() => {
     if (!profile) return;
     setColor(profile.color || '#3b82f6');
-    setHexInput(profile.color || '#3b82f6');
     setRegion(profile.home_region || '');
     setRsiHandle(profile.rsi_handle || '');
     setBannerPanel(profile.banner_panel || null);
     const earned = ['alpha', ...(profile.home_region ? ['home_region'] : [])];
     setSelectedBadges(profile.badges != null ? [...profile.badges] : [...earned]);
-  // Only resync on first load or when user data changes server-side.
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [profile?.id]);
+
+  // Auto-expand the set that contains the active banner
+  useEffect(() => {
+    if (!bannerPanel || !bannerSets.length) return;
+    const matchSet = bannerSets.find(s => s.banners.some(b => b.id === bannerPanel));
+    if (matchSet) setExpandedSets(prev => ({ ...prev, [matchSet.name]: true }));
+  }, [bannerPanel, bannerSets]);
+
+  // ── Rate limit computed values ────────────────────────────────────────────
+  const callsignCountdown  = timeUntilAllowed(profile?.callsign_changed_at);
+  const regionCountdown    = timeUntilAllowed(profile?.home_region_changed_at);
+  const rsiHandleCountdown = timeUntilAllowed(profile?.rsi_handle_changed_at);
+  const recentAuecChecks   = recentTimestamps(profile?.auec_verification_timestamps);
+  const auecRemaining      = Math.max(0, 3 - recentAuecChecks.length);
 
   // ── Save handlers ─────────────────────────────────────────────────────────────
   const saveColor = async () => {
@@ -155,32 +222,35 @@ export default function SettingsView({ profile, updateProfile, checkCallsign }) 
   };
 
   const saveRegion = async () => {
-    if (!region) return;
+    if (!region || regionCountdown) return;
     setRegionError(null);
     setSaving(true);
-    const { error } = await updateProfile({ home_region: region });
+    const { error } = await updateProfile({ home_region: region, home_region_changed_at: new Date().toISOString() });
     setSaving(false);
     if (error) setRegionError(error.message || 'Save failed');
     else flash(setRegionSaved);
   };
 
   const saveRsiHandle = async () => {
-    if (!rsiHandle.trim()) return;
+    if (!rsiHandle.trim() || rsiHandleCountdown) return;
     setRsiHandleError(null);
     setSaving(true);
-    const { error } = await updateProfile({ rsi_handle: rsiHandle.trim().toUpperCase() });
+    const { error } = await updateProfile({ rsi_handle: rsiHandle.trim().toUpperCase(), rsi_handle_changed_at: new Date().toISOString() });
     setSaving(false);
     if (error) setRsiHandleError(error.message || 'Save failed');
     else flash(setRsiHandleSaved);
   };
 
   const saveAuecBalance = async (amount) => {
-    if (!amount || amount <= 0) return;
+    if (!amount || amount <= 0 || auecRemaining === 0) return;
     setAuecError(null);
     setSaving(true);
+    const now = new Date().toISOString();
+    const updatedTimestamps = [...(profile?.auec_verification_timestamps || []), now];
     const { error } = await updateProfile({
       auec_balance: amount,
-      auec_balance_verified_at: new Date().toISOString(),
+      auec_balance_verified_at: now,
+      auec_verification_timestamps: updatedTimestamps,
       ...(rsiHandle.trim() ? { rsi_handle: rsiHandle.trim().toUpperCase() } : {}),
     });
     setAuecExtracted(null);
@@ -209,17 +279,17 @@ export default function SettingsView({ profile, updateProfile, checkCallsign }) 
   };
 
   const saveCallsign = async () => {
-    if (!callsignRegex.test(callsign) || callsignStatus !== 'available') return;
+    if (!callsignRegex.test(callsign) || callsignStatus !== 'available' || callsignCountdown) return;
     setCallsignError(null);
     setSaving(true);
-    const { error } = await updateProfile({ callsign });
+    const { error } = await updateProfile({ callsign, callsign_changed_at: new Date().toISOString() });
     setSaving(false);
     if (error) setCallsignError(error.message || 'Save failed');
     else { setCallsignStatus(null); flash(setCallsignSaved); }
   };
 
   const handleAuecScan = async (file) => {
-    if (!file || !rsiHandle.trim()) return;
+    if (!file || !rsiHandle.trim() || auecRemaining === 0) return;
     setAuecScanning(true);
     setAuecScanError(null);
     setAuecExtracted(null);
@@ -248,11 +318,6 @@ export default function SettingsView({ profile, updateProfile, checkCallsign }) 
     }
   };
 
-  const handleHexInput = (v) => {
-    setHexInput(v);
-    if (/^#[0-9a-fA-F]{6}$/.test(v)) setColor(v);
-  };
-
   const toggleBadge = (id) => {
     if (!earnedBadgeIds.includes(id)) return;
     setSelectedBadges(prev => {
@@ -260,6 +325,10 @@ export default function SettingsView({ profile, updateProfile, checkCallsign }) 
       if (prev.length >= MAX_BADGES) return prev;
       return [...prev, id];
     });
+  };
+
+  const toggleSet = (setName) => {
+    setExpandedSets(prev => ({ ...prev, [setName]: !prev[setName] }));
   };
 
   // ── UI helpers ───────────────────────────────────────────────────────────────
@@ -285,6 +354,44 @@ export default function SettingsView({ profile, updateProfile, checkCallsign }) 
     return null;
   };
 
+  // Split color rows into two columns
+  const leftRows  = COLOR_ROWS.filter((_, i) => i % 2 === 0);
+  const rightRows = COLOR_ROWS.filter((_, i) => i % 2 === 1);
+
+  const renderColorColumn = (rows) => (
+    <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 2 }}>
+      {rows.map(row => (
+        <div key={row.label} style={{ display: 'flex', gap: 2 }}>
+          {row.colors.map(c => {
+            const selected = color === c;
+            const light = isLight(c);
+            return (
+              <button
+                key={c}
+                title={`${row.label} · ${c}`}
+                onClick={() => setColor(c)}
+                style={{
+                  flex: 1, height: 26, background: c,
+                  border: 'none', cursor: 'pointer', padding: 0, position: 'relative',
+                  outline: selected ? `2px solid ${light ? '#000' : '#fff'}` : 'none',
+                  outlineOffset: -2,
+                }}
+              >
+                {selected && (
+                  <span style={{
+                    position: 'absolute', inset: 0, display: 'flex', alignItems: 'center',
+                    justifyContent: 'center', fontSize: 11, color: light ? '#000' : '#fff',
+                    lineHeight: 1,
+                  }}>✓</span>
+                )}
+              </button>
+            );
+          })}
+        </div>
+      ))}
+    </div>
+  );
+
   return (
     <div style={{ padding: '20px' }}>
       <div style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 20, letterSpacing: '-0.02em', marginBottom: 24 }}>Settings</div>
@@ -299,54 +406,10 @@ export default function SettingsView({ profile, updateProfile, checkCallsign }) 
           <span style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--muted)' }}>{color.toUpperCase()}</span>
         </div>
 
-        {/* Palette grid — 11 colour families × 7 shades */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 2, marginBottom: 14 }}>
-          {COLOR_ROWS.map(row => (
-            <div key={row.label} style={{ display: 'flex', gap: 2 }}>
-              {row.colors.map(c => {
-                const selected = color === c;
-                const light = isLight(c);
-                return (
-                  <button
-                    key={c}
-                    title={c}
-                    onClick={() => { setColor(c); setHexInput(c); }}
-                    style={{
-                      flex: 1,
-                      height: 26,
-                      background: c,
-                      border: 'none',
-                      cursor: 'pointer',
-                      padding: 0,
-                      position: 'relative',
-                      outline: selected ? `2px solid ${light ? '#000' : '#fff'}` : 'none',
-                      outlineOffset: -2,
-                    }}
-                  >
-                    {selected && (
-                      <span style={{
-                        position: 'absolute', inset: 0, display: 'flex', alignItems: 'center',
-                        justifyContent: 'center', fontSize: 11, color: light ? '#000' : '#fff',
-                        lineHeight: 1,
-                      }}>✓</span>
-                    )}
-                  </button>
-                );
-              })}
-            </div>
-          ))}
-        </div>
-
-        {/* Custom hex input */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 14 }}>
-          <div style={{ width: 28, height: 28, borderRadius: '50%', background: color, border: '2px solid #000', flexShrink: 0 }} />
-          <input
-            style={{ flex: 1, padding: '7px 10px', border: '2px solid #000', fontFamily: 'var(--font-mono)', fontSize: 13, outline: 'none' }}
-            value={hexInput}
-            onChange={e => handleHexInput(e.target.value)}
-            placeholder="#c41e3a"
-            maxLength={7}
-          />
+        {/* Palette grid — two columns, interleaved families */}
+        <div style={{ display: 'flex', gap: 6, marginBottom: 14 }}>
+          {renderColorColumn(leftRows)}
+          {renderColorColumn(rightRows)}
         </div>
 
         <div style={{ display: 'flex', alignItems: 'center' }}>
@@ -391,7 +454,6 @@ export default function SettingsView({ profile, updateProfile, checkCallsign }) 
                   position: 'relative',
                 }}
               >
-                {/* Badge preview */}
                 <div style={{ position: 'relative' }}>
                   {renderBadge(def.id, 'lg') ?? (
                     <div style={{
@@ -402,7 +464,6 @@ export default function SettingsView({ profile, updateProfile, checkCallsign }) 
                       <span style={{ fontSize: 18, color: '#ccc' }}>🔒</span>
                     </div>
                   )}
-                  {/* Selection indicator overlay */}
                   {selected && (
                     <div style={{
                       position: 'absolute', top: -4, right: -4, width: 16, height: 16,
@@ -447,15 +508,19 @@ export default function SettingsView({ profile, updateProfile, checkCallsign }) 
         {sectionTitle('Home Region')}
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 14 }}>
           {REGIONS.map(r => (
-            <button key={r.key} onClick={() => setRegion(r.key)}
+            <button key={r.key} onClick={() => !regionCountdown && setRegion(r.key)}
               style={{
-                padding: '16px 12px', border: `2px solid ${region === r.key ? '#c41e3a' : '#000'}`,
+                padding: '14px 12px', border: `2px solid ${region === r.key ? '#c41e3a' : '#000'}`,
                 background: region === r.key ? 'rgba(196,30,58,0.05)' : '#fff',
-                cursor: 'pointer', textAlign: 'left',
+                cursor: regionCountdown ? 'default' : 'pointer', textAlign: 'left',
+                display: 'flex', alignItems: 'center', gap: 10,
               }}
             >
-              <div style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 13, color: region === r.key ? '#c41e3a' : '#000', marginBottom: 2 }}>{r.label}</div>
-              <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '0.08em' }}>{r.sub}</div>
+              <LandingZoneBadge region={r.key} size="sm" />
+              <div>
+                <div style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 13, color: region === r.key ? '#c41e3a' : '#000', marginBottom: 2 }}>{r.label}</div>
+                <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '0.08em' }}>{r.sub}</div>
+              </div>
             </button>
           ))}
         </div>
@@ -467,8 +532,10 @@ export default function SettingsView({ profile, updateProfile, checkCallsign }) 
             </div>
           </div>
         )}
-        <div style={{ display: 'flex', alignItems: 'center' }}>
-          {saveBtn(saveRegion, !region)}
+        <LastChangedNote ts={profile?.home_region_changed_at} />
+        <RateLimitNote countdown={regionCountdown} />
+        <div style={{ display: 'flex', alignItems: 'center', marginTop: 10 }}>
+          {saveBtn(saveRegion, !region || !!regionCountdown)}
           <SavedBadge visible={regionSaved} />
         </div>
         <SaveError msg={regionError} />
@@ -517,61 +584,83 @@ export default function SettingsView({ profile, updateProfile, checkCallsign }) 
               </button>
             </div>
 
-            {/* Loading */}
             {bannersLoading && (
               <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--muted)', marginBottom: 16 }}>Loading banners…</div>
             )}
 
-            {/* Banner sets */}
-            {!bannersLoading && bannerSets.map(set => (
-              <div key={set.name} style={{ marginBottom: 22 }}>
-                <div style={{
-                  fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 10,
-                  letterSpacing: '0.14em', textTransform: 'uppercase', color: '#888',
-                  marginBottom: 10, borderBottom: '1px solid #e8e8e8', paddingBottom: 6,
-                }}>
-                  {set.name}
-                </div>
-                <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-                  {set.banners.map(b => {
-                    const selected = bannerPanel === b.id;
-                    return (
-                      <button
-                        key={b.id}
-                        onClick={() => setBannerPanel(b.id)}
-                        style={{
-                          width: 106, height: 106, padding: 0, flexShrink: 0,
-                          border: `2px solid ${selected ? '#c41e3a' : 'transparent'}`,
-                          cursor: 'pointer', position: 'relative', overflow: 'hidden',
-                          outline: 'none', background: '#111',
-                          boxShadow: selected ? '0 0 0 1px #c41e3a' : 'none',
-                        }}
-                      >
-                        <div style={{
-                          position: 'absolute', inset: 0,
-                          backgroundImage: `url(${b.src})`,
-                          backgroundSize: 'cover', backgroundPosition: 'center',
-                        }} />
-                        <div style={{
-                          position: 'absolute', inset: 0, pointerEvents: 'none',
-                          background: 'radial-gradient(ellipse at center, transparent 38%, rgba(0,0,0,0.55) 100%)',
-                        }} />
-                        {selected && (
-                          <div style={{ position: 'absolute', top: -4, right: -4, width: 16, height: 16, borderRadius: '50%', background: '#c41e3a', border: '2px solid #fff', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 2 }}>
-                            <span style={{ color: '#fff', fontSize: 8, lineHeight: 1 }}>✓</span>
-                          </div>
-                        )}
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
-            ))}
+            {/* Collapsible banner sets */}
+            {!bannersLoading && bannerSets.map(set => {
+              const accessible = canAccessSet(set.name, profile?.badges);
+              if (!accessible) return null;
+              const expanded = !!expandedSets[set.name];
+              const hasSelected = set.banners.some(b => b.id === bannerPanel);
 
-            {/* Empty state */}
+              return (
+                <div key={set.name} style={{ marginBottom: 10 }}>
+                  {/* Set header / toggle */}
+                  <button
+                    onClick={() => toggleSet(set.name)}
+                    style={{
+                      width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                      padding: '8px 10px', background: 'none',
+                      border: `2px solid ${hasSelected ? '#c41e3a' : '#e8e8e8'}`,
+                      cursor: 'pointer', textAlign: 'left',
+                    }}
+                  >
+                    <span style={{
+                      fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 10,
+                      letterSpacing: '0.14em', textTransform: 'uppercase',
+                      color: hasSelected ? '#c41e3a' : '#888',
+                    }}>
+                      {set.name}
+                      {hasSelected && <span style={{ marginLeft: 6, fontSize: 8 }}>✓</span>}
+                    </span>
+                    <span style={{ fontSize: 10, color: '#aaa', fontFamily: 'var(--font-mono)' }}>{expanded ? '▲' : '▼'}</span>
+                  </button>
+
+                  {/* Thumbnails */}
+                  {expanded && (
+                    <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', padding: '10px 0 4px 0' }}>
+                      {set.banners.map(b => {
+                        const selected = bannerPanel === b.id;
+                        return (
+                          <button
+                            key={b.id}
+                            onClick={() => setBannerPanel(b.id)}
+                            style={{
+                              width: 106, height: 106, padding: 0, flexShrink: 0,
+                              border: `2px solid ${selected ? '#c41e3a' : 'transparent'}`,
+                              cursor: 'pointer', position: 'relative', overflow: 'hidden',
+                              outline: 'none', background: '#111',
+                              boxShadow: selected ? '0 0 0 1px #c41e3a' : 'none',
+                            }}
+                          >
+                            <div style={{
+                              position: 'absolute', inset: 0,
+                              backgroundImage: `url(${b.src})`,
+                              backgroundSize: 'cover', backgroundPosition: 'center',
+                            }} />
+                            <div style={{
+                              position: 'absolute', inset: 0, pointerEvents: 'none',
+                              background: 'radial-gradient(ellipse at center, transparent 38%, rgba(0,0,0,0.55) 100%)',
+                            }} />
+                            {selected && (
+                              <div style={{ position: 'absolute', top: -4, right: -4, width: 16, height: 16, borderRadius: '50%', background: '#c41e3a', border: '2px solid #fff', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 2 }}>
+                                <span style={{ color: '#fff', fontSize: 8, lineHeight: 1 }}>✓</span>
+                              </div>
+                            )}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+
             {!bannersLoading && bannerSets.length === 0 && (
               <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--muted)', marginBottom: 16 }}>
-                No banners in storage yet. Upload images to the images bucket to create sets.
+                No banners in storage yet.
               </div>
             )}
           </div>
@@ -584,7 +673,7 @@ export default function SettingsView({ profile, updateProfile, checkCallsign }) 
               return signedSrc ? (
               <div>
                 <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: 8, textAlign: 'right' }}>Preview</div>
-                <div style={{ width: 200, height: 200, position: 'relative', overflow: 'hidden', border: '2px solid #ccc', background: '#111' }}>
+                <div style={{ width: 270, height: 270, position: 'relative', overflow: 'hidden', border: '2px solid #ccc', background: '#111' }}>
                   <div style={{
                     position: 'absolute', inset: 0,
                     backgroundImage: `url(${signedSrc})`,
@@ -619,17 +708,20 @@ export default function SettingsView({ profile, updateProfile, checkCallsign }) 
           value={callsign}
           onChange={e => { setCallsign(e.target.value); setCallsignStatus(null); }}
           onBlur={handleCallsignBlur}
+          disabled={!!callsignCountdown}
           maxLength={20}
           placeholder="New callsign"
         />
-        <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, minHeight: 16, marginBottom: 12 }}>
+        <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, minHeight: 16, marginBottom: 8 }}>
           {checking && <span style={{ color: 'var(--muted)' }}>Checking…</span>}
           {!checking && callsignStatus === 'available' && <span style={{ color: '#2D7A1F' }}>✓ Available</span>}
           {!checking && callsignStatus === 'taken' && <span style={{ color: '#c41e3a' }}>✗ Taken</span>}
           {!checking && callsignStatus === 'invalid' && <span style={{ color: '#c41e3a' }}>✗ 2–20 chars, letters/numbers/_/- only</span>}
         </div>
-        <div style={{ display: 'flex', alignItems: 'center' }}>
-          {saveBtn(saveCallsign, callsignStatus !== 'available')}
+        <LastChangedNote ts={profile?.callsign_changed_at} />
+        <RateLimitNote countdown={callsignCountdown} />
+        <div style={{ display: 'flex', alignItems: 'center', marginTop: 10 }}>
+          {saveBtn(saveCallsign, callsignStatus !== 'available' || !!callsignCountdown)}
           <SavedBadge visible={callsignSaved} />
         </div>
         <SaveError msg={callsignError} />
@@ -652,11 +744,14 @@ export default function SettingsView({ profile, updateProfile, checkCallsign }) 
               onChange={e => setRsiHandle(e.target.value)}
               placeholder="e.g. DIRTYNARWHAL"
               maxLength={32}
+              disabled={!!rsiHandleCountdown}
               style={{ flex: 1, padding: '9px 12px', border: '2px solid #000', fontFamily: 'var(--font-mono)', fontSize: 13, outline: 'none', textTransform: 'uppercase', letterSpacing: '0.04em' }}
             />
-            {saveBtn(saveRsiHandle, !rsiHandle.trim())}
+            {saveBtn(saveRsiHandle, !rsiHandle.trim() || !!rsiHandleCountdown)}
             <SavedBadge visible={rsiHandleSaved} />
           </div>
+          <LastChangedNote ts={profile?.rsi_handle_changed_at} />
+          <RateLimitNote countdown={rsiHandleCountdown} />
           <SaveError msg={rsiHandleError} />
         </div>
 
@@ -674,6 +769,28 @@ export default function SettingsView({ profile, updateProfile, checkCallsign }) 
             </div>
           </div>
         )}
+
+        {/* Remaining verifications */}
+        <div style={{
+          display: 'flex', alignItems: 'center', gap: 6, marginBottom: 14,
+          padding: '8px 12px',
+          background: auecRemaining === 0 ? 'rgba(196,30,58,0.04)' : 'var(--bg-2)',
+          border: `1px solid ${auecRemaining === 0 ? '#c41e3a' : 'var(--bg-3)'}`,
+        }}>
+          <span style={{
+            fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 18,
+            color: auecRemaining === 0 ? '#c41e3a' : auecRemaining === 1 ? '#d97706' : '#2d8659',
+            letterSpacing: '-0.01em', lineHeight: 1,
+          }}>{auecRemaining}</span>
+          <span style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '0.08em', lineHeight: 1.4 }}>
+            verification{auecRemaining !== 1 ? 's' : ''} remaining today
+            {auecRemaining === 0 && recentAuecChecks.length > 0 && (() => {
+              const oldest = Math.min(...recentAuecChecks.map(t => new Date(t).getTime()));
+              const resetsIn = timeUntilAllowed(new Date(oldest - DAY_MS + 1).toISOString());
+              return resetsIn ? ` · resets in ${resetsIn}` : '';
+            })()}
+          </span>
+        </div>
 
         {/* Scan result awaiting confirmation */}
         {auecExtracted !== null && (
@@ -705,13 +822,13 @@ export default function SettingsView({ profile, updateProfile, checkCallsign }) 
               <input type="number" min="0" value={auecManual} onChange={e => setAuecManual(e.target.value)} placeholder="Enter balance manually"
                 style={{ flex: 1, padding: '8px 10px', border: '2px solid #000', fontFamily: 'var(--font-mono)', fontSize: 13, outline: 'none' }} />
               <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--muted)', flexShrink: 0 }}>aUEC</span>
-              <button onClick={() => saveAuecBalance(parseInt(auecManual, 10))} disabled={!auecManual || saving}
+              <button onClick={() => saveAuecBalance(parseInt(auecManual, 10))} disabled={!auecManual || saving || auecRemaining === 0}
                 style={{
                   padding: '9px 20px', fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 12, textTransform: 'uppercase', letterSpacing: '0.04em', flexShrink: 0,
-                  cursor: !auecManual ? 'default' : 'pointer',
-                  border: `2px solid ${auecManual ? '#c41e3a' : '#ccc'}`,
-                  background: auecManual ? '#c41e3a' : '#f5f5f5',
-                  color: auecManual ? '#fff' : '#999',
+                  cursor: !auecManual || auecRemaining === 0 ? 'default' : 'pointer',
+                  border: `2px solid ${auecManual && auecRemaining > 0 ? '#c41e3a' : '#ccc'}`,
+                  background: auecManual && auecRemaining > 0 ? '#c41e3a' : '#f5f5f5',
+                  color: auecManual && auecRemaining > 0 ? '#fff' : '#999',
                 }}>Save</button>
             </div>
           </div>
@@ -722,13 +839,13 @@ export default function SettingsView({ profile, updateProfile, checkCallsign }) 
           <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
             <button
               onClick={() => auecFileRef.current?.click()}
-              disabled={auecScanning || !rsiHandle.trim()}
+              disabled={auecScanning || !rsiHandle.trim() || auecRemaining === 0}
               style={{
                 padding: '9px 20px', fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 12, textTransform: 'uppercase', letterSpacing: '0.04em',
-                cursor: (auecScanning || !rsiHandle.trim()) ? 'default' : 'pointer',
-                border: `2px solid ${(auecScanning || !rsiHandle.trim()) ? '#ccc' : '#000'}`,
-                background: (auecScanning || !rsiHandle.trim()) ? '#f5f5f5' : '#000',
-                color: (auecScanning || !rsiHandle.trim()) ? '#999' : '#fff',
+                cursor: (auecScanning || !rsiHandle.trim() || auecRemaining === 0) ? 'default' : 'pointer',
+                border: `2px solid ${(auecScanning || !rsiHandle.trim() || auecRemaining === 0) ? '#ccc' : '#000'}`,
+                background: (auecScanning || !rsiHandle.trim() || auecRemaining === 0) ? '#f5f5f5' : '#000',
+                color: (auecScanning || !rsiHandle.trim() || auecRemaining === 0) ? '#999' : '#fff',
                 display: 'flex', alignItems: 'center', gap: 8,
               }}
             >
@@ -740,7 +857,7 @@ export default function SettingsView({ profile, updateProfile, checkCallsign }) 
             <SavedBadge visible={auecSaved} />
           </div>
         )}
-        {!rsiHandle.trim() && auecExtracted === null && (
+        {!rsiHandle.trim() && auecExtracted === null && auecRemaining > 0 && (
           <div style={{ marginTop: 8, fontFamily: 'var(--font-mono)', fontSize: 9, color: '#c41e3a', letterSpacing: '0.04em' }}>
             Enter your RSI handle above to enable scanning.
           </div>

@@ -373,7 +373,7 @@ export default function SessionView({
   onSetWaypointStatus, onCastRemovalVote, onWithdrawVote, onInvitePlayer,
   onStartSession, onPauseSession, onResumeSession, onEndSession,
   onDeleteSession, onUpdateSession, onUpdateContract,
-  onUpdateWaypoint, onUpdateCargoItem,
+  onUpdateWaypoint, onUpdateCargoItem, onAddCargoItemLive,
   commodities, systemsMap,
   playerColors, myProfileId, myCallsign, friends,
   onCopyInviteLink, onLeaveSession, onRemovePlayer,
@@ -393,6 +393,10 @@ export default function SessionView({
   const [editPanel, setEditPanel]                             = useState({ pickups: [], dropoffs: [], cargo: [] });
   const [confirmDeleteContractId, setConfirmDeleteContractId] = useState(null);
   const [confirmRemovePlayerId, setConfirmRemovePlayerId]     = useState(null);
+  const [addCargoContractId, setAddCargoContractId]           = useState(null);
+  const [addCargoCommodity, setAddCargoCommodity]             = useState('RMC');
+  const [addCargoScu, setAddCargoScu]                         = useState('');
+  const [addCargoSource, setAddCargoSource]                   = useState('found');
 
   const label      = keyToLabel(session.date);
   const totalSCU   = session.contracts.reduce((t, c) => t + c.cargo.reduce((s, x) => s + Number(x.scu || 0), 0), 0);
@@ -1011,6 +1015,109 @@ export default function SessionView({
                       </div>
                     );
                   })}
+                </div>
+              )}
+
+              {/* ── Salvage cost summary + Add Found Cargo ── */}
+              {contract.type === 'Salvaging' && (
+                <div style={{ marginBottom: 14 }}>
+                  {/* Cost / profit line */}
+                  {(contract.claimCost > 0 || contract.refiningCost > 0 || contract.payout > 0) && (
+                    <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 10, padding: '8px 10px', background: 'var(--bg-2)', border: '1px solid var(--bg-3)' }}>
+                      {contract.claimCost > 0 && (
+                        <span style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: '#c41e3a' }}>
+                          Claim −{contract.claimCost.toLocaleString()}
+                        </span>
+                      )}
+                      {contract.payout > 0 && (
+                        <span style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: '#2d8659' }}>
+                          Sale +{contract.payout.toLocaleString()}
+                        </span>
+                      )}
+                      {contract.refiningCost > 0 && (
+                        <span style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: '#c41e3a' }}>
+                          Refining −{contract.refiningCost.toLocaleString()}
+                        </span>
+                      )}
+                      {(contract.claimCost > 0 || contract.refiningCost > 0) && contract.payout > 0 && (() => {
+                        const net = contract.payout - (contract.claimCost || 0) - (contract.refiningCost || 0);
+                        const perMember = memberCount > 0 ? Math.floor(net / memberCount) : 0;
+                        return (
+                          <>
+                            <span style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: 'var(--muted)' }}>·</span>
+                            <span style={{ fontFamily: 'var(--font-mono)', fontSize: 9, fontWeight: 700, color: net >= 0 ? '#2d8659' : '#c41e3a' }}>
+                              Net {net.toLocaleString()}
+                            </span>
+                            {memberCount > 1 && (
+                              <span style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: 'var(--muted)' }}>
+                                ({perMember.toLocaleString()} / pilot)
+                              </span>
+                            )}
+                          </>
+                        );
+                      })()}
+                    </div>
+                  )}
+
+                  {/* Found cargo pills */}
+                  {contract.cargo.some(c => c.source === 'found') && (
+                    <div style={{ marginBottom: 8 }}>
+                      <div style={sectionLbl}>Found Cargo</div>
+                      <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                        {contract.cargo.filter(c => c.source === 'found').map((c, i) => (
+                          <div key={c.id || i} style={{ padding: '6px 10px', background: 'transparent', border: '2px solid #d97706', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 3, minWidth: 72 }}>
+                            <span style={{ fontFamily: 'var(--font-display)', fontSize: 10, fontWeight: 700, color: '#d97706', letterSpacing: '0.04em' }}>{c.commodity}</span>
+                            <span style={{ fontFamily: 'var(--font-mono)', fontSize: 14, fontWeight: 700, color: 'var(--muted)', lineHeight: 1 }}>{c.scu} SCU</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Add found cargo form */}
+                  {isSessionMember && !session.endedAt && (
+                    addCargoContractId === contract.id ? (
+                      <div style={{ padding: '10px 12px', border: '2px solid #d97706', background: 'var(--bg-2)', display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
+                        <span style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: '#d97706', textTransform: 'uppercase', letterSpacing: '0.1em', flexShrink: 0 }}>Found Cargo</span>
+                        <input
+                          placeholder="Commodity"
+                          value={addCargoCommodity}
+                          onChange={e => setAddCargoCommodity(e.target.value)}
+                          style={{ width: 110, padding: '4px 8px', border: '2px solid var(--border)', background: 'var(--bg-1)', color: 'var(--text)', fontFamily: 'var(--font-mono)', fontSize: 12, outline: 'none' }}
+                        />
+                        <input
+                          type="number" min="0" placeholder="SCU"
+                          value={addCargoScu}
+                          onChange={e => setAddCargoScu(e.target.value)}
+                          style={{ width: 68, padding: '4px 8px', border: '2px solid var(--border)', background: 'var(--bg-1)', color: 'var(--text)', fontFamily: 'var(--font-mono)', fontSize: 12, outline: 'none', textAlign: 'right' }}
+                        />
+                        <span style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--muted)', flexShrink: 0 }}>SCU</span>
+                        <button
+                          onClick={async () => {
+                            if (!addCargoCommodity.trim() || !Number(addCargoScu)) return;
+                            await onAddCargoItemLive?.(contract.id, { commodity: addCargoCommodity.trim(), scu: Number(addCargoScu), source: addCargoSource });
+                            setAddCargoContractId(null);
+                            setAddCargoCommodity('RMC');
+                            setAddCargoScu('');
+                          }}
+                          disabled={!addCargoCommodity.trim() || !Number(addCargoScu)}
+                          style={{ padding: '4px 12px', background: '#d97706', border: 'none', color: '#fff', cursor: 'pointer', fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 10, textTransform: 'uppercase' }}
+                        >Add</button>
+                        <button onClick={() => setAddCargoContractId(null)}
+                          style={{ padding: '4px 10px', background: 'transparent', border: '1px solid var(--border)', color: 'var(--muted)', cursor: 'pointer', fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 10 }}>✗</button>
+                      </div>
+                    ) : (
+                      <button
+                        onClick={() => { setAddCargoContractId(contract.id); setAddCargoCommodity('RMC'); setAddCargoScu(''); setAddCargoSource('found'); }}
+                        style={{
+                          background: 'none', border: '2px dashed #d97706', color: '#d97706',
+                          padding: '6px 14px', cursor: 'pointer',
+                          fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 10,
+                          textTransform: 'uppercase', letterSpacing: '0.06em',
+                        }}
+                      >+ Add Found Cargo</button>
+                    )
+                  )}
                 </div>
               )}
 

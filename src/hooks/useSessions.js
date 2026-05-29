@@ -42,7 +42,9 @@ const xf = (s) => ({
         body: w.body,
         completions: (w.waypoint_completions || []).map(wc => ({ profileId: wc.profile_id, status: wc.status })),
       })),
-    cargo: (c.cargo_items || []).map(ci => ({ id: ci.id, commodity: ci.commodity, scu: ci.scu, fromLocation: ci.from_location || null, toLocation: ci.to_location || null })),
+    claimCost:    Number(c.claim_cost)    || 0,
+    refiningCost: Number(c.refining_cost) || 0,
+    cargo: (c.cargo_items || []).map(ci => ({ id: ci.id, commodity: ci.commodity, scu: ci.scu, fromLocation: ci.from_location || null, toLocation: ci.to_location || null, source: ci.cargo_source || null })),
   })),
 });
 
@@ -69,7 +71,7 @@ export function useSessions(enabled = true, userId) {
               id, kind, location_name, body, sort_order,
               waypoint_completions ( profile_id, status )
             ),
-            cargo_items ( id, commodity, scu, from_location, to_location )
+            cargo_items ( id, commodity, scu, from_location, to_location, cargo_source )
           )
         `)
         .order('date', { ascending: false });
@@ -141,7 +143,16 @@ export function useSessions(enabled = true, userId) {
 
     const { data: c, error } = await supabase
       .from('contracts')
-      .insert({ session_id: sessionId, type: contract.type, system: contract.system, done: false, creator_id: user?.id || null, payout: Number(contract.payout) || 0 })
+      .insert({
+        session_id: sessionId,
+        type: contract.type,
+        system: contract.system,
+        done: false,
+        creator_id: user?.id || null,
+        payout: Number(contract.payout) || 0,
+        claim_cost: Number(contract.claimCost) || 0,
+        refining_cost: Number(contract.refiningCost) || 0,
+      })
       .select('id')
       .single();
     if (error) { console.error('createContract:', error); return; }
@@ -163,8 +174,8 @@ export function useSessions(enabled = true, userId) {
     let insertedCargo = cargoRows.map(ci => ({ commodity: ci.commodity, scu: Number(ci.scu) }));
     if (cargoRows.length) {
       const { data: ins } = await supabase.from('cargo_items')
-        .insert(cargoRows.map(ci => ({ contract_id: c.id, commodity: ci.commodity, scu: Number(ci.scu), from_location: ci.fromLocation || null, to_location: ci.toLocation || null })))
-        .select('id, commodity, scu, from_location, to_location');
+        .insert(cargoRows.map(ci => ({ contract_id: c.id, commodity: ci.commodity, scu: Number(ci.scu), from_location: ci.fromLocation || null, to_location: ci.toLocation || null, cargo_source: ci.source || null })))
+        .select('id, commodity, scu, from_location, to_location, cargo_source');
       if (ins) insertedCargo = ins;
     }
 
@@ -336,6 +347,20 @@ export function useSessions(enabled = true, userId) {
     return true;
   }, [load]);
 
+  // ── addCargoItemLive ────────────────────────────────────────
+  // For adding found cargo live during a salvage session
+  const addCargoItemLive = useCallback(async (contractId, { commodity, scu, source }) => {
+    const { error } = await supabase.from('cargo_items').insert({
+      contract_id: contractId,
+      commodity,
+      scu: Number(scu),
+      cargo_source: source || null,
+    });
+    if (error) { console.error('addCargoItemLive:', error); return false; }
+    await load();
+    return true;
+  }, [load]);
+
   // ── updateCargoItem ────────────────────────────────────────
   const updateCargoItem = useCallback(async (cargoItemId, updates) => {
     const { error } = await supabase.from('cargo_items').update(updates).eq('id', cargoItemId);
@@ -386,7 +411,7 @@ export function useSessions(enabled = true, userId) {
     setWaypointStatus, castRemovalVote, withdrawRemovalVote, addPlayerToSession,
     startSession, pauseSession, resumeSession, endSession,
     deleteSession, updateSession, updateContract,
-    updateWaypoint, updateCargoItem,
+    updateWaypoint, updateCargoItem, addCargoItemLive,
     leaveSession, removePlayerFromSession,
   };
 }

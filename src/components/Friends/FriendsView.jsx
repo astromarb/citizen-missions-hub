@@ -20,6 +20,55 @@ const sectionLabel = {
   marginBottom: 10, marginTop: 20,
 };
 
+function FriendBubbles({ friends, onViewProfile }) {
+  if (!friends.length) return null;
+  const MAX_SHOWN = 50;
+  const shown = friends.slice(0, MAX_SHOWN);
+  const bubbleSize = friends.length >= 25 ? 40 : 52;
+  const fontSize = friends.length >= 25 ? 9 : 10;
+
+  return (
+    <div style={{ marginBottom: 4 }}>
+      <div style={sectionLabel}>Friends ({friends.length})</div>
+      <div style={{
+        border: '2px solid #000', background: '#fff', padding: '16px',
+        display: 'flex', flexWrap: 'wrap', gap: friends.length >= 25 ? 10 : 14,
+      }}>
+        {shown.map(f => (
+          <button
+            key={f.friendshipId}
+            onClick={() => onViewProfile?.(f)}
+            style={{
+              display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 5,
+              background: 'none', border: 'none', cursor: onViewProfile ? 'pointer' : 'default',
+              padding: 0,
+            }}
+          >
+            <Avatar profile={f} size={bubbleSize} />
+            <span style={{
+              fontFamily: 'var(--font-display)', fontWeight: 700,
+              fontSize: fontSize, color: '#000',
+              maxWidth: bubbleSize + 8, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+            }}>{f.callsign}</span>
+          </button>
+        ))}
+        {friends.length > MAX_SHOWN && (
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 4 }}>
+            <div style={{
+              width: bubbleSize, height: bubbleSize, borderRadius: '50%',
+              background: 'var(--bg-2)', border: '2px solid #ccc',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+            }}>
+              <span style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 11, color: 'var(--muted)' }}>+{friends.length - MAX_SHOWN}</span>
+            </div>
+            <span style={{ fontFamily: 'var(--font-mono)', fontSize: 8, color: 'var(--muted)' }}>more</span>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
 export default function FriendsView({ friends, pending, sent, sessionInvites, searchUsers, sendRequest, respond, remove, onViewProfile, onRespondToSessionInvite }) {
   const [query, setQuery] = useState('');
   const [results, setResults] = useState([]);
@@ -75,46 +124,66 @@ export default function FriendsView({ friends, pending, sent, sessionInvites, se
   );
 
   const pendingInvites = sessionInvites || [];
+  const hasPending = pending.length > 0 || pendingInvites.length > 0;
 
   return (
     <div style={{ padding: '20px' }}>
-      <div style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 20, letterSpacing: '-0.02em', marginBottom: 20 }}>Requests & Crew</div>
+      <div style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 20, letterSpacing: '-0.02em', marginBottom: 20 }}>Friends</div>
 
-      {/* ── Session Invites ── */}
-      {pendingInvites.length > 0 && (
+      {/* ── Friend Bubbles ── */}
+      <FriendBubbles friends={friends} onViewProfile={onViewProfile} />
+
+      {/* ── Pending section (invites + requests) ── */}
+      {hasPending && (
         <div style={{ marginBottom: 4 }}>
-          <div style={sectionLabel}>Session Invites ({pendingInvites.length})</div>
-          <div style={{ border: '2px solid #c41e3a', background: '#fff', padding: '0 16px' }}>
-            {pendingInvites.map(inv => {
-              const d = inv.session?.date
-                ? new Date(inv.session.date + 'T12:00:00').toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })
-                : 'Unknown date';
-              return (
-                <div key={inv.id} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '12px 0', borderBottom: '1px solid #f0f0f0' }}>
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 13, color: '#000' }}>
-                      Session · {d}
-                    </div>
-                    <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '0.08em', marginTop: 2 }}>
-                      Invited by{' '}
-                      <span style={{ color: inv.inviter?.color || '#888', fontWeight: 700 }}>
-                        {inv.inviter?.callsign || '?'}
-                      </span>
-                    </div>
-                  </div>
-                  <div style={{ display: 'flex', gap: 6, flexShrink: 0 }}>
-                    {actionBtn('Accept', () => onRespondToSessionInvite?.(inv.id, true, inv.session_id), 'green')}
-                    {actionBtn('Decline', () => onRespondToSessionInvite?.(inv.id, false, inv.session_id), 'danger')}
-                  </div>
-                </div>
-              );
-            })}
+          <div style={sectionLabel}>
+            Pending{(pending.length + pendingInvites.length) > 0 ? ` (${pending.length + pendingInvites.length})` : ''}
           </div>
+
+          {pendingInvites.length > 0 && (
+            <div style={{ border: '2px solid #c41e3a', background: '#fff', padding: '0 16px', marginBottom: 8 }}>
+              {pendingInvites.map(inv => {
+                const d = inv.session?.date
+                  ? new Date(inv.session.date + 'T12:00:00').toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })
+                  : 'Unknown date';
+                return (
+                  <div key={inv.id} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '12px 0', borderBottom: '1px solid #f0f0f0' }}>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 13, color: '#000' }}>
+                        Session Invite · {d}
+                      </div>
+                      <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '0.08em', marginTop: 2 }}>
+                        from{' '}
+                        <span style={{ color: inv.inviter?.color || '#888', fontWeight: 700 }}>
+                          {inv.inviter?.callsign || '?'}
+                        </span>
+                      </div>
+                    </div>
+                    <div style={{ display: 'flex', gap: 6, flexShrink: 0 }}>
+                      {actionBtn('Accept', () => onRespondToSessionInvite?.(inv.id, true, inv.session_id), 'green')}
+                      {actionBtn('Decline', () => onRespondToSessionInvite?.(inv.id, false, inv.session_id), 'danger')}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+
+          {pending.length > 0 && (
+            <div style={{ border: '2px solid #000', background: '#fff', padding: '0 16px' }}>
+              {pending.map(p => (
+                <ProfileRow key={p.friendshipId} profile={p} actions={[
+                  actionBtn('Accept', () => respond(p.friendshipId, true), 'green'),
+                  actionBtn('Decline', () => respond(p.friendshipId, false), 'danger'),
+                ]} />
+              ))}
+            </div>
+          )}
         </div>
       )}
 
-      {/* Search */}
-      <div style={{ border: '2px solid #000', background: '#fff', padding: 16, marginBottom: 4 }}>
+      {/* ── Search ── */}
+      <div style={{ border: '2px solid #000', background: '#fff', padding: 16, marginBottom: 4, marginTop: hasPending ? 0 : 4 }}>
         <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, textTransform: 'uppercase', letterSpacing: '0.1em', color: 'var(--muted)', marginBottom: 8 }}>Search Pilots</div>
         <input
           style={{ width: '100%', padding: '9px 12px', border: '2px solid #000', fontFamily: 'var(--font-mono)', fontSize: 13, outline: 'none', boxSizing: 'border-box' }}
@@ -147,22 +216,7 @@ export default function FriendsView({ friends, pending, sent, sessionInvites, se
         )}
       </div>
 
-      {/* Incoming requests */}
-      {pending.length > 0 && (
-        <div>
-          <div style={sectionLabel}>Incoming Requests ({pending.length})</div>
-          <div style={{ border: '2px solid #000', background: '#fff', padding: '0 16px' }}>
-            {pending.map(p => (
-              <ProfileRow key={p.friendshipId} profile={p} actions={[
-                actionBtn('Accept', () => respond(p.friendshipId, true), 'green'),
-                actionBtn('Decline', () => respond(p.friendshipId, false), 'danger'),
-              ]} />
-            ))}
-          </div>
-        </div>
-      )}
-
-      {/* Sent requests */}
+      {/* ── Sent requests ── */}
       {sent.length > 0 && (
         <div>
           <div style={sectionLabel}>Sent Requests ({sent.length})</div>
@@ -183,15 +237,10 @@ export default function FriendsView({ friends, pending, sent, sessionInvites, se
         </div>
       )}
 
-      {/* Friends list */}
-      <div>
-        <div style={sectionLabel}>Friends ({friends.length})</div>
-        {friends.length === 0 ? (
-          <div style={{ textAlign: 'center', padding: '40px 20px', border: '2px dashed #000', background: '#fff' }}>
-            <div style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 16, marginBottom: 6 }}>No crew yet</div>
-            <div style={{ color: 'var(--muted)', fontSize: 12 }}>Search for pilots above to send friend requests.</div>
-          </div>
-        ) : (
+      {/* ── Full friend list ── */}
+      {friends.length > 0 && (
+        <div>
+          <div style={sectionLabel}>All Friends ({friends.length})</div>
           <div style={{ border: '2px solid #000', background: '#fff', padding: '0 16px' }}>
             {friends.map(f => (
               <ProfileRow key={f.friendshipId} profile={f} actions={
@@ -206,8 +255,15 @@ export default function FriendsView({ friends, pending, sent, sessionInvites, se
               } />
             ))}
           </div>
-        )}
-      </div>
+        </div>
+      )}
+
+      {friends.length === 0 && (
+        <div style={{ textAlign: 'center', padding: '40px 20px', border: '2px dashed #000', background: '#fff', marginTop: 8 }}>
+          <div style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 16, marginBottom: 6 }}>No crew yet</div>
+          <div style={{ color: 'var(--muted)', fontSize: 12 }}>Search for pilots above to send friend requests.</div>
+        </div>
+      )}
     </div>
   );
 }
