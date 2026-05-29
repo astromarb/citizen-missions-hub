@@ -9,13 +9,13 @@ export function useToast() {
 export function ToastProvider({ children }) {
   const [toasts, setToasts] = useState([]);
 
-  const show = useCallback((message, type = 'info') => {
+  const show = useCallback((message, type = 'info', duration = 4000) => {
     const id = Date.now() + Math.random();
     setToasts(t => [...t, { id, message, type }]);
-    setTimeout(() => setToasts(t => t.filter(x => x.id !== id)), 4000);
+    setTimeout(() => setToasts(t => t.filter(x => x.id !== id)), duration);
   }, []);
 
-  const colors = { success: '#2d8659', error: '#c41e3a', info: '#000' };
+  const colors = { success: '#2d8659', error: '#c41e3a', info: '#000', message: '#1e40af' };
 
   return (
     <ToastCtx.Provider value={show}>

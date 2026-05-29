@@ -52,4 +52,21 @@ export const SFX = {
   halt:     () => _play('halt-screetch'),
   complete: () => _play('mission-complete'),
   tab:      (id) => _play(TAB_SOUNDS[id] || 'entry-boop'),
+  notify:   () => {
+    try {
+      const ctx  = new (window.AudioContext || window.webkitAudioContext)();
+      const osc  = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(1046, ctx.currentTime);       // C6
+      osc.frequency.setValueAtTime(1318, ctx.currentTime + 0.1); // E6
+      gain.gain.setValueAtTime(0.22, ctx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.55);
+      osc.start(ctx.currentTime);
+      osc.stop(ctx.currentTime + 0.55);
+      osc.onended = () => ctx.close();
+    } catch {}
+  },
 };

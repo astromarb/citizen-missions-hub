@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { Analytics } from '@vercel/analytics/react';
 import { supabase } from '@/lib/supabase.js';
 import { useSessions } from '@/hooks/useSessions.js';
@@ -258,7 +258,15 @@ function AppInner() {
   const myCallsign  = profile?.callsign || null;
 
   const { incoming: sessionInvites, createInvite, respondToInvite } = useSessionInvites(myProfileId, !!authSession);
-  const { inbox: msgInbox, sent: msgSent, sendMessage, markRead, deleteMessage, unreadCount: msgUnread } = useMessages(myProfileId, !!authSession);
+
+  const handleNewMessage = useCallback((row) => {
+    const senderName = row.is_system ? 'Nexus Hub System' : null;
+    const label = senderName || 'New message';
+    showToast(label, 'message', 8000);
+    SFX.notify();
+  }, [showToast]);
+
+  const { conversations, sendMessage, markRead, deleteMessage, unreadCount: msgUnread } = useMessages(myProfileId, !!authSession, handleNewMessage);
 
   useEffect(() => {
     const timeout = new Promise((_, rej) => setTimeout(() => rej(new Error('auth-timeout')), 12000));
@@ -836,11 +844,12 @@ function AppInner() {
                 remove={handleRemoveFriend}
                 onViewProfile={openFriendProfile}
                 onRespondToSessionInvite={handleRespondToSessionInvite}
-                inbox={msgInbox}
-                msgSent={msgSent}
+                conversations={conversations}
                 sendMessage={sendMessage}
                 markRead={markRead}
                 deleteMessage={deleteMessage}
+                myProfileId={myProfileId}
+                isMobile={isMobile}
               />
             </div>
           )}
