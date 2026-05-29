@@ -23,6 +23,7 @@ import MissionsView from '@/components/Missions/MissionsView.jsx';
 import LeaderboardView from '@/components/Leaderboard/LeaderboardView.jsx';
 import FriendProfileView from '@/components/Friends/FriendProfileView.jsx';
 import ActiveSessionsView from '@/components/ActiveSessions/ActiveSessionsView.jsx';
+import AdminView from '@/components/Admin/AdminView.jsx';
 import { ToastProvider, useToast } from '@/components/shared/Toast.jsx';
 import { PLAYER_COLORS } from '@/data/players.js';
 import { fmtKey } from '@/utils/dateUtils.js';
@@ -483,6 +484,7 @@ function AppInner() {
     ['leaderboard',     'Leaderboards'],
     ['friends',         totalPendingRequests > 0 ? `Friends (${totalPendingRequests})` : 'Friends'],
     ['settings',        'Settings'],
+    ...(profile?.is_admin ? [['admin', 'Admin']] : []),
   ];
 
   return (
@@ -779,6 +781,12 @@ function AppInner() {
                 updateProfile={updateProfile}
                 checkCallsign={checkCallsign}
               />
+            </div>
+          )}
+
+          {activeTab === 'admin' && profile?.is_admin && (
+            <div style={{ animation: A.fadeUp(), flex: 1, minHeight: 0, overflowY: 'auto' }}>
+              <AdminView />
             </div>
           )}
         </div>

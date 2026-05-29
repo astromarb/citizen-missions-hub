@@ -3,6 +3,7 @@ import { supabase } from '@/lib/supabase.js';
 import LandingZoneBadge, { AlphaBadge } from '../shared/LandingZoneBadge.jsx';
 import { getBanner } from '../../data/profileBanners.js';
 import { useBanners } from '../../hooks/useBanners.js';
+import { useBannerMetadata } from '../../hooks/useBannerMetadata.js';
 
 // ── Color palette ─────────────────────────────────────────────────────────────
 const COLOR_ROWS = [
@@ -157,6 +158,7 @@ export default function SettingsView({ profile, updateProfile, checkCallsign }) 
   const [bannerError,   setBannerError]   = useState(null);
   const [expandedSets,  setExpandedSets]  = useState({});
   const { sets: bannerSets, loading: bannersLoading, refresh: refreshBanners } = useBanners();
+  const { itemMeta: bannerItemMeta, setMeta: bannerSetMeta } = useBannerMetadata();
 
   // ── RSI handle ──────────────────────────────────────────────────────────────
   const [rsiHandle,      setRsiHandle]      = useState(profile?.rsi_handle || '');
@@ -594,6 +596,7 @@ export default function SettingsView({ profile, updateProfile, checkCallsign }) 
               if (!accessible) return null;
               const expanded = !!expandedSets[set.name];
               const hasSelected = set.banners.some(b => b.id === bannerPanel);
+              const setDescription = bannerSetMeta[set.name]?.description;
 
               return (
                 <div key={set.name} style={{ marginBottom: 10 }}>
@@ -604,18 +607,25 @@ export default function SettingsView({ profile, updateProfile, checkCallsign }) 
                       width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between',
                       padding: '8px 10px', background: 'none',
                       border: `2px solid ${hasSelected ? '#c41e3a' : '#e8e8e8'}`,
-                      cursor: 'pointer', textAlign: 'left',
+                      cursor: 'pointer', textAlign: 'left', gap: 8,
                     }}
                   >
-                    <span style={{
-                      fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 10,
-                      letterSpacing: '0.14em', textTransform: 'uppercase',
-                      color: hasSelected ? '#c41e3a' : '#888',
-                    }}>
-                      {set.name}
-                      {hasSelected && <span style={{ marginLeft: 6, fontSize: 8 }}>✓</span>}
-                    </span>
-                    <span style={{ fontSize: 10, color: '#aaa', fontFamily: 'var(--font-mono)' }}>{expanded ? '▲' : '▼'}</span>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <span style={{
+                        fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 10,
+                        letterSpacing: '0.14em', textTransform: 'uppercase',
+                        color: hasSelected ? '#c41e3a' : '#888',
+                      }}>
+                        {set.name}
+                        {hasSelected && <span style={{ marginLeft: 6, fontSize: 8 }}>✓</span>}
+                      </span>
+                      {setDescription && (
+                        <span style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: 'var(--muted)', marginLeft: 8 }}>
+                          {setDescription}
+                        </span>
+                      )}
+                    </div>
+                    <span style={{ fontSize: 10, color: '#aaa', fontFamily: 'var(--font-mono)', flexShrink: 0 }}>{expanded ? '▲' : '▼'}</span>
                   </button>
 
                   {/* Thumbnails */}
@@ -623,31 +633,46 @@ export default function SettingsView({ profile, updateProfile, checkCallsign }) 
                     <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', padding: '10px 0 4px 0' }}>
                       {set.banners.map(b => {
                         const selected = bannerPanel === b.id;
+                        const displayName = bannerItemMeta[b.id]?.displayName;
                         return (
                           <button
                             key={b.id}
                             onClick={() => setBannerPanel(b.id)}
+                            title={displayName || b.id}
                             style={{
-                              width: 106, height: 106, padding: 0, flexShrink: 0,
+                              width: 106, padding: 0, flexShrink: 0,
                               border: `2px solid ${selected ? '#c41e3a' : 'transparent'}`,
-                              cursor: 'pointer', position: 'relative', overflow: 'hidden',
-                              outline: 'none', background: '#111',
+                              cursor: 'pointer', position: 'relative', overflow: 'visible',
+                              outline: 'none', background: 'none',
                               boxShadow: selected ? '0 0 0 1px #c41e3a' : 'none',
+                              display: 'flex', flexDirection: 'column', alignItems: 'stretch', gap: 4,
                             }}
                           >
-                            <div style={{
-                              position: 'absolute', inset: 0,
-                              backgroundImage: `url(${b.src})`,
-                              backgroundSize: 'cover', backgroundPosition: 'center',
-                            }} />
-                            <div style={{
-                              position: 'absolute', inset: 0, pointerEvents: 'none',
-                              background: 'radial-gradient(ellipse at center, transparent 38%, rgba(0,0,0,0.55) 100%)',
-                            }} />
-                            {selected && (
-                              <div style={{ position: 'absolute', top: -4, right: -4, width: 16, height: 16, borderRadius: '50%', background: '#c41e3a', border: '2px solid #fff', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 2 }}>
-                                <span style={{ color: '#fff', fontSize: 8, lineHeight: 1 }}>✓</span>
-                              </div>
+                            <div style={{ width: '100%', height: 106, position: 'relative', overflow: 'hidden', background: '#111' }}>
+                              <div style={{
+                                position: 'absolute', inset: 0,
+                                backgroundImage: `url(${b.src})`,
+                                backgroundSize: 'cover', backgroundPosition: 'center',
+                              }} />
+                              <div style={{
+                                position: 'absolute', inset: 0, pointerEvents: 'none',
+                                background: 'radial-gradient(ellipse at center, transparent 38%, rgba(0,0,0,0.55) 100%)',
+                              }} />
+                              {selected && (
+                                <div style={{ position: 'absolute', top: -4, right: -4, width: 16, height: 16, borderRadius: '50%', background: '#c41e3a', border: '2px solid #fff', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 2 }}>
+                                  <span style={{ color: '#fff', fontSize: 8, lineHeight: 1 }}>✓</span>
+                                </div>
+                              )}
+                            </div>
+                            {displayName && (
+                              <span style={{
+                                fontFamily: 'var(--font-mono)', fontSize: 8,
+                                color: selected ? '#c41e3a' : 'var(--muted)',
+                                overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+                                textAlign: 'center',
+                              }}>
+                                {displayName}
+                              </span>
                             )}
                           </button>
                         );
