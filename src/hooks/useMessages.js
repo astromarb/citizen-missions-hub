@@ -68,7 +68,11 @@ export function useMessages(myProfileId, enabled = true, onNewMessage = null) {
       .or(`sender_id.eq.${myProfileId},recipient_id.eq.${myProfileId}`)
       .order('created_at', { ascending: true });
     if (error) { console.error('useMessages load:', error); return; }
-    setAllMessages((data || []).map(m => ({ ...m, _dir: m.sender_id === myProfileId ? 'sent' : 'inbox' })));
+    setAllMessages((data || []).map(m => ({
+      ...m,
+      // System messages where we are the recipient are always inbox, even if we also sent them
+      _dir: (m.is_system && m.recipient_id === myProfileId) ? 'inbox' : (m.sender_id === myProfileId ? 'sent' : 'inbox'),
+    })));
   }, [myProfileId]);
 
   useEffect(() => {

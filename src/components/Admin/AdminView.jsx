@@ -475,6 +475,9 @@ function BroadcastLogEntry({ entry, onDelete }) {
     <div style={{ border: '2px solid #e0e0e0', background: '#fafafa', padding: '12px 16px' }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 8, flexWrap: 'wrap' }}>
         <span style={{ background: '#c41e3a', color: '#fff', ...mono, fontSize: 8, padding: '2px 6px', letterSpacing: '0.08em', textTransform: 'uppercase', flexShrink: 0 }}>⚡ SYS</span>
+        {!entry.broadcast_id && (
+          <span style={{ background: '#55555522', border: '1.5px solid #555', color: '#555', ...mono, fontSize: 8, padding: '2px 6px', letterSpacing: '0.08em', textTransform: 'uppercase', flexShrink: 0 }}>Preview</span>
+        )}
         {entry.sender ? (
           <span style={{ ...display, fontWeight: 700, fontSize: 11, textTransform: 'uppercase', color: entry.sender.color || '#000' }}>
             {entry.sender.callsign}
@@ -518,11 +521,12 @@ function BroadcastLogEntry({ entry, onDelete }) {
 }
 
 function BroadcastsPanel() {
-  const [body,    setBody]    = useState('');
-  const [sending, setSending] = useState(false);
-  const [result,  setResult]  = useState(null);
-  const [log,     setLog]     = useState([]);
-  const [adminId, setAdminId] = useState(null);
+  const [body,       setBody]       = useState('');
+  const [sending,    setSending]    = useState(false);
+  const [previewing, setPreviewing] = useState(false);
+  const [result,     setResult]     = useState(null);
+  const [log,        setLog]        = useState([]);
+  const [adminId,    setAdminId]    = useState(null);
 
   const loadLog = useCallback(async (uid) => {
     const { data: rows } = await supabase
@@ -587,6 +591,26 @@ function BroadcastsPanel() {
     }
   };
 
+  const preview = async () => {
+    if (!body.trim() || previewing || !adminId) return;
+    setPreviewing(true);
+    setResult(null);
+    const { error } = await supabase.from('messages').insert({
+      sender_id:    adminId,
+      recipient_id: adminId,
+      content:      body.trim(),
+      is_system:    true,
+    });
+    setPreviewing(false);
+    if (error) {
+      setResult({ error: error.message });
+    } else {
+      setResult({ preview: true });
+      setTimeout(() => setResult(null), 4000);
+      await loadLog(adminId);
+    }
+  };
+
   const deleteBroadcast = useCallback(async (broadcastId) => {
     if (!broadcastId) return;
     const { error } = await supabase
@@ -620,7 +644,20 @@ function BroadcastsPanel() {
           />
           <div style={{ ...mono, fontSize: 9, ...muted, textAlign: 'right', marginTop: 3 }}>{body.length}/1000</div>
         </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
+          <button
+            onClick={preview}
+            disabled={!body.trim() || previewing || sending}
+            style={{
+              padding: '9px 20px', fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 12,
+              textTransform: 'uppercase', letterSpacing: '0.04em',
+              border: `2px solid ${!body.trim() ? '#ccc' : '#555'}`,
+              background: !body.trim() ? '#f5f5f5' : '#fff',
+              color: !body.trim() ? '#999' : '#555',
+              cursor: !body.trim() || previewing || sending ? 'default' : 'pointer',
+            }}>
+            {previewing ? 'Sending…' : 'Preview to Me'}
+          </button>
           <button
             onClick={submit}
             disabled={!body.trim() || sending}
@@ -634,8 +671,9 @@ function BroadcastsPanel() {
             }}>
             {sending ? 'Sending…' : 'Send to All'}
           </button>
-          {result?.sent  && <span style={{ ...mono, fontSize: 10, color: '#2d8659' }}>Sent to {result.sent} pilots ✓</span>}
-          {result?.error && <span style={{ ...mono, fontSize: 10, color: '#c41e3a' }}>Error: {result.error}</span>}
+          {result?.preview && <span style={{ ...mono, fontSize: 10, color: '#555' }}>Preview sent to your inbox ✓</span>}
+          {result?.sent    && <span style={{ ...mono, fontSize: 10, color: '#2d8659' }}>Sent to {result.sent} pilots ✓</span>}
+          {result?.error   && <span style={{ ...mono, fontSize: 10, color: '#c41e3a' }}>Error: {result.error}</span>}
         </div>
       </div>
 
