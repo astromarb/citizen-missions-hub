@@ -101,7 +101,7 @@ export default function SettingsView({ profile, updateProfile, checkCallsign }) 
   const [bannerPanel, setBannerPanel] = useState(profile?.banner_panel || null);
   const [bannerSaved, setBannerSaved] = useState(false);
   const [bannerError, setBannerError] = useState(null);
-  const { sets: bannerSets, loading: bannersLoading } = useBanners();
+  const { sets: bannerSets, loading: bannersLoading, refresh: refreshBanners } = useBanners();
 
   // ── RSI handle ──────────────────────────────────────────────────────────────
   const [rsiHandle,      setRsiHandle]      = useState(profile?.rsi_handle || '');
@@ -476,7 +476,19 @@ export default function SettingsView({ profile, updateProfile, checkCallsign }) 
 
       {/* ── Profile Banner ────────────────────────────────────────────────────── */}
       <div style={{ border: '2px solid #000', background: '#fff', padding: '20px', marginBottom: 16 }}>
-        {sectionTitle('Profile Banner')}
+        <div style={{ display: 'flex', alignItems: 'flex-end', gap: 12 }}>
+          {sectionTitle('Profile Banner')}
+          <button
+            onClick={refreshBanners}
+            disabled={bannersLoading}
+            style={{
+              fontFamily: 'var(--font-mono)', fontSize: 9, color: 'var(--muted)',
+              background: 'none', border: 'none', cursor: bannersLoading ? 'default' : 'pointer',
+              padding: '0 0 15px 0', letterSpacing: '0.08em', textTransform: 'uppercase',
+              opacity: bannersLoading ? 0.4 : 1, transition: 'opacity 0.15s',
+            }}
+          >↻ refresh</button>
+        </div>
 
         <div style={{ display: 'flex', gap: 24, alignItems: 'flex-start' }}>
 

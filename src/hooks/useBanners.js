@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '../lib/supabase.js';
 
 // "alpha-1.png"        → "Alpha Set"
@@ -15,7 +15,6 @@ function itemUrl(item) {
   if (typeof item === 'string') {
     return supabase.storage.from('images').getPublicUrl(item).data.publicUrl;
   }
-  // Prefer signed URL (bypasses CDN cache), fall back to public URL
   if (item.url) return item.url;
   const base = supabase.storage.from('images').getPublicUrl(item.name).data.publicUrl;
   return item.updatedAt ? `${base}?t=${encodeURIComponent(item.updatedAt)}` : base;
@@ -36,8 +35,10 @@ function groupIntoSets(fileObjects) {
 export function useBanners() {
   const [sets,    setSets]    = useState([]);
   const [loading, setLoading] = useState(true);
+  const [tick,    setTick]    = useState(0);
 
   useEffect(() => {
+    setLoading(true);
     supabase.functions
       .invoke('list-banners')
       .then(({ data, error }) => {
@@ -46,7 +47,9 @@ export function useBanners() {
         setLoading(false);
       })
       .catch(() => setLoading(false));
-  }, []);
+  }, [tick]);
 
-  return { sets, loading };
+  const refresh = useCallback(() => setTick(t => t + 1), []);
+
+  return { sets, loading, refresh };
 }
