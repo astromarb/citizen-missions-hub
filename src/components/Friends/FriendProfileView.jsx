@@ -4,6 +4,7 @@ import { typeBg } from '../../data/contractTypes.js';
 import { getContractSize } from '../../utils/contractSize.js';
 import { getBanner } from '../../data/profileBanners.js';
 import { useBannerUrl } from '../../hooks/useBanners.js';
+import { calcFleetValue } from '../../data/ships.js';
 
 const DAY_COLORS = [
   { bg: '#e8db7d', text: '#000' }, // Sunday
@@ -242,14 +243,7 @@ export default function FriendProfileView({ friend, sessions, myProfileId, onBac
 
   const contractsCount = friendSessions.reduce((t, s) => t + s.contracts.length, 0);
 
-  const lifetimeSCU = friendSessions.reduce((t, s) =>
-    t + s.contracts.reduce((ct, c) => ct + c.cargo.reduce((cg, ci) => cg + Number(ci.scu || 0), 0), 0), 0);
 
-  const lifetimePayout = friendSessions.reduce((total, s) => {
-    const sessionTotal = s.contracts.reduce((t, c) => t + (c.payout || 0), 0);
-    const mc = s.members?.length || 1;
-    return total + Math.floor(sessionTotal / mc);
-  }, 0);
 
   const callsign = friend.callsign || 'Pilot';
   const color = friend.color || '#8b949e';
@@ -267,11 +261,12 @@ export default function FriendProfileView({ friend, sessions, myProfileId, onBac
     return null;
   };
 
+  const netWorth = (Number(friend?.auec_balance) || 0) + calcFleetValue(friend?.owned_ships);
+
   const statsRows = [
-    ['Sessions', friendSessions.length.toLocaleString()],
-    ['Contracts', contractsCount.toLocaleString()],
-    ['SCU Hauled', lifetimeSCU.toLocaleString()],
-    ['aUEC Earned', lifetimePayout > 0 ? lifetimePayout.toLocaleString() : '—'],
+    ['Sessions',         friendSessions.length.toLocaleString()],
+    ['Contracts',        contractsCount.toLocaleString()],
+    ['Net Worth (aUEC)', netWorth > 0 ? netWorth.toLocaleString() : '0'],
   ];
 
   const bannerObj  = friend?.banner_panel ? getBanner(friend.banner_panel) : null;
@@ -341,7 +336,6 @@ export default function FriendProfileView({ friend, sessions, myProfileId, onBac
               </div>
             </div>
             <div style={{ position: 'absolute', bottom: 0, left: 0, right: 4, zIndex: 2, padding: '10px 14px 14px' }}>
-              <div style={{ fontFamily: 'var(--font-mono)', fontSize: 8, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'rgba(255,255,255,0.55)', marginBottom: 6 }}>Career Stats</div>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '4px 16px' }}>
                 {statsRows.map(([label, val]) => (
                   <div key={label}>
@@ -389,7 +383,6 @@ export default function FriendProfileView({ friend, sessions, myProfileId, onBac
                 <div style={{ width: '100%', height: 4, background: color }} />
               </div>
               <div style={{ padding: '18px 20px' }}>
-                <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, letterSpacing: '0.14em', textTransform: 'uppercase', color: bannerObj ? lblCol : 'var(--muted)', marginBottom: 8, textShadow: shadow }}>Career Stats</div>
                 {statsRows.map(([label, val]) => (
                   <div key={label} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', padding: '9px 0', borderBottom: `1px solid ${bannerObj ? 'rgba(255,255,255,0.15)' : 'var(--bg-2)'}` }}>
                     <span style={{ fontFamily: 'var(--font-mono)', fontSize: 12, color: bannerObj ? lblCol : 'var(--muted)', letterSpacing: '0.04em', textShadow: shadow }}>{label}</span>

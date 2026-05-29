@@ -302,7 +302,7 @@ function AppInner() {
 
   useEffect(() => {
     if (!authSession) { setProfiles([]); return; }
-    supabase.from('profiles').select('id, callsign, color, avatar_url, auec_balance, auec_balance_verified_at').order('callsign')
+    supabase.from('profiles').select('id, callsign, color, avatar_url, auec_balance, auec_balance_verified_at, owned_ships').order('callsign')
       .then(({ data }) => { if (data) setProfiles(data); });
   }, [authSession]);
 

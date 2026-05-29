@@ -6,6 +6,7 @@ import { typeBg } from '../../data/contractTypes.js';
 import { getContractSize } from '../../utils/contractSize.js';
 import { getBanner } from '../../data/profileBanners.js';
 import { useBannerUrl } from '../../hooks/useBanners.js';
+import { calcFleetValue } from '../../data/ships.js';
 
 // M  T  W  Th  F  Sa  Su  (JS getDay: 0=Sun)
 const DAY_COLORS = [
@@ -243,13 +244,6 @@ export default function MissionsView({ sessions, myProfileId, profile, avatarUrl
     .filter(s => s.members?.some(m => m.id === myProfileId))
     .sort((a, b) => new Date(b.date) - new Date(a.date));
 
-  const lifetimeSCU = mySessions.reduce((t, s) =>
-    t + s.contracts.reduce((ct, c) => ct + c.cargo.reduce((cg, ci) => cg + Number(ci.scu || 0), 0), 0), 0);
-  const lifetimePayout = mySessions.reduce((s, sess) => {
-    const total = sess.contracts.reduce((t, c) => t + (c.payout || 0), 0);
-    const mc = sess.members?.length || 1;
-    return s + Math.floor(total / mc);
-  }, 0);
   const myContracts = mySessions.reduce((t, s) => t + s.contracts.length, 0);
 
   if (!myProfileId) {
@@ -275,12 +269,12 @@ export default function MissionsView({ sessions, myProfileId, profile, avatarUrl
     return null;
   };
 
+  const netWorth = (Number(profile?.auec_balance) || 0) + calcFleetValue(profile?.owned_ships);
+
   const statsRows = [
-    ['Sessions',   mySessions.length.toLocaleString()],
-    ['Contracts',  myContracts.toLocaleString()],
-    ['SCU Hauled', lifetimeSCU.toLocaleString()],
-    ['aUEC Earned', lifetimePayout > 0 ? lifetimePayout.toLocaleString() : '—'],
-    ...(profile?.auec_balance > 0 ? [['Wallet', `${Number(profile.auec_balance).toLocaleString()} aUEC`]] : []),
+    ['Sessions',         mySessions.length.toLocaleString()],
+    ['Contracts',        myContracts.toLocaleString()],
+    ['Net Worth (aUEC)', netWorth > 0 ? netWorth.toLocaleString() : '0'],
   ];
 
   const bannerObj = profile?.banner_panel ? getBanner(profile.banner_panel) : null;
@@ -322,7 +316,6 @@ export default function MissionsView({ sessions, myProfileId, profile, avatarUrl
             </div>
             {/* Bottom: stats overlaid on gradient */}
             <div style={{ position: 'absolute', bottom: 0, left: 0, right: 4, zIndex: 2, padding: '10px 14px 14px' }}>
-              <div style={{ fontFamily: 'var(--font-mono)', fontSize: 8, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'rgba(255,255,255,0.55)', marginBottom: 6 }}>Career Stats</div>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '4px 16px' }}>
                 {statsRows.map(([label, val]) => (
                   <div key={label}>
@@ -360,7 +353,6 @@ export default function MissionsView({ sessions, myProfileId, profile, avatarUrl
                 <div style={{ width: '100%', height: 4, background: color }} />
               </div>
               <div style={{ padding: '18px 20px' }}>
-                <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, letterSpacing: '0.14em', textTransform: 'uppercase', color: bannerObj ? lblCol : 'var(--muted)', marginBottom: 8, textShadow: shadow }}>Career Stats</div>
                 {statsRows.map(([label, val]) => (
                   <div key={label} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', padding: '9px 0', borderBottom: `1px solid ${bannerObj ? 'rgba(255,255,255,0.15)' : 'var(--bg-2)'}` }}>
                     <span style={{ fontFamily: 'var(--font-mono)', fontSize: 12, color: bannerObj ? lblCol : 'var(--muted)', letterSpacing: '0.04em', textShadow: shadow }}>{label}</span>

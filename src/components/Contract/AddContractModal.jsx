@@ -53,11 +53,12 @@ function deriveSalvageSystem(location, systemsMap) {
 }
 
 const MISSION_CATEGORIES = [
-  { key: 'hauling',  label: 'Hauling',       available: true },
-  { key: 'salvage',  label: 'Salvage',        available: true },
-  { key: 'bounty',   label: 'Bounty Hunting', available: false },
-  { key: 'mining',   label: 'Mining',         available: false },
-  { key: 'security', label: 'Security',       available: false },
+  { key: 'hauling',   label: 'Hauling',       available: true },
+  { key: 'salvage',   label: 'Salvage',        available: true },
+  { key: 'refueling', label: 'Refueling',      available: true },
+  { key: 'bounty',    label: 'Bounty Hunting', available: false },
+  { key: 'mining',    label: 'Mining',         available: false },
+  { key: 'security',  label: 'Security',       available: false },
 ];
 
 export default function AddContractModal({ onSave, onClose, commodities, systemsMap }) {
@@ -70,6 +71,10 @@ export default function AddContractModal({ onSave, onClose, commodities, systems
   const [payout,        setPayout]        = useState('');
   const [cargoByPickup, setCargoByPickup] = useState([[emptyItem()]]);
   const [distribution,  setDistribution]  = useState({});
+
+  // ── Refueling state ─────────────────────────────────────────────
+  const [refuelLocation, setRefuelLocation] = useState(emptyWp());
+  const [refuelPayout,   setRefuelPayout]   = useState('');
 
   // ── Salvage state ───────────────────────────────────────────────
   const [salvageLocation,  setSalvageLocation]  = useState(emptyWp());
@@ -101,7 +106,10 @@ export default function AddContractModal({ onSave, onClose, commodities, systems
   const hasSalvageMaterials = salvageMaterials.some(m => Number(m.scu) > 0);
   const salvageSteps = 4; // category → location+cost → materials → sell run
 
-  const totalSteps = category === 'salvage' ? salvageSteps : haulingSteps;
+  // ── Refueling derived ────────────────────────────────────────────
+  const refuelSystem = deriveSalvageSystem(refuelLocation, systemsMap);
+
+  const totalSteps = category === 'salvage' ? salvageSteps : category === 'refueling' ? 2 : haulingSteps;
 
   const canAdvance =
     category === 'salvage'
@@ -109,6 +117,8 @@ export default function AddContractModal({ onSave, onClose, commodities, systems
         : step === 2 ? true  // materials optional at creation
         : step === 3 ? (Number(salvageSalePrice) > 0)
         : true
+      : category === 'refueling'
+      ? !!refuelLocation.name?.trim()
       : step === 1 ? hasPickup && hasDropoff
       : step === 2 ? hasAnyCargo
       : true;
@@ -135,43 +145,20 @@ export default function AddContractModal({ onSave, onClose, commodities, systems
   const removeSalvageMaterial = (i) =>
     setSalvageMaterials(prev => prev.filter((_, mi) => mi !== i));
 
-  // ── Step advances ─────────────────────────────────────────────────
-  const advanceToCargo = () => {
-    const groups = filledPickups.length > 0 ? filledPickups.map(() => [emptyItem()]) : [[emptyItem()]];
-    setCargoByPickup(groups);
-    setStep(2);
-  };
-
-  const advanceToDistribution = () => {
-    const dist = {};
-    filledPickups.forEach((_, pi) => {
-      dist[pi] = {};
-      (cargoByPickup[pi] || []).forEach((item, ii) => {
-        if (!item.commodity || !Number(item.scu)) return;
-        dist[pi][ii] = Object.fromEntries(filledDropoffs.map((_, di) => [di, '']));
-      });
-    });
-    setDistribution(dist);
-    setStep(3);
-  };
-
-  const splitEvenly = (pi, ii) => {
-    const total = Number(cargoByPickup[pi]?.[ii]?.scu || 0);
-    const count = filledDropoffs.length;
-    if (!count || !total) return;
-    const base = Math.floor(total / count);
-    const rem  = total - base * count;
-    setDistribution(prev => ({
-      ...prev,
-      [pi]: {
-        ...prev[pi],
-        [ii]: Object.fromEntries(filledDropoffs.map((_, di) => [di, String(di === 0 ? base + rem : base)])),
-      },
-    }));
-  };
-
   // ── Save ────────────────────────────────────────────────────────
   const save = () => {
+    if (category === 'refueling') {
+      onSave({
+        type:     'Refueling',
+        system:   refuelSystem || refuelLocation.body || refuelLocation.name || 'Unknown',
+        pickups:  [refuelLocation],
+        dropoffs: [],
+        cargo:    [],
+        payout:   Number(refuelPayout) || 0,
+      });
+      return;
+    }
+
     if (category === 'salvage') {
       const materialCargo = salvageMaterials
         .filter(m => Number(m.scu) > 0)
@@ -225,6 +212,41 @@ export default function AddContractModal({ onSave, onClose, commodities, systems
     });
   };
 
+  // ── Step advances ─────────────────────────────────────────────────
+  const advanceToCargo = () => {
+    const groups = filledPickups.length > 0 ? filledPickups.map(() => [emptyItem()]) : [[emptyItem()]];
+    setCargoByPickup(groups);
+    setStep(2);
+  };
+
+  const advanceToDistribution = () => {
+    const dist = {};
+    filledPickups.forEach((_, pi) => {
+      dist[pi] = {};
+      (cargoByPickup[pi] || []).forEach((item, ii) => {
+        if (!item.commodity || !Number(item.scu)) return;
+        dist[pi][ii] = Object.fromEntries(filledDropoffs.map((_, di) => [di, '']));
+      });
+    });
+    setDistribution(dist);
+    setStep(3);
+  };
+
+  const splitEvenly = (pi, ii) => {
+    const total = Number(cargoByPickup[pi]?.[ii]?.scu || 0);
+    const count = filledDropoffs.length;
+    if (!count || !total) return;
+    const base = Math.floor(total / count);
+    const rem  = total - base * count;
+    setDistribution(prev => ({
+      ...prev,
+      [pi]: {
+        ...prev[pi],
+        [ii]: Object.fromEntries(filledDropoffs.map((_, di) => [di, String(di === 0 ? base + rem : base)])),
+      },
+    }));
+  };
+
   // ── Style helpers ────────────────────────────────────────────────
   const primaryBtn = (disabled) => ({
     padding: '10px 24px', fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 12,
@@ -250,6 +272,8 @@ export default function AddContractModal({ onSave, onClose, commodities, systems
     if (category === 'salvage') {
       if (step < salvageSteps - 1) setStep(s => s + 1);
       else save();
+    } else if (category === 'refueling') {
+      save();
     } else {
       if (step === 1) advanceToCargo();
       else if (step === 2 && multiDropoff) advanceToDistribution();
@@ -259,6 +283,8 @@ export default function AddContractModal({ onSave, onClose, commodities, systems
 
   const isFinalStep = category === 'salvage'
     ? step === salvageSteps - 1
+    : category === 'refueling'
+    ? step === 1
     : step === haulingSteps - 1;
 
   return (
@@ -466,6 +492,44 @@ export default function AddContractModal({ onSave, onClose, commodities, systems
                 </div>
               </div>
             )}
+          </div>
+        )}
+
+        {/* ── REFUELING STEP 1: Location + Payout ── */}
+        {category === 'refueling' && step === 1 && (
+          <div>
+            <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--muted)', letterSpacing: '0.08em', marginBottom: 18, textTransform: 'uppercase' }}>
+              Refueling Details
+            </div>
+
+            <div style={{ marginBottom: 20 }}>
+              <span style={lbl}>Refueling Station / Location</span>
+              <LocationAutocomplete
+                value={refuelLocation}
+                onChange={setRefuelLocation}
+                placeholder="Search location…"
+                systemsMap={systemsMap}
+              />
+              {refuelSystem && (
+                <div style={{ marginTop: 6, fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--muted)' }}>
+                  System: {refuelSystem}
+                </div>
+              )}
+            </div>
+
+            <div style={{ marginBottom: 20 }}>
+              <span style={lbl}>Payout (aUEC)</span>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                <input
+                  type="number" min="0" step="1000"
+                  style={{ flex: 1, padding: '8px 10px', background: 'var(--bg-1)', border: '2px solid var(--border)', color: 'var(--text)', fontSize: 13, fontFamily: 'var(--font-mono)', outline: 'none' }}
+                  placeholder="0 if tracking only"
+                  value={refuelPayout}
+                  onChange={e => setRefuelPayout(e.target.value)}
+                />
+                <span style={{ fontSize: 11, color: 'var(--muted)', fontFamily: 'var(--font-mono)', flexShrink: 0 }}>aUEC</span>
+              </div>
+            </div>
           </div>
         )}
 

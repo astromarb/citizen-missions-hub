@@ -5,6 +5,7 @@ import LandingZoneBadge, { AlphaBadge } from '../shared/LandingZoneBadge.jsx';
 import { getBanner } from '../../data/profileBanners.js';
 import { useBanners } from '../../hooks/useBanners.js';
 import { useBannerMetadata } from '../../hooks/useBannerMetadata.js';
+import { SHIPS, searchShips, calcFleetValue } from '../../data/ships.js';
 
 // ── Color palette ─────────────────────────────────────────────────────────────
 const COLOR_ROWS = [
@@ -176,6 +177,13 @@ export default function SettingsView({ profile, updateProfile, checkCallsign }) 
   const [auecError,     setAuecError]     = useState(null);
   const auecFileRef = useRef(null);
 
+  // ── Ships / fleet ───────────────────────────────────────────────────────────
+  const [ownedShips,   setOwnedShips]   = useState(() => profile?.owned_ships || []);
+  const [shipQuery,    setShipQuery]    = useState('');
+  const [shipResults,  setShipResults]  = useState([]);
+  const [shipsSaved,   setShipsSaved]   = useState(false);
+  const [shipsError,   setShipsError]   = useState(null);
+
   const [saving, setSaving] = useState(false);
 
   const flash = (setter) => { setter(true); setTimeout(() => setter(false), 2000); };
@@ -187,6 +195,7 @@ export default function SettingsView({ profile, updateProfile, checkCallsign }) 
     setRegion(profile.home_region || '');
     setRsiHandle(profile.rsi_handle || '');
     setBannerPanel(profile.banner_panel || null);
+    setOwnedShips(profile.owned_ships || []);
     const earned = ['alpha', ...(profile.home_region ? ['home_region'] : [])];
     setSelectedBadges(profile.badges != null ? [...profile.badges] : [...earned]);
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -319,6 +328,30 @@ export default function SettingsView({ profile, updateProfile, checkCallsign }) 
       setAuecScanning(false);
       if (auecFileRef.current) auecFileRef.current.value = '';
     }
+  };
+
+  const saveShips = async (nextShips) => {
+    setShipsError(null);
+    setSaving(true);
+    const { error } = await updateProfile({ owned_ships: nextShips });
+    setSaving(false);
+    if (error) setShipsError(error.message || 'Save failed');
+    else flash(setShipsSaved);
+  };
+
+  const addShip = (name) => {
+    if (ownedShips.includes(name)) return;
+    const next = [...ownedShips, name];
+    setOwnedShips(next);
+    setShipQuery('');
+    setShipResults([]);
+    saveShips(next);
+  };
+
+  const removeShip = (name) => {
+    const next = ownedShips.filter(s => s !== name);
+    setOwnedShips(next);
+    saveShips(next);
   };
 
   const toggleBadge = (id) => {
@@ -873,6 +906,119 @@ export default function SettingsView({ profile, updateProfile, checkCallsign }) 
         <SaveError msg={auecError} />
         <div style={{ marginTop: 14, fontFamily: 'var(--font-mono)', fontSize: 9, color: 'var(--muted)', lineHeight: 1.7, letterSpacing: '0.02em' }}>
           <strong style={{ color: 'var(--text)' }}>How it works:</strong> upload any screenshot where your RSI handle and ≡ aUEC balance are visible. Direct game screenshots and phone photos of your monitor both work.
+        </div>
+      </div>
+
+      {/* ── Ships / Fleet ────────────────────────────────────────────────────── */}
+      <div style={{ border: '2px solid #000', background: '#fff', padding: '20px' }}>
+        {sectionTitle('My Fleet')}
+        <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--muted)', marginBottom: 16, lineHeight: 1.7 }}>
+          Add ships you own. Their aUEC value is included in your public Net Worth.
+        </div>
+
+        {/* Net worth summary */}
+        {(() => {
+          const fleetVal   = calcFleetValue(ownedShips);
+          const balance    = Number(profile?.auec_balance) || 0;
+          const totalWorth = fleetVal + balance;
+          return (
+            <div style={{ padding: '12px 14px', background: 'var(--bg-2)', border: '2px solid #000', marginBottom: 20 }}>
+              <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: 10 }}>Net Worth Breakdown</div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', fontFamily: 'var(--font-mono)', fontSize: 11 }}>
+                  <span style={{ color: 'var(--muted)' }}>aUEC Balance</span>
+                  <span>{balance.toLocaleString()} aUEC</span>
+                </div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', fontFamily: 'var(--font-mono)', fontSize: 11 }}>
+                  <span style={{ color: 'var(--muted)' }}>Fleet Value ({ownedShips.length} ship{ownedShips.length !== 1 ? 's' : ''})</span>
+                  <span>{fleetVal.toLocaleString()} aUEC</span>
+                </div>
+                <div style={{ borderTop: '1px solid var(--bg-3)', paddingTop: 6, display: 'flex', justifyContent: 'space-between', fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 15 }}>
+                  <span>Total Net Worth</span>
+                  <span style={{ color: totalWorth > 0 ? '#2d8659' : 'var(--muted)' }}>{totalWorth.toLocaleString()} aUEC</span>
+                </div>
+              </div>
+            </div>
+          );
+        })()}
+
+        {/* Search + add */}
+        <div style={{ marginBottom: 16, position: 'relative' }}>
+          <div style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 10, letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: 6 }}>Add a Ship</div>
+          <input
+            value={shipQuery}
+            onChange={e => { setShipQuery(e.target.value); setShipResults(searchShips(e.target.value)); }}
+            onKeyDown={e => { if (e.key === 'Escape') { setShipQuery(''); setShipResults([]); } }}
+            placeholder="Search by ship name or manufacturer…"
+            style={{ width: '100%', boxSizing: 'border-box', padding: '9px 12px', border: '2px solid #000', fontFamily: 'var(--font-mono)', fontSize: 12, outline: 'none', letterSpacing: '0.02em' }}
+          />
+          {shipResults.length > 0 && (
+            <div style={{
+              position: 'absolute', top: '100%', left: 0, right: 0, zIndex: 20,
+              background: 'var(--bg-1)', border: '2px solid #000', borderTop: 'none',
+              boxShadow: '4px 4px 0 rgba(0,0,0,0.15)',
+            }}>
+              {shipResults.map(ship => {
+                const already = ownedShips.includes(ship.name);
+                return (
+                  <button key={ship.name}
+                    onMouseDown={e => e.preventDefault()}
+                    onClick={() => { if (!already) addShip(ship.name); }}
+                    disabled={already}
+                    style={{
+                      display: 'flex', justifyContent: 'space-between', alignItems: 'baseline',
+                      width: '100%', padding: '9px 12px', border: 'none', borderBottom: '1px solid var(--bg-2)',
+                      background: already ? 'var(--bg-2)' : 'var(--bg-1)',
+                      cursor: already ? 'default' : 'pointer', textAlign: 'left',
+                    }}
+                    onMouseEnter={e => { if (!already) e.currentTarget.style.background = 'var(--bg-2)'; }}
+                    onMouseLeave={e => { if (!already) e.currentTarget.style.background = 'var(--bg-1)'; }}
+                  >
+                    <span style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 12, textTransform: 'uppercase', letterSpacing: '0.04em', color: already ? 'var(--muted)' : 'var(--text)' }}>
+                      {ship.name}
+                    </span>
+                    <span style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: already ? 'var(--muted)' : '#2d8659', marginLeft: 12, flexShrink: 0 }}>
+                      {already ? 'owned' : `${ship.value.toLocaleString()} aUEC`}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+          )}
+        </div>
+
+        {/* Fleet list */}
+        {ownedShips.length === 0 ? (
+          <div style={{ padding: '20px', border: '2px dashed var(--bg-3)', textAlign: 'center', fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--muted)' }}>
+            No ships added yet. Search above to build your fleet.
+          </div>
+        ) : (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+            {ownedShips.map(name => {
+              const ship = SHIPS.find(s => s.name === name);
+              return (
+                <div key={name} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 12px', border: '2px solid var(--bg-3)', background: 'var(--bg-2)' }}>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 12, textTransform: 'uppercase', letterSpacing: '0.04em', color: 'var(--text)' }}>{name}</div>
+                    {ship && (
+                      <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: 'var(--muted)', marginTop: 2 }}>{ship.manufacturer}</div>
+                    )}
+                  </div>
+                  <span style={{ fontFamily: 'var(--font-mono)', fontSize: 12, fontWeight: 700, color: '#2d8659', flexShrink: 0 }}>
+                    {ship ? ship.value.toLocaleString() : '?'} aUEC
+                  </span>
+                  <button onClick={() => removeShip(name)} title="Remove ship"
+                    style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#c41e3a', fontSize: 18, fontWeight: 700, lineHeight: 1, padding: '0 2px', flexShrink: 0 }}>×</button>
+                </div>
+              );
+            })}
+          </div>
+        )}
+
+        {shipsError && <div style={{ marginTop: 10, fontFamily: 'var(--font-mono)', fontSize: 10, color: '#c41e3a' }}>{shipsError}</div>}
+        {shipsSaved && <div style={{ marginTop: 10, fontFamily: 'var(--font-mono)', fontSize: 10, color: '#2d8659' }}>Fleet saved ✓</div>}
+        <div style={{ marginTop: 14, fontFamily: 'var(--font-mono)', fontSize: 9, color: 'var(--muted)', lineHeight: 1.7, letterSpacing: '0.02em' }}>
+          Ship values are approximate aUEC equivalents. Net Worth is public on your profile.
         </div>
       </div>
     </div>

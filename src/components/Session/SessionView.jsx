@@ -369,6 +369,136 @@ function WaypointRow({ waypoint, myProfileId, members, onSetStatus, canEdit, kin
   );
 }
 
+function RefuelingWaypointRow({ waypoint, myProfileId, members, onSetStatus, canEdit, canEditLocation, onUpdateWaypoint, allLocations }) {
+  const [editingLoc, setEditingLoc] = useState(false);
+  const [locVal, setLocVal] = useState('');
+
+  const startLocEdit  = () => { setLocVal(waypoint.name || ''); setEditingLoc(true); };
+  const saveLocEdit   = () => { if (locVal) onUpdateWaypoint?.(waypoint.id, { location_name: locVal }); setEditingLoc(false); };
+  const cancelLocEdit = () => setEditingLoc(false);
+
+  const myCompletion = waypoint.completions?.find(c => c.profileId === myProfileId);
+  const countFor     = (status) => (waypoint.completions || []).filter(c => c.status === status).length;
+
+  const memberMap = {};
+  const myColor   = (members || []).find(m => m.id === myProfileId)?.color || '#0891b2';
+  (members || []).forEach(m => { memberMap[m.id] = m; });
+
+  const contrastColor = (hex) => {
+    if (!hex || hex.length < 7) return '#000';
+    const r = parseInt(hex.slice(1, 3), 16);
+    const g = parseInt(hex.slice(3, 5), 16);
+    const b = parseInt(hex.slice(5, 7), 16);
+    return (0.299 * r + 0.587 * g + 0.114 * b) / 255 > 0.5 ? '#000' : '#fff';
+  };
+
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 5, marginBottom: 10 }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+        <span style={{ color: '#0891b2', fontSize: 13, flexShrink: 0 }}>⛽</span>
+
+        {editingLoc ? (
+          <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, flexWrap: 'wrap' }}>
+            <select
+              autoFocus value={locVal}
+              onChange={e => setLocVal(e.target.value)}
+              onKeyDown={e => { if (e.key === 'Enter') saveLocEdit(); if (e.key === 'Escape') cancelLocEdit(); }}
+              style={{ maxWidth: 220, padding: '2px 4px', border: '2px solid #0891b2', background: 'var(--bg-1)', color: '#0891b2', fontFamily: 'var(--font-sans)', fontSize: 12, fontWeight: 500, outline: 'none' }}
+            >
+              <option value="">— pick location —</option>
+              {(() => {
+                const grouped = {};
+                (allLocations || []).forEach(l => {
+                  const key = `${l.system} → ${l.body}`;
+                  if (!grouped[key]) grouped[key] = [];
+                  grouped[key].push(l);
+                });
+                return Object.entries(grouped).sort().map(([groupKey, locs]) => (
+                  <optgroup key={groupKey} label={groupKey}>
+                    {locs.map(l => <option key={l.name} value={l.name}>{l.name}</option>)}
+                  </optgroup>
+                ));
+              })()}
+            </select>
+            <button onClick={saveLocEdit}
+              style={{ background: '#2d8659', border: 'none', color: '#fff', cursor: 'pointer', padding: '2px 7px', fontWeight: 700, fontSize: 11 }}>✓</button>
+            <button onClick={cancelLocEdit}
+              style={{ background: 'none', border: '1px solid var(--border)', color: 'var(--muted)', cursor: 'pointer', padding: '2px 6px', fontSize: 11 }}>✗</button>
+          </span>
+        ) : (
+          <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5, overflow: 'hidden' }}>
+            <span style={{ fontFamily: 'var(--font-sans)', fontSize: 13, color: '#0891b2', fontWeight: 500, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+              {wpName(waypoint)}
+            </span>
+            {canEditLocation && (
+              <button onClick={startLocEdit} title="Edit location"
+                style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '0 2px', color: 'var(--muted)', fontSize: 10, lineHeight: 1, flexShrink: 0, fontFamily: 'var(--font-mono)' }}>✎</button>
+            )}
+          </span>
+        )}
+      </div>
+
+      {(waypoint.completions || []).length > 0 && (
+        <div style={{ paddingLeft: 22, display: 'flex', gap: 4, flexWrap: 'wrap', alignItems: 'center' }}>
+          {(waypoint.completions || []).map(c => {
+            const m = memberMap[c.profileId];
+            if (!m) return null;
+            const col = m.color || '#888';
+            return (
+              <span key={c.profileId} style={{
+                fontFamily: 'var(--font-display)', fontSize: 10, fontWeight: 700,
+                background: col, color: contrastColor(col),
+                padding: '2px 6px', letterSpacing: '0.05em', textTransform: 'uppercase',
+                border: `2px solid ${col}`, whiteSpace: 'nowrap',
+              }}>
+                {m.callsign}
+              </span>
+            );
+          })}
+        </div>
+      )}
+
+      {myProfileId && canEdit && (
+        <div style={{ paddingLeft: 22, display: 'flex', gap: 10 }}>
+          {/* EN ROUTE */}
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 3 }}>
+            <span style={{ fontFamily: 'var(--font-mono)', fontSize: 8, color: '#aaa', height: 11, lineHeight: '11px', textAlign: 'center' }}>
+              {countFor('en_route') > 0 ? `(${countFor('en_route')})` : ''}
+            </span>
+            <div style={{ width: 32, height: 32, boxSizing: 'border-box', border: `2px solid ${myCompletion?.status === 'en_route' ? myColor : 'transparent'}`, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <button
+                onClick={() => onSetStatus(waypoint.id, myCompletion?.status === 'en_route' ? null : 'en_route')}
+                title="Mark en route"
+                style={{ width: 28, height: 28, cursor: 'pointer', border: 'none', padding: 0, clipPath: 'polygon(5% 0%, 100% 50%, 5% 100%)', background: countFor('en_route') > 0 ? '#0066cc' : '#ddd', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700, fontSize: 14 }}
+              >→</button>
+            </div>
+            <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '0.06em', whiteSpace: 'nowrap' }}>EN ROUTE</span>
+          </div>
+          {/* FUELED */}
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 3 }}>
+            <span style={{ fontFamily: 'var(--font-mono)', fontSize: 8, color: '#aaa', height: 11, lineHeight: '11px', textAlign: 'center' }}>
+              {countFor('done') > 0 ? `(${countFor('done')})` : ''}
+            </span>
+            <button
+              onClick={() => onSetStatus(waypoint.id, myCompletion?.status === 'done' ? null : 'done')}
+              title="Mark fueled"
+              style={{
+                width: 32, height: 32, cursor: 'pointer',
+                border: `2px solid ${myCompletion?.status === 'done' ? myColor : 'var(--border)'}`,
+                background: countFor('done') > 0 ? '#0891b2' : 'var(--bg-1)',
+                color: countFor('done') > 0 ? '#fff' : 'var(--muted)',
+                fontWeight: 700, fontSize: 15,
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+              }}
+            >⛽</button>
+            <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '0.06em', whiteSpace: 'nowrap' }}>FUELED</span>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 export default function SessionView({
   session, onBack, onAddContract, onToggleDone, onDeleteContract,
   onSetWaypointStatus, onCastRemovalVote, onWithdrawVote, onInvitePlayer,
@@ -816,10 +946,12 @@ export default function SessionView({
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 5, flexShrink: 0 }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                     <TypeBadge type={contract.type} />
-                    <span title={sz.tip} style={{
-                      fontFamily: 'var(--font-display)', fontSize: contract.done ? 22 : 15, fontWeight: 800,
-                      color: 'var(--text)', textDecoration: 'underline', letterSpacing: '0.02em',
-                    }}>{'{ '}{sz.label}{' }'}</span>
+                    {contract.type !== 'Refueling' && (
+                      <span title={sz.tip} style={{
+                        fontFamily: 'var(--font-display)', fontSize: contract.done ? 22 : 15, fontWeight: 800,
+                        color: 'var(--text)', textDecoration: 'underline', letterSpacing: '0.02em',
+                      }}>{'{ '}{sz.label}{' }'}</span>
+                    )}
                   </div>
                   {isSessionMember && !isEditingPayout && !contract.done && (
                     <button
@@ -841,7 +973,7 @@ export default function SessionView({
                   }}>
                     {contract.system}
                   </span>
-                  {isLocal && !contract.done && (
+                  {isLocal && !contract.done && contract.type !== 'Refueling' && (
                     <span style={{
                       fontFamily: 'var(--font-mono)', fontSize: 8, fontWeight: 700,
                       letterSpacing: '0.12em', textTransform: 'uppercase',
@@ -924,8 +1056,28 @@ export default function SessionView({
               {!contract.done && <>
               <div style={{ height: 1, background: 'var(--bg-3)', marginBottom: 14 }} />
 
+              {/* ── Refueling Station ── */}
+              {contract.type === 'Refueling' && contract.pickups.length > 0 && (
+                <div style={{ marginBottom: 12 }}>
+                  <div style={sectionLbl}>Refueling Station</div>
+                  {contract.pickups.map((wp, i) => (
+                    <RefuelingWaypointRow
+                      key={wp.id || i}
+                      waypoint={wp}
+                      myProfileId={myProfileId}
+                      members={members}
+                      onSetStatus={onSetWaypointStatus || (() => {})}
+                      canEdit={isSessionMember}
+                      canEditLocation={isSessionCreator}
+                      onUpdateWaypoint={onUpdateWaypoint}
+                      allLocations={allLocations}
+                    />
+                  ))}
+                </div>
+              )}
+
               {/* ── Pickups ── */}
-              {contract.pickups.length > 0 && (
+              {contract.type !== 'Refueling' && contract.pickups.length > 0 && (
                 <div style={{ marginBottom: 12 }}>
                   <div style={sectionLbl}>Pickups</div>
                   {contract.pickups.map((wp, i) => (
@@ -946,7 +1098,7 @@ export default function SessionView({
               )}
 
               {/* ── Dropoffs ── */}
-              {contract.dropoffs.length > 0 && (
+              {contract.type !== 'Refueling' && contract.dropoffs.length > 0 && (
                 <div style={{ marginBottom: 12 }}>
                   <div style={sectionLbl}>Dropoffs</div>
                   {contract.dropoffs.map((wp, i) => (
