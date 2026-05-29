@@ -6,6 +6,7 @@ import { useRefData } from '@/hooks/useRefData.js';
 import { useProfile } from '@/hooks/useProfile.js';
 import { useFriends } from '@/hooks/useFriends.js';
 import { useSessionInvites } from '@/hooks/useSessionInvites.js';
+import { useMessages } from '@/hooks/useMessages.js';
 import { useIsMobile } from '@/hooks/useIsMobile.js';
 import { SFX } from '@/hooks/useSound.js';
 import { A } from '@/styles/animations.js';
@@ -237,13 +238,6 @@ function AppInner() {
 
   const userId = authSession?.user?.id || null;
 
-  // Non-blocking Discord DM notification — never throws, never blocks the calling action
-  const notifyDiscord = (type, recipientUserId, payload) => {
-    supabase.functions.invoke('discord-notify', {
-      body: { type, recipientUserId, ...payload },
-    }).catch(() => {});
-  };
-
   // ── Data hooks ──
   const {
     sessions, loading: sessionsLoading,
@@ -257,12 +251,14 @@ function AppInner() {
   const { commodities, systemsMap } = useRefData(!!authSession);
   const { profile, loading: profileLoading, checkCallsign, updateProfile, reload: reloadProfile } = useProfile(userId);
   const { friends, pending, sent, searchUsers, sendRequest, respond, remove: removeFriend } = useFriends(userId, !!authSession);
-  const { incoming: sessionInvites, createInvite, respondToInvite } = useSessionInvites(userId, !!authSession);
   const [joinToken, setJoinToken] = useState(() => new URLSearchParams(window.location.search).get('join'));
 
   // Declared early so they're available in useEffect dependency arrays below
   const myProfileId = profile?.id || null;
   const myCallsign  = profile?.callsign || null;
+
+  const { incoming: sessionInvites, createInvite, respondToInvite } = useSessionInvites(myProfileId, !!authSession);
+  const { inbox: msgInbox, sent: msgSent, sendMessage, markRead, unreadCount: msgUnread } = useMessages(myProfileId, !!authSession);
 
   useEffect(() => {
     const timeout = new Promise((_, rej) => setTimeout(() => rej(new Error('auth-timeout')), 12000));
@@ -371,13 +367,6 @@ function AppInner() {
     if (sess) {
       setModal(null);
       openSession(sess.id);
-      if (profile?.callsign && players.length) {
-        const dateLabel = new Date(dateKey + 'T12:00:00').toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
-        for (const callsign of players) {
-          const friend = (friends || []).find(f => f.callsign === callsign);
-          if (friend?.id) notifyDiscord('session_invite', friend.id, { inviterCallsign: profile.callsign, sessionDate: dateLabel });
-        }
-      }
     }
   };
 
@@ -445,11 +434,6 @@ function AppInner() {
     const ok = await createInvite(sessionId, profileId);
     SFX.boop();
     showToast(ok ? 'Session invite sent' : 'Could not send invite — pilot may already be in session', ok ? 'success' : 'error');
-    if (ok && myCallsign) {
-      const sess = sessions[sessionId];
-      const dateLabel = sess ? new Date(sess.date + 'T12:00:00').toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' }) : '';
-      notifyDiscord('session_invite', profileId, { inviterCallsign: myCallsign, sessionDate: dateLabel });
-    }
   };
 
   const handleRespondToSessionInvite = async (inviteId, accept, sessionId) => {
@@ -488,7 +472,6 @@ function AppInner() {
     await sendRequest(id);
     SFX.plus();
     showToast('Friend request sent', 'success');
-    if (myCallsign) notifyDiscord('friend_request', id, { senderCallsign: myCallsign });
   };
 
   const handleFriendRespond = async (fid, accept) => {
@@ -568,13 +551,14 @@ function AppInner() {
   };
 
   const totalPendingRequests = (pending?.length || 0) + (sessionInvites?.length || 0);
+  const socialBadge = totalPendingRequests + msgUnread;
   const TABS = [
     ['missions',        'Missions'],
     ['calendar',        'Calendar'],
     ['active-sessions', 'Active Sessions'],
     ['stats',           'Stats'],
     ['leaderboard',     'Leaderboards'],
-    ['friends',         totalPendingRequests > 0 ? `Friends (${totalPendingRequests})` : 'Friends'],
+    ['friends',         socialBadge > 0 ? `Social (${socialBadge})` : 'Social'],
     ['settings',        'Settings'],
     ...(profile?.is_admin ? [['admin', 'Admin']] : []),
   ];
@@ -852,6 +836,10 @@ function AppInner() {
                 remove={handleRemoveFriend}
                 onViewProfile={openFriendProfile}
                 onRespondToSessionInvite={handleRespondToSessionInvite}
+                inbox={msgInbox}
+                msgSent={msgSent}
+                sendMessage={sendMessage}
+                markRead={markRead}
               />
             </div>
           )}

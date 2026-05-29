@@ -452,117 +452,81 @@ function BannerItemEditor({ banner, initialDisplayName, initialDescription, savi
 
 // ── Sub-panel: Broadcasts ─────────────────────────────────────────────────────
 function BroadcastsPanel() {
-  const [broadcasts, setBroadcasts] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [title, setTitle]     = useState('');
-  const [body, setBody]       = useState('');
-  const [saving, setSaving]   = useState(false);
-  const [saved, setSaved]     = useState(false);
-
-  const load = useCallback(async () => {
-    const { data } = await supabase
-      .from('broadcasts')
-      .select('id, title, body, created_at, sent_at, created_by')
-      .order('created_at', { ascending: false });
-    setBroadcasts(data ?? []);
-    setLoading(false);
-  }, []);
-
-  useEffect(() => { load(); }, [load]);
+  const [body,     setBody]     = useState('');
+  const [sending,  setSending]  = useState(false);
+  const [result,   setResult]   = useState(null); // { sent: N } | { error: string }
 
   const submit = async () => {
-    if (!title.trim()) return;
-    setSaving(true);
-    const { data: { user } } = await supabase.auth.getUser();
-    const { error } = await supabase.from('broadcasts').insert({
-      title: title.trim(),
-      body: body.trim(),
-      created_by: user?.id ?? null,
-    });
-    if (error) alert('Error: ' + error.message);
-    else {
-      setTitle(''); setBody('');
-      setSaved(true); setTimeout(() => setSaved(false), 2000);
-      load();
+    if (!body.trim() || sending) return;
+    setSending(true);
+    setResult(null);
+
+    // Fetch all profile IDs
+    const { data: profiles, error: fetchErr } = await supabase
+      .from('profiles')
+      .select('id');
+
+    if (fetchErr || !profiles?.length) {
+      setResult({ error: fetchErr?.message || 'No users found' });
+      setSending(false);
+      return;
     }
-    setSaving(false);
+
+    // Insert one system message per user
+    const rows = profiles.map(p => ({
+      sender_id:    null,
+      recipient_id: p.id,
+      content:      body.trim(),
+      is_system:    true,
+    }));
+
+    const { error: insertErr } = await supabase.from('messages').insert(rows);
+    setSending(false);
+    if (insertErr) {
+      setResult({ error: insertErr.message });
+    } else {
+      setBody('');
+      setResult({ sent: profiles.length });
+      setTimeout(() => setResult(null), 4000);
+    }
   };
 
   return (
     <div>
       <div style={{ border: '2px solid #000', background: '#fff', padding: 20, marginBottom: 20 }}>
-        <div style={{ ...display, fontWeight: 700, fontSize: 14, marginBottom: 14 }}>New Broadcast</div>
-        <div style={{
-          padding: '10px 12px', marginBottom: 14,
-          background: 'rgba(196,30,58,0.04)', border: '1.5px solid #c41e3a',
-          ...mono, fontSize: 9, color: '#c41e3a', lineHeight: 1.6,
-        }}>
-          Broadcasts are saved as drafts. Delivery to users is not yet implemented.
-        </div>
-        <div style={{ marginBottom: 10 }}>
-          <div style={{ ...mono, fontSize: 9, ...muted, textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: 6 }}>Title</div>
-          <input
-            value={title}
-            onChange={e => setTitle(e.target.value)}
-            placeholder="e.g. Server Maintenance Tonight"
-            style={{ width: '100%', padding: '9px 12px', border: '2px solid #000', fontFamily: 'var(--font-mono)', fontSize: 13, outline: 'none', boxSizing: 'border-box' }}
-          />
+        <div style={{ ...display, fontWeight: 700, fontSize: 14, marginBottom: 6 }}>Broadcast System Message</div>
+        <div style={{ ...mono, fontSize: 10, color: '#888', marginBottom: 14, lineHeight: 1.6 }}>
+          Sends a message to <strong>all pilots</strong> from "Nexus Hub System". Recipients cannot reply.
         </div>
         <div style={{ marginBottom: 14 }}>
-          <div style={{ ...mono, fontSize: 9, ...muted, textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: 6 }}>Body</div>
+          <div style={{ ...mono, fontSize: 9, ...muted, textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: 6 }}>Message</div>
           <textarea
             value={body}
-            onChange={e => setBody(e.target.value)}
-            placeholder="Message body…"
+            onChange={e => setBody(e.target.value.slice(0, 1000))}
+            placeholder="e.g. Server maintenance tonight at 22:00 UTC…"
             rows={4}
             style={{ width: '100%', padding: '9px 12px', border: '2px solid #000', fontFamily: 'var(--font-mono)', fontSize: 12, outline: 'none', resize: 'vertical', boxSizing: 'border-box', lineHeight: 1.5 }}
           />
+          <div style={{ ...mono, fontSize: 9, ...muted, textAlign: 'right', marginTop: 3 }}>{body.length}/1000</div>
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
           <button
             onClick={submit}
-            disabled={!title.trim() || saving}
+            disabled={!body.trim() || sending}
             style={{
               padding: '9px 20px', fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 12,
               textTransform: 'uppercase', letterSpacing: '0.04em',
-              border: `2px solid ${!title.trim() ? '#ccc' : '#c41e3a'}`,
-              background: !title.trim() ? '#f5f5f5' : '#c41e3a',
-              color: !title.trim() ? '#999' : '#fff',
-              cursor: !title.trim() || saving ? 'default' : 'pointer',
+              border: `2px solid ${!body.trim() ? '#ccc' : '#c41e3a'}`,
+              background: !body.trim() ? '#f5f5f5' : '#c41e3a',
+              color: !body.trim() ? '#999' : '#fff',
+              cursor: !body.trim() || sending ? 'default' : 'pointer',
             }}>
-            {saving ? 'Saving…' : 'Save Draft'}
+            {sending ? 'Sending…' : 'Send to All'}
           </button>
-          {saved && <span style={{ ...mono, fontSize: 10, color: '#2d8659' }}>Saved ✓</span>}
+          {result?.sent   && <span style={{ ...mono, fontSize: 10, color: '#2d8659' }}>Sent to {result.sent} pilots ✓</span>}
+          {result?.error  && <span style={{ ...mono, fontSize: 10, color: '#c41e3a' }}>Error: {result.error}</span>}
         </div>
       </div>
-
-      {loading ? (
-        <div style={{ ...mono, fontSize: 11, ...muted }}>Loading broadcasts…</div>
-      ) : broadcasts.length === 0 ? (
-        <div style={{ ...mono, fontSize: 11, ...muted }}>No broadcasts yet.</div>
-      ) : (
-        <div style={{ border: '2px solid #000', background: '#fff' }}>
-          <div style={{ ...mono, fontSize: 9, ...muted, textTransform: 'uppercase', letterSpacing: '0.1em', padding: '8px 14px', borderBottom: '1px solid #e8e8e8', background: '#f5f5f5' }}>
-            Saved Drafts ({broadcasts.length})
-          </div>
-          {broadcasts.map((b, i) => (
-            <div key={b.id} style={{ padding: '12px 14px', borderBottom: i < broadcasts.length - 1 ? '1px solid #f0f0f0' : 'none' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 4 }}>
-                <div style={{ ...display, fontWeight: 700, fontSize: 13 }}>{b.title}</div>
-                <div style={{ ...mono, fontSize: 9, ...muted }}>
-                  {new Date(b.created_at).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })}
-                </div>
-              </div>
-              {b.body && <div style={{ ...mono, fontSize: 11, color: '#555', lineHeight: 1.5 }}>{b.body}</div>}
-              {b.sent_at ? (
-                <span style={{ ...pill('#2d8659'), marginTop: 6, display: 'inline-block' }}>Sent</span>
-              ) : (
-                <span style={{ ...pill('#888'), marginTop: 6, display: 'inline-block' }}>Draft</span>
-              )}
-            </div>
-          ))}
-        </div>
-      )}
     </div>
   );
 }

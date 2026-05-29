@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
+import MessagesSection from '@/components/Messages/MessagesSection.jsx';
 
 function Avatar({ profile, size = 36 }) {
   const color = profile?.color || '#8b949e';
@@ -69,7 +70,7 @@ function FriendBubbles({ friends, onViewProfile }) {
   );
 }
 
-export default function FriendsView({ friends, pending, sent, sessionInvites, searchUsers, sendRequest, respond, remove, onViewProfile, onRespondToSessionInvite }) {
+export default function FriendsView({ friends, pending, sent, sessionInvites, searchUsers, sendRequest, respond, remove, onViewProfile, onRespondToSessionInvite, inbox: msgInbox, msgSent, sendMessage, markRead }) {
   const [query, setQuery] = useState('');
   const [results, setResults] = useState([]);
   const [searching, setSearching] = useState(false);
@@ -264,6 +265,17 @@ export default function FriendsView({ friends, pending, sent, sessionInvites, se
           <div style={{ color: 'var(--muted)', fontSize: 12 }}>Search for pilots above to send friend requests.</div>
         </div>
       )}
+
+      {/* ── Messages ── */}
+      <div style={{ marginTop: 28 }}>
+        <MessagesSection
+          inbox={msgInbox}
+          sent={msgSent}
+          sendMessage={sendMessage}
+          markRead={markRead}
+          friends={friends}
+        />
+      </div>
     </div>
   );
 }
