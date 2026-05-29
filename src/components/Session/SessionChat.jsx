@@ -144,7 +144,7 @@ export default function SessionChat({ session, myProfileId, isSessionMember }) {
       {/* Messages */}
       <div
         ref={scrollRef}
-        style={{ minHeight: 80, maxHeight: 320, overflowY: 'auto', padding: '12px 14px', display: 'flex', flexDirection: 'column' }}
+        style={{ minHeight: 80, maxHeight: isMobile ? 640 : 320, overflowY: 'auto', padding: '12px 14px', display: 'flex', flexDirection: 'column' }}
       >
         {messages.length === 0 && (
           <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', ...mono, fontSize: 11, color: 'var(--muted)', textAlign: 'center', padding: '16px 0' }}>
