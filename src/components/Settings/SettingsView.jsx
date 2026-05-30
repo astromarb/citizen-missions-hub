@@ -470,12 +470,12 @@ export default function SettingsView({ profile, updateProfile, checkCallsign, sy
 
         {/* Preview */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 14 }}>
-          <div style={{ width: 33, height: 33, background: color, border: '2px solid #000', flexShrink: 0 }} />
+          <div style={{ width: 22, height: 22, background: color, border: '2px solid #000', flexShrink: 0 }} />
           <span style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--muted)' }}>{color.toUpperCase()}</span>
         </div>
 
         {/* Palette grid — two columns, interleaved families */}
-        <div style={{ display: 'flex', gap: 6, marginBottom: 14, width: '75%' }}>
+        <div style={{ display: 'flex', gap: 6, marginBottom: 14, width: '50%' }}>
           {renderColorColumn(leftRows)}
           {renderColorColumn(rightRows)}
         </div>
