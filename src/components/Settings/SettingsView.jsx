@@ -398,9 +398,9 @@ export default function SettingsView({ profile, updateProfile, checkCallsign, sy
       style={{
         padding: '9px 20px', fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 12,
         textTransform: 'uppercase', letterSpacing: '0.04em', cursor: disabled ? 'default' : 'pointer',
-        border: `2px solid ${disabled ? '#ccc' : '#c41e3a'}`,
-        background: disabled ? '#f5f5f5' : '#c41e3a',
-        color: disabled ? '#999' : '#fff',
+        border: `2px solid ${disabled ? 'var(--border)' : '#c41e3a'}`,
+        background: disabled ? 'var(--bg-2)' : '#c41e3a',
+        color: disabled ? 'var(--muted)' : '#fff',
       }}
     >Save</button>
   );
@@ -487,7 +487,7 @@ export default function SettingsView({ profile, updateProfile, checkCallsign, sy
 
         {/* Preview */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 14 }}>
-          <div style={{ width: 22, height: 22, background: color, border: '2px solid #000', flexShrink: 0 }} />
+          <div style={{ width: 22, height: 22, background: color, border: '2px solid var(--border)', flexShrink: 0 }} />
           <span style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--muted)' }}>{color.toUpperCase()}</span>
         </div>
 
@@ -523,7 +523,7 @@ export default function SettingsView({ profile, updateProfile, checkCallsign, sy
                 style={{
                   display: 'flex', alignItems: 'center', gap: 12,
                   padding: '10px 12px', cursor: 'pointer', textAlign: 'left',
-                  border: selected ? '2px solid #000' : '2px solid var(--border)',
+                  border: selected ? '2px solid var(--text)' : '2px solid var(--border)',
                   background: selected ? 'var(--bg-2)' : 'var(--bg-1)',
                   outline: 'none',
                 }}
@@ -553,7 +553,7 @@ export default function SettingsView({ profile, updateProfile, checkCallsign, sy
       </div>
 
       {/* ── Profile Badges ───────────────────────────────────────────────────── */}
-      <div style={{ border: '2px solid #000', background: '#fff', padding: '20px', marginBottom: 16 }}>
+      <div style={{ border: '2px solid var(--border)', background: 'var(--bg-1)', padding: '20px', marginBottom: 16 }}>
         {sectionTitle('Profile Badges')}
 
         <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--muted)', marginBottom: 16, lineHeight: 1.6, display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
@@ -580,8 +580,8 @@ export default function SettingsView({ profile, updateProfile, checkCallsign, sy
                 style={{
                   display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6,
                   padding: '12px 10px', minWidth: 84,
-                  border: `2px solid ${selected ? '#c41e3a' : earned ? '#ccc' : '#e8e8e8'}`,
-                  background: selected ? 'rgba(196,30,58,0.04)' : '#fafafa',
+                  border: `2px solid ${selected ? '#c41e3a' : earned ? 'var(--border)' : 'var(--bg-3)'}`,
+                  background: selected ? 'rgba(196,30,58,0.04)' : 'var(--bg-2)',
                   cursor: earned ? 'pointer' : 'default',
                   opacity: earned ? 1 : 0.45,
                   position: 'relative',
@@ -590,9 +590,9 @@ export default function SettingsView({ profile, updateProfile, checkCallsign, sy
                 <div style={{ position: 'relative' }}>
                   {renderBadge(def.id, 'lg') ?? (
                     <div style={{
-                      width: 68, height: 68, border: '2px dashed #ddd',
+                      width: 68, height: 68, border: '2px dashed var(--border)',
                       display: 'flex', alignItems: 'center', justifyContent: 'center',
-                      background: '#f5f5f5',
+                      background: 'var(--bg-2)',
                     }}>
                       <span style={{ fontSize: 18, color: '#ccc' }}>🔒</span>
                     </div>
@@ -608,7 +608,7 @@ export default function SettingsView({ profile, updateProfile, checkCallsign, sy
                   )}
                 </div>
 
-                <span style={{ fontFamily: 'var(--font-mono)', fontSize: 8, color: '#333', textTransform: 'uppercase', letterSpacing: '0.08em', textAlign: 'center' }}>
+                <span style={{ fontFamily: 'var(--font-mono)', fontSize: 8, color: 'var(--text)', textTransform: 'uppercase', letterSpacing: '0.08em', textAlign: 'center' }}>
                   {def.label}
                 </span>
                 <span style={{
@@ -637,21 +637,21 @@ export default function SettingsView({ profile, updateProfile, checkCallsign, sy
       </div>
 
       {/* ── Home Region ─────────────────────────────────────────────────────── */}
-      <div style={{ border: '2px solid #000', background: '#fff', padding: '20px', marginBottom: 16 }}>
+      <div style={{ border: '2px solid var(--border)', background: 'var(--bg-1)', padding: '20px', marginBottom: 16 }}>
         {sectionTitle('Home Region')}
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 14 }}>
           {REGIONS.map(r => (
             <button key={r.key} onClick={() => !regionCountdown && setRegion(r.key)}
               style={{
-                padding: '14px 12px', border: `2px solid ${region === r.key ? '#c41e3a' : '#000'}`,
-                background: region === r.key ? 'rgba(196,30,58,0.05)' : '#fff',
+                padding: '14px 12px', border: `2px solid ${region === r.key ? '#c41e3a' : 'var(--border)'}`,
+                background: region === r.key ? 'rgba(196,30,58,0.05)' : 'var(--bg-2)',
                 cursor: regionCountdown ? 'default' : 'pointer', textAlign: 'left',
                 display: 'flex', alignItems: 'center', gap: 10,
               }}
             >
               <LandingZoneBadge region={r.key} size="sm" />
               <div>
-                <div style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 13, color: region === r.key ? '#c41e3a' : '#000', marginBottom: 2 }}>{r.label}</div>
+                <div style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 13, color: region === r.key ? '#c41e3a' : 'var(--text)', marginBottom: 2 }}>{r.label}</div>
                 <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '0.08em' }}>{r.sub}</div>
               </div>
             </button>
@@ -667,7 +667,7 @@ export default function SettingsView({ profile, updateProfile, checkCallsign, sy
       </div>
 
       {/* ── Profile Banner ────────────────────────────────────────────────────── */}
-      <div style={{ border: '2px solid #000', background: '#fff', padding: '20px', marginBottom: 16 }}>
+      <div style={{ border: '2px solid var(--border)', background: 'var(--bg-1)', padding: '20px', marginBottom: 16 }}>
         <div style={{ display: 'flex', alignItems: 'flex-end', gap: 12 }}>
           {sectionTitle('Profile Banner')}
           <button
@@ -688,15 +688,15 @@ export default function SettingsView({ profile, updateProfile, checkCallsign, sy
             onClick={() => setBannerPanel(null)}
             style={{
               width: 80, height: 80, flexShrink: 0,
-              border: `2px solid ${bannerPanel === null ? '#c41e3a' : '#ccc'}`,
-              background: bannerPanel === null ? 'rgba(196,30,58,0.04)' : '#fafafa',
+              border: `2px solid ${bannerPanel === null ? '#c41e3a' : 'var(--border)'}`,
+              background: bannerPanel === null ? 'rgba(196,30,58,0.04)' : 'var(--bg-2)',
               cursor: 'pointer', display: 'inline-flex', flexDirection: 'column',
               alignItems: 'center', justifyContent: 'center', gap: 4,
               position: 'relative', verticalAlign: 'top',
             }}
           >
-            <span style={{ fontSize: 20, color: '#bbb' }}>✕</span>
-            <span style={{ fontFamily: 'var(--font-mono)', fontSize: 8, color: '#bbb', textTransform: 'uppercase', letterSpacing: '0.08em' }}>None</span>
+            <span style={{ fontSize: 20, color: 'var(--muted)' }}>✕</span>
+            <span style={{ fontFamily: 'var(--font-mono)', fontSize: 8, color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '0.08em' }}>None</span>
             {bannerPanel === null && (
               <div style={{ position: 'absolute', top: -4, right: -4, width: 16, height: 16, borderRadius: '50%', background: '#c41e3a', border: '2px solid #fff', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                 <span style={{ color: '#fff', fontSize: 8, lineHeight: 1 }}>✓</span>
@@ -732,7 +732,7 @@ export default function SettingsView({ profile, updateProfile, checkCallsign, sy
                 style={{
                   width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between',
                   padding: '8px 10px', background: 'none',
-                  border: `2px solid ${hasSelected ? '#c41e3a' : '#e8e8e8'}`,
+                  border: `2px solid ${hasSelected ? '#c41e3a' : 'var(--border)'}`,
                   cursor: 'pointer', textAlign: 'left', gap: 8,
                 }}
               >
@@ -740,18 +740,18 @@ export default function SettingsView({ profile, updateProfile, checkCallsign, sy
                   <span style={{
                     fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 13,
                     letterSpacing: '0.08em', textTransform: 'uppercase',
-                    color: hasSelected ? '#c41e3a' : '#444',
+                    color: hasSelected ? '#c41e3a' : 'var(--text)',
                   }}>
                     {set.name}
                     {hasSelected && <span style={{ marginLeft: 6, fontSize: 9 }}>✓</span>}
                   </span>
                   {setDescription && (
-                    <span style={{ fontFamily: 'var(--font-mono)', fontSize: 14, color: '#333' }}>
+                    <span style={{ fontFamily: 'var(--font-mono)', fontSize: 14, color: 'var(--text)' }}>
                       {setDescription}
                     </span>
                   )}
                 </div>
-                <span style={{ fontSize: 10, color: '#aaa', fontFamily: 'var(--font-mono)', flexShrink: 0 }}>{expanded ? '▲' : '▼'}</span>
+                <span style={{ fontSize: 10, color: 'var(--muted)', fontFamily: 'var(--font-mono)', flexShrink: 0 }}>{expanded ? '▲' : '▼'}</span>
               </button>
 
               {/* Thumbnails — 4-col desktop, 1-col mobile */}
@@ -815,7 +815,7 @@ export default function SettingsView({ profile, updateProfile, checkCallsign, sy
                           <div style={{ padding: '4px 6px 8px' }}>
                             <span style={{
                               fontFamily: 'var(--font-mono)', fontSize: isMobile ? 16 : 14,
-                              color: '#555', lineHeight: 1.4, display: 'block',
+                              color: 'var(--muted)', lineHeight: 1.4, display: 'block',
                             }}>
                               "{description}"
                             </span>
@@ -838,13 +838,13 @@ export default function SettingsView({ profile, updateProfile, checkCallsign, sy
       </div>
 
       {/* ── Callsign ────────────────────────────────────────────────────────── */}
-      <div style={{ border: '2px solid #000', background: '#fff', padding: '20px', marginBottom: 16 }}>
+      <div style={{ border: '2px solid var(--border)', background: 'var(--bg-1)', padding: '20px', marginBottom: 16 }}>
         {sectionTitle('Callsign')}
         <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--muted)', marginBottom: 10 }}>
-          Current: <strong style={{ color: '#000' }}>{profile?.callsign}</strong>
+          Current: <strong style={{ color: 'var(--text)' }}>{profile?.callsign}</strong>
         </div>
         <input
-          style={{ width: '100%', padding: '9px 12px', border: '2px solid #000', fontFamily: 'var(--font-mono)', fontSize: 13, outline: 'none', boxSizing: 'border-box', marginBottom: 6 }}
+          style={{ width: '100%', padding: '9px 12px', border: '2px solid var(--border)', background: 'var(--bg-0)', color: 'var(--text)', fontFamily: 'var(--font-mono)', fontSize: 13, outline: 'none', boxSizing: 'border-box', marginBottom: 6 }}
           value={callsign}
           onChange={e => { setCallsign(e.target.value); setCallsignStatus(null); }}
           onBlur={handleCallsignBlur}
@@ -866,7 +866,7 @@ export default function SettingsView({ profile, updateProfile, checkCallsign, sy
       </div>
 
       {/* ── aUEC Balance Verification ────────────────────────────────────────── */}
-      <div style={{ border: '2px solid #000', background: '#fff', padding: '20px' }}>
+      <div style={{ border: '2px solid var(--border)', background: 'var(--bg-1)', padding: '20px' }}>
         {sectionTitle('aUEC Balance Verification')}
         <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--muted)', marginBottom: 16, lineHeight: 1.7 }}>
           Enter your RSI handle, then upload a screenshot where your HUD is visible.
@@ -883,7 +883,7 @@ export default function SettingsView({ profile, updateProfile, checkCallsign, sy
               placeholder="e.g. DIRTYNARWHAL"
               maxLength={32}
               disabled={!!rsiHandleCountdown}
-              style={{ flex: 1, padding: '9px 12px', border: '2px solid #000', fontFamily: 'var(--font-mono)', fontSize: 13, outline: 'none', textTransform: 'uppercase', letterSpacing: '0.04em' }}
+              style={{ flex: 1, padding: '9px 12px', border: '2px solid var(--border)', background: 'var(--bg-0)', color: 'var(--text)', fontFamily: 'var(--font-mono)', fontSize: 13, outline: 'none', textTransform: 'uppercase', letterSpacing: '0.04em' }}
             />
             {saveBtn(saveRsiHandle, !rsiHandle.trim() || !!rsiHandleCountdown)}
             <SavedBadge visible={rsiHandleSaved} />
@@ -958,15 +958,15 @@ export default function SettingsView({ profile, updateProfile, checkCallsign, sy
             </div>
             <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
               <input type="number" min="0" value={auecManual} onChange={e => setAuecManual(e.target.value)} placeholder="Enter balance manually"
-                style={{ flex: 1, padding: '8px 10px', border: '2px solid #000', fontFamily: 'var(--font-mono)', fontSize: 13, outline: 'none' }} />
+                style={{ flex: 1, padding: '8px 10px', border: '2px solid var(--border)', background: 'var(--bg-0)', color: 'var(--text)', fontFamily: 'var(--font-mono)', fontSize: 13, outline: 'none' }} />
               <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--muted)', flexShrink: 0 }}>aUEC</span>
               <button onClick={() => saveAuecBalance(parseInt(auecManual, 10))} disabled={!auecManual || saving || auecRemaining === 0}
                 style={{
                   padding: '9px 20px', fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 12, textTransform: 'uppercase', letterSpacing: '0.04em', flexShrink: 0,
                   cursor: !auecManual || auecRemaining === 0 ? 'default' : 'pointer',
-                  border: `2px solid ${auecManual && auecRemaining > 0 ? '#c41e3a' : '#ccc'}`,
-                  background: auecManual && auecRemaining > 0 ? '#c41e3a' : '#f5f5f5',
-                  color: auecManual && auecRemaining > 0 ? '#fff' : '#999',
+                  border: `2px solid ${auecManual && auecRemaining > 0 ? '#c41e3a' : 'var(--border)'}`,
+                  background: auecManual && auecRemaining > 0 ? '#c41e3a' : 'var(--bg-2)',
+                  color: auecManual && auecRemaining > 0 ? '#fff' : 'var(--muted)',
                 }}>Save</button>
             </div>
           </div>
@@ -981,9 +981,9 @@ export default function SettingsView({ profile, updateProfile, checkCallsign, sy
               style={{
                 padding: '9px 20px', fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 12, textTransform: 'uppercase', letterSpacing: '0.04em',
                 cursor: (auecScanning || !rsiHandle.trim() || auecRemaining === 0) ? 'default' : 'pointer',
-                border: `2px solid ${(auecScanning || !rsiHandle.trim() || auecRemaining === 0) ? '#ccc' : '#000'}`,
-                background: (auecScanning || !rsiHandle.trim() || auecRemaining === 0) ? '#f5f5f5' : '#000',
-                color: (auecScanning || !rsiHandle.trim() || auecRemaining === 0) ? '#999' : '#fff',
+                border: `2px solid ${(auecScanning || !rsiHandle.trim() || auecRemaining === 0) ? 'var(--border)' : '#c41e3a'}`,
+                background: (auecScanning || !rsiHandle.trim() || auecRemaining === 0) ? 'var(--bg-2)' : '#c41e3a',
+                color: (auecScanning || !rsiHandle.trim() || auecRemaining === 0) ? 'var(--muted)' : '#fff',
                 display: 'flex', alignItems: 'center', gap: 8,
               }}
             >
@@ -1007,7 +1007,7 @@ export default function SettingsView({ profile, updateProfile, checkCallsign, sy
       </div>
 
       {/* ── Ships / Fleet ────────────────────────────────────────────────────── */}
-      <div style={{ border: '2px solid #000', background: '#fff', padding: '20px' }}>
+      <div style={{ border: '2px solid var(--border)', background: 'var(--bg-1)', padding: '20px' }}>
         {sectionTitle('My Fleet')}
         <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--muted)', marginBottom: 16, lineHeight: 1.7 }}>
           Add ships you own. Their aUEC value is included in your public Net Worth.
@@ -1019,7 +1019,7 @@ export default function SettingsView({ profile, updateProfile, checkCallsign, sy
           const balance    = Number(profile?.auec_balance) || 0;
           const totalWorth = fleetVal + balance;
           return (
-            <div style={{ padding: '12px 14px', background: 'var(--bg-2)', border: '2px solid #000', marginBottom: 20 }}>
+            <div style={{ padding: '12px 14px', background: 'var(--bg-2)', border: '2px solid var(--border)', marginBottom: 20 }}>
               <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: 10 }}>Net Worth Breakdown</div>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', fontFamily: 'var(--font-mono)', fontSize: 11 }}>
@@ -1047,12 +1047,12 @@ export default function SettingsView({ profile, updateProfile, checkCallsign, sy
             onChange={e => { setShipQuery(e.target.value); setShipResults(searchShipList(e.target.value)); }}
             onKeyDown={e => { if (e.key === 'Escape') { setShipQuery(''); setShipResults([]); } }}
             placeholder="Search by ship name or manufacturer…"
-            style={{ width: '100%', boxSizing: 'border-box', padding: '9px 12px', border: '2px solid #000', fontFamily: 'var(--font-mono)', fontSize: 12, outline: 'none', letterSpacing: '0.02em' }}
+            style={{ width: '100%', boxSizing: 'border-box', padding: '9px 12px', border: '2px solid var(--border)', background: 'var(--bg-0)', color: 'var(--text)', fontFamily: 'var(--font-mono)', fontSize: 12, outline: 'none', letterSpacing: '0.02em' }}
           />
           {shipResults.length > 0 && (
             <div style={{
               position: 'absolute', top: '100%', left: 0, right: 0, zIndex: 20,
-              background: 'var(--bg-1)', border: '2px solid #000', borderTop: 'none',
+              background: 'var(--bg-1)', border: '2px solid var(--border)', borderTop: 'none',
               boxShadow: '4px 4px 0 rgba(0,0,0,0.15)',
             }}>
               {shipResults.map(ship => {
@@ -1120,7 +1120,7 @@ export default function SettingsView({ profile, updateProfile, checkCallsign, sy
       </div>
 
       {/* ── Messages & Privacy ──────────────────────────────────────────────── */}
-      <div style={{ border: '2px solid #000', background: '#fff', padding: '20px', marginTop: 16 }}>
+      <div style={{ border: '2px solid var(--border)', background: 'var(--bg-1)', padding: '20px', marginTop: 16 }}>
         {sectionTitle('Messages & Privacy')}
         <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--muted)', marginBottom: 16, lineHeight: 1.7 }}>
           Manage messages sent to your inbox by Nexus Hub system broadcasts.
@@ -1154,7 +1154,7 @@ export default function SettingsView({ profile, updateProfile, checkCallsign, sy
                   style={{
                     padding: '7px 14px', fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 11,
                     textTransform: 'uppercase', letterSpacing: '0.04em', cursor: 'pointer',
-                    border: '2px solid #ccc', background: '#f5f5f5', color: '#999',
+                    border: '2px solid var(--border)', background: 'var(--bg-2)', color: 'var(--muted)',
                   }}
                 >Cancel</button>
               </span>
@@ -1164,10 +1164,10 @@ export default function SettingsView({ profile, updateProfile, checkCallsign, sy
                 style={{
                   padding: '7px 16px', fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 11,
                   textTransform: 'uppercase', letterSpacing: '0.04em', cursor: 'pointer',
-                  border: '2px solid #000', background: '#fff', color: '#000',
+                  border: '2px solid var(--border)', background: 'var(--bg-1)', color: 'var(--text)',
                 }}
-                onMouseEnter={e => { e.currentTarget.style.background = '#f5f5f5'; }}
-                onMouseLeave={e => { e.currentTarget.style.background = '#fff'; }}
+                onMouseEnter={e => { e.currentTarget.style.background = 'var(--bg-2)'; }}
+                onMouseLeave={e => { e.currentTarget.style.background = 'var(--bg-1)'; }}
               >Delete All System Messages</button>
             )
           )}
