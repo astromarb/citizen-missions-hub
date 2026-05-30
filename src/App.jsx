@@ -322,7 +322,6 @@ function AppInner() {
       const sess = sessions[sid];
       setSelectedSessionId(sid);
       setView('session');
-      setActiveTab('calendar');
       setViewDate(new Date(sess.date + 'T12:00:00').setDate(1) && new Date(new Date(sess.date + 'T12:00:00').getFullYear(), new Date(sess.date + 'T12:00:00').getMonth(), 1));
     }
   }, [sessions, sessionsLoading]);
@@ -376,14 +375,14 @@ function AppInner() {
     SFX.open();
     setSelectedSessionId(id);
     setView('session');
-    window.history.replaceState(null, '', `?tab=calendar&session=${id}`);
+    window.history.replaceState(null, '', `?tab=${activeTab}&session=${id}`);
   };
 
   const closeSession = () => {
     SFX.back();
     setView('calendar');
     setSelectedSessionId(null);
-    window.history.replaceState(null, '', '?tab=calendar');
+    window.history.replaceState(null, '', `?tab=${activeTab}`);
   };
 
   const saveSession = async ({ date: dateKey, players }) => {
@@ -414,7 +413,6 @@ function AppInner() {
     if (!sess) return;
     const d = new Date(sess.date + 'T12:00:00');
     setViewDate(new Date(d.getFullYear(), d.getMonth(), 1));
-    setActiveTab('calendar');
     openSession(id);
   };
 
@@ -612,13 +610,13 @@ function AppInner() {
         flexShrink: 0,
       }}>
         {/* Wordmark */}
-        <div style={{ padding: '12px 0', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+        <div style={{ padding: '12px 0', display: 'flex', flexDirection: 'column', justifyContent: 'center', flexShrink: 0 }}>
           <div style={{
-            fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 18,
+            fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: isMobile ? 13 : 18,
             letterSpacing: '0.06em', color: '#fff', textTransform: 'uppercase', lineHeight: 1,
           }}>CITIZEN</div>
           <div style={{
-            fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 10,
+            fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: isMobile ? 7 : 10,
             letterSpacing: '0.18em', color: '#c41e3a', textTransform: 'uppercase', marginTop: 2,
           }}>MISSIONS HUB</div>
         </div>
@@ -699,46 +697,8 @@ function AppInner() {
       <div style={{ flex: 1, overflowY: 'auto', overflowX: 'hidden', display: 'flex', flexDirection: 'column', paddingBottom: isMobile ? 64 : 0 }}>
         <div style={{ maxWidth: (activeTab === 'calendar' && view === 'calendar') ? '100%' : isMobile ? '100%' : 1400, width: '100%', margin: '0 auto', flex: 1, display: 'flex', flexDirection: 'column' }}>
 
-          {/* Calendar tab — full width */}
-          {activeTab === 'calendar' && view === 'calendar' && (
-            <div style={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column', overflow: 'auto' }}>
-              <div style={{
-                display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                padding: isMobile ? '12px 12px 6px' : '16px 24px 8px',
-              }}>
-                <button
-                  style={{ border: '2px solid var(--border)', background: 'var(--bg-1)', color: 'var(--text)', padding: '5px 14px', cursor: 'pointer', fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 12, textTransform: 'uppercase', letterSpacing: '0.04em' }}
-                  onMouseEnter={e => { e.currentTarget.style.background = '#000'; e.currentTarget.style.color = '#fff'; }}
-                  onMouseLeave={e => { e.currentTarget.style.background = getComputedStyle(document.documentElement).getPropertyValue('--bg-1').trim(); e.currentTarget.style.color = getComputedStyle(document.documentElement).getPropertyValue('--text').trim(); }}
-                  onClick={() => { SFX.back(); navMonth(-1); }}
-                >←</button>
-                <div style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: isMobile ? 14 : 18, letterSpacing: '-0.01em', color: 'var(--text)', textTransform: 'uppercase' }}>{monthName}</div>
-                <button
-                  style={{ border: '2px solid var(--border)', background: 'var(--bg-1)', color: 'var(--text)', padding: '5px 14px', cursor: 'pointer', fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 12, textTransform: 'uppercase', letterSpacing: '0.04em' }}
-                  onMouseEnter={e => { e.currentTarget.style.background = '#000'; e.currentTarget.style.color = '#fff'; }}
-                  onMouseLeave={e => { e.currentTarget.style.background = getComputedStyle(document.documentElement).getPropertyValue('--bg-1').trim(); e.currentTarget.style.color = getComputedStyle(document.documentElement).getPropertyValue('--text').trim(); }}
-                  onClick={() => { SFX.back(); navMonth(1); }}
-                >→</button>
-              </div>
-              <CalendarView
-                sessionsByDate={sessionsByDate}
-                viewDate={viewDate}
-                myProfileId={myProfileId}
-                onSelectDate={(id) => openSession(id)}
-                onShowPicker={(key, sessList) => setModal({ type: 'session-picker', dateKey: key, sessions: sessList })}
-                onNewSession={key => {
-                  if (key > TODAY_KEY) { showToast('Cannot create sessions for future dates', 'info'); SFX.halt(); return; }
-                  SFX.boop(); setModal({ type: 'new-session', dateKey: key });
-                }}
-                cardTheme={getTheme(profile?.card_theme)}
-              />
-              <div style={{ padding: isMobile ? '6px 12px 12px' : '8px 24px 16px', fontSize: 11, color: 'var(--muted)', fontFamily: 'var(--font-mono)', letterSpacing: '0.04em' }}>
-                Click any day to open an existing session or start a new one.
-              </div>
-            </div>
-          )}
-
-          {activeTab === 'calendar' && view === 'session' && selectedSessionId && sessions[selectedSessionId] && (
+          {/* Session view — rendered regardless of which tab opened it */}
+          {view === 'session' && selectedSessionId && sessions[selectedSessionId] && (
             <SessionView
               session={sessions[selectedSessionId]}
               onBack={closeSession}
@@ -776,6 +736,48 @@ function AppInner() {
                 navigator.clipboard.writeText(link).then(() => showToast('Invite link copied to clipboard', 'success'));
               }}
             />
+          )}
+
+          {/* Tab content — hidden while session is open */}
+          {view !== 'session' && (<>
+
+          {/* Calendar tab — full width */}
+          {activeTab === 'calendar' && (
+            <div style={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column', overflow: 'auto' }}>
+              <div style={{
+                display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                padding: isMobile ? '12px 12px 6px' : '16px 24px 8px',
+              }}>
+                <button
+                  style={{ border: '2px solid var(--border)', background: 'var(--bg-1)', color: 'var(--text)', padding: '5px 14px', cursor: 'pointer', fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 12, textTransform: 'uppercase', letterSpacing: '0.04em' }}
+                  onMouseEnter={e => { e.currentTarget.style.background = '#000'; e.currentTarget.style.color = '#fff'; }}
+                  onMouseLeave={e => { e.currentTarget.style.background = getComputedStyle(document.documentElement).getPropertyValue('--bg-1').trim(); e.currentTarget.style.color = getComputedStyle(document.documentElement).getPropertyValue('--text').trim(); }}
+                  onClick={() => { SFX.back(); navMonth(-1); }}
+                >←</button>
+                <div style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: isMobile ? 14 : 18, letterSpacing: '-0.01em', color: 'var(--text)', textTransform: 'uppercase' }}>{monthName}</div>
+                <button
+                  style={{ border: '2px solid var(--border)', background: 'var(--bg-1)', color: 'var(--text)', padding: '5px 14px', cursor: 'pointer', fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 12, textTransform: 'uppercase', letterSpacing: '0.04em' }}
+                  onMouseEnter={e => { e.currentTarget.style.background = '#000'; e.currentTarget.style.color = '#fff'; }}
+                  onMouseLeave={e => { e.currentTarget.style.background = getComputedStyle(document.documentElement).getPropertyValue('--bg-1').trim(); e.currentTarget.style.color = getComputedStyle(document.documentElement).getPropertyValue('--text').trim(); }}
+                  onClick={() => { SFX.back(); navMonth(1); }}
+                >→</button>
+              </div>
+              <CalendarView
+                sessionsByDate={sessionsByDate}
+                viewDate={viewDate}
+                myProfileId={myProfileId}
+                onSelectDate={(id) => openSession(id)}
+                onShowPicker={(key, sessList) => setModal({ type: 'session-picker', dateKey: key, sessions: sessList })}
+                onNewSession={key => {
+                  if (key > TODAY_KEY) { showToast('Cannot create sessions for future dates', 'info'); SFX.halt(); return; }
+                  SFX.boop(); setModal({ type: 'new-session', dateKey: key });
+                }}
+                cardTheme={getTheme(profile?.card_theme)}
+              />
+              <div style={{ padding: isMobile ? '6px 12px 12px' : '8px 24px 16px', fontSize: 11, color: 'var(--muted)', fontFamily: 'var(--font-mono)', letterSpacing: '0.04em' }}>
+                Click any day to open an existing session or start a new one.
+              </div>
+            </div>
           )}
 
           {activeTab === 'missions' && (
@@ -893,6 +895,8 @@ function AppInner() {
               <AdminView />
             </div>
           )}
+
+          </>)}
         </div>
       </div>
 
