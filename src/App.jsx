@@ -780,7 +780,7 @@ function AppInner() {
 
           {activeTab === 'missions' && (
             <div style={{ animation: A.fadeUp(), flex: 1, minHeight: 0 }}>
-              <MissionsView sessions={sessions} myProfileId={myProfileId} profile={profile} avatarUrl={avatarUrl} onOpenSession={handleOpenSession} />
+              <MissionsView sessions={sessions} myProfileId={myProfileId} profile={profile} avatarUrl={avatarUrl} onOpenSession={handleOpenSession} cardTheme={getTheme(profile?.card_theme)} />
             </div>
           )}
           {activeTab === 'active-sessions' && (
@@ -827,7 +827,7 @@ function AppInner() {
                   onOpen={id => { setManageMode(false); handleOpenSession(id); }}
                 />
               ) : (
-                <ActiveSessionsView sessions={sessions} myProfileId={myProfileId} onOpenSession={handleOpenSession} />
+                <ActiveSessionsView sessions={sessions} myProfileId={myProfileId} onOpenSession={handleOpenSession} cardTheme={getTheme(profile?.card_theme)} />
               )}
             </div>
           )}

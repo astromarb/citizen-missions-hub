@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useIsMobile } from '../../hooks/useIsMobile.js';
 import { CONTRACT_TYPES } from '../../data/contractTypes.js';
 import EmptyState from '../shared/EmptyState.jsx';
+import { isLightColor } from '../../data/cardThemes.js';
 
 const DAY_COLORS = [
   { bg: '#e8db7d', text: '#000' },
@@ -32,9 +33,12 @@ function fmtElapsed(ms) {
   return `${m}m ${String(sec).padStart(2, '0')}s`;
 }
 
-function ActiveSessionCard({ session, myProfileId, onOpen, now }) {
+function ActiveSessionCard({ session, myProfileId, onOpen, now, cardTheme }) {
   const d = new Date(session.date + 'T12:00:00');
-  const { bg: headerBg, text: headerText } = DAY_COLORS[d.getDay()];
+  const dayOfWeek = d.getDay();
+  const themeColor = cardTheme?.colors?.[dayOfWeek] ?? null;
+  const headerBg   = themeColor ?? DAY_COLORS[dayOfWeek].bg;
+  const headerText = themeColor ? (isLightColor(themeColor) ? '#000' : '#fff') : DAY_COLORS[dayOfWeek].text;
   const isDark = headerText === '#fff';
   const dateLabel = d.toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' });
 
@@ -267,7 +271,7 @@ function TrophyCabinet({ contracts }) {
   );
 }
 
-export default function ActiveSessionsView({ sessions, myProfileId, onOpenSession }) {
+export default function ActiveSessionsView({ sessions, myProfileId, onOpenSession, cardTheme }) {
   const isMobile = useIsMobile();
   const now = useTick();
 
@@ -313,6 +317,7 @@ export default function ActiveSessionsView({ sessions, myProfileId, onOpenSessio
               myProfileId={myProfileId}
               onOpen={onOpenSession}
               now={now}
+              cardTheme={cardTheme}
             />
           ))}
         </div>

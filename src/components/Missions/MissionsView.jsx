@@ -8,6 +8,7 @@ import { getContractSize } from '../../utils/contractSize.js';
 import { getBanner } from '../../data/profileBanners.js';
 import { useBannerUrl } from '../../hooks/useBanners.js';
 import { calcFleetValue } from '../../data/ships.js';
+import { isLightColor } from '../../data/cardThemes.js';
 
 // M  T  W  Th  F  Sa  Su  (JS getDay: 0=Sun)
 const DAY_COLORS = [
@@ -38,7 +39,7 @@ function sessionDurationMs(session) {
   return end - start - (session.totalPausedMs || 0);
 }
 
-function SessionDebrief({ session, myProfileId, onOpenSession }) {
+function SessionDebrief({ session, myProfileId, onOpenSession, cardTheme }) {
   const isMobile = useIsMobile();
   const totalSCU = session.contracts.reduce((t, c) =>
     t + c.cargo.reduce((s, ci) => s + Number(ci.scu || 0), 0), 0);
@@ -48,14 +49,17 @@ function SessionDebrief({ session, myProfileId, onOpenSession }) {
   const durationMs = sessionDurationMs(session);
 
   const d = new Date(session.date + 'T12:00:00');
-  const { bg: headerBg, text: headerText } = DAY_COLORS[d.getDay()];
+  const dayOfWeek = d.getDay();
+  const themeColor = cardTheme?.colors?.[dayOfWeek] ?? null;
+  const headerBg   = themeColor ?? DAY_COLORS[dayOfWeek].bg;
+  const headerText = themeColor ? (isLightColor(themeColor) ? '#000' : '#fff') : DAY_COLORS[dayOfWeek].text;
   const isDark = headerText === '#fff';
   const mutedColor = isDark ? 'rgba(255,255,255,0.65)' : 'rgba(0,0,0,0.55)';
   const dateLabel = d.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' });
   const statusText = session.endedAt ? 'COMPLETE' : session.startedAt ? 'IN PROGRESS' : 'SETTING UP';
 
   return (
-    <div style={{ border: '2px solid var(--border)', background: 'var(--bg-1)' }}>
+    <div style={{ border: '2px solid var(--border)', background: 'var(--bg-1)', height: '100%', display: 'flex', flexDirection: 'column' }}>
 
       {/* ── Day-colored header ── */}
       <div style={{ background: headerBg, padding: '12px 16px' }}>
@@ -239,7 +243,7 @@ function SessionDebrief({ session, myProfileId, onOpenSession }) {
   );
 }
 
-export default function MissionsView({ sessions, myProfileId, profile, avatarUrl, onOpenSession }) {
+export default function MissionsView({ sessions, myProfileId, profile, avatarUrl, onOpenSession, cardTheme }) {
   const isMobile = useIsMobile();
   const mySessions = Object.values(sessions)
     .filter(s => s.members?.some(m => m.id === myProfileId))
@@ -415,11 +419,11 @@ export default function MissionsView({ sessions, myProfileId, profile, avatarUrl
           <EmptyState icon="◎" title="No Missions Yet" message="Join a session from the Calendar tab to see your mission history here." />
         ) : isMobile ? (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-            {mySessions.map(s => <SessionDebrief key={s.id} session={s} myProfileId={myProfileId} onOpenSession={onOpenSession} />)}
+            {mySessions.map(s => <SessionDebrief key={s.id} session={s} myProfileId={myProfileId} onOpenSession={onOpenSession} cardTheme={cardTheme} />)}
           </div>
         ) : (
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 16 }}>
-            {mySessions.map(s => <SessionDebrief key={s.id} session={s} myProfileId={myProfileId} onOpenSession={onOpenSession} />)}
+            {mySessions.map(s => <SessionDebrief key={s.id} session={s} myProfileId={myProfileId} onOpenSession={onOpenSession} cardTheme={cardTheme} />)}
           </div>
         )}
       </div>
