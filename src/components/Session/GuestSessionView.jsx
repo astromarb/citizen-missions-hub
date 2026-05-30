@@ -155,7 +155,7 @@ export default function GuestSessionView({ inviteToken, onSignIn }) {
                     {c.payout > 0 && (
                       <div style={{ marginLeft: 'auto' }}>
                         <div style={{ fontFamily: 'var(--font-mono)', fontSize: 8, color: '#555', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: 4 }}>Payout</div>
-                        <div style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 14, color: '#2d8659' }}>{c.payout.toLocaleString()}</div>
+                        <div style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 14, color: '#2d8659' }}>{c.payout.toLocaleString()} <span style={{ fontSize: 10, fontWeight: 600, opacity: 0.7 }}>aUEC</span></div>
                       </div>
                     )}
                   </div>

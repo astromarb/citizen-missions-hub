@@ -61,7 +61,7 @@ export default function LoginScreen({ joinToken }) {
           <svg width="20" height="16" viewBox="0 0 20 16" fill="white"><path d="M16.93 1.33A16.47 16.47 0 0 0 12.86 0c-.19.34-.4.8-.55 1.16a15.24 15.24 0 0 0-4.62 0A11.83 11.83 0 0 0 7.13 0 16.54 16.54 0 0 0 3.06 1.34 17.53 17.53 0 0 0 .07 13.1a16.62 16.62 0 0 0 5.07 2.57 12.47 12.47 0 0 0 1.07-1.75 10.84 10.84 0 0 1-1.72-.83c.14-.1.28-.21.42-.32a11.84 11.84 0 0 0 10.18 0c.13.11.28.22.42.32-.55.33-1.13.6-1.73.84a12.4 12.4 0 0 0 1.07 1.74 16.57 16.57 0 0 0 5.08-2.57 17.47 17.47 0 0 0-3-11.77ZM6.68 10.71c-1 0-1.82-.92-1.82-2.05s.8-2.06 1.82-2.06 1.84.93 1.82 2.06c0 1.13-.81 2.05-1.82 2.05Zm6.64 0c-1 0-1.82-.92-1.82-2.05s.8-2.06 1.82-2.06 1.83.93 1.82 2.06c0 1.13-.8 2.05-1.82 2.05Z"/></svg>
           Login with Discord
         </button>
-        <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: '#555', letterSpacing: '0.08em' }}>Free · No email required · Star Citizen players only</div>
+        <div style={{ fontFamily: 'var(--font-sans)', fontSize: 11, color: '#555', letterSpacing: '0.04em' }}>Free · No email required · Star Citizen players only</div>
 
         {/* Features grid */}
         <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr 1fr' : 'repeat(4, 1fr)', gap: 12, marginTop: 56, width: '100%' }}>
@@ -69,7 +69,7 @@ export default function LoginScreen({ joinToken }) {
             <div key={f.title} style={{ border: '1.5px solid #2a2a2a', background: '#111', padding: '16px 14px', textAlign: 'left' }}>
               <div style={{ fontSize: 18, color: '#c41e3a', marginBottom: 8, lineHeight: 1 }}>{f.icon}</div>
               <div style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 11, color: '#fff', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 6 }}>{f.title}</div>
-              <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: '#666', lineHeight: 1.6 }}>{f.desc}</div>
+              <div style={{ fontFamily: 'var(--font-sans)', fontSize: 11, color: '#666', lineHeight: 1.6 }}>{f.desc}</div>
             </div>
           ))}
         </div>
@@ -77,8 +77,8 @@ export default function LoginScreen({ joinToken }) {
 
       {/* Footer */}
       <div style={{ padding: isMobile ? '16px 20px' : '20px 48px', borderTop: '1px solid #1f1f1f', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 8 }}>
-        <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: '#444', letterSpacing: '0.08em' }}>© 2026 CITIZEN MISSIONS HUB · UEE CARGO OPS · v0.2-alpha</div>
-        <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: '#444', letterSpacing: '0.06em' }}>Not affiliated with Cloud Imperium Games</div>
+        <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: '#444', letterSpacing: '0.06em' }}>© 2026 CITIZEN MISSIONS HUB · UEE CARGO OPS · v0.2-alpha</div>
+        <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: '#444', letterSpacing: '0.06em' }}>Not affiliated with Cloud Imperium Games</div>
       </div>
     </div>
   );

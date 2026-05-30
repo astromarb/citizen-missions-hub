@@ -10,7 +10,7 @@ export default function EmptyState({ icon = '◎', title, message, action, onAct
       {action && (
         <button onClick={onAction}
           style={{ padding: '9px 22px', border: '2px solid #c41e3a', background: '#c41e3a', color: '#fff', fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.04em', cursor: 'pointer' }}
-          onMouseEnter={e => { e.currentTarget.style.background = '#000'; e.currentTarget.style.borderColor = '#000'; }}
+          onMouseEnter={e => { e.currentTarget.style.background = '#9e0e2a'; e.currentTarget.style.borderColor = '#9e0e2a'; }}
           onMouseLeave={e => { e.currentTarget.style.background = '#c41e3a'; e.currentTarget.style.borderColor = '#c41e3a'; }}>
           {action}
         </button>
