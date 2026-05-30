@@ -165,14 +165,25 @@ function TrophyCabinet({ contracts }) {
         </div>
       </div>
 
-      <div style={{
-        overflowX: 'auto', paddingBottom: 12,
-        scrollbarWidth: 'thin', scrollbarColor: 'var(--border) transparent',
-      }}>
+      {/* scrollbar hidden, cards in 2 rows, drag-to-scroll */}
+      <div className="no-scrollbar" style={{ overflowX: 'auto', paddingBottom: 4 }}
+        onMouseDown={e => {
+          const el = e.currentTarget;
+          const startX = e.pageX - el.offsetLeft;
+          const startScroll = el.scrollLeft;
+          const onMove = (ev) => { el.scrollLeft = startScroll - (ev.pageX - el.offsetLeft - startX); };
+          const onUp = () => { window.removeEventListener('mousemove', onMove); window.removeEventListener('mouseup', onUp); };
+          window.addEventListener('mousemove', onMove);
+          window.addEventListener('mouseup', onUp);
+        }}
+      >
         <div style={{
-          display: 'flex', gap: 10, alignItems: 'flex-end',
+          display: 'grid',
+          gridTemplateRows: 'repeat(2, auto)',
+          gridAutoFlow: 'column',
+          gap: 10,
           paddingBottom: 4, paddingLeft: 2, paddingRight: 2,
-          minWidth: 'max-content',
+          width: 'max-content',
         }}>
           {contracts.map((c, i) => {
             const typeInfo = CONTRACT_TYPES[c.type] || { bg: '#555', color: '#fff' };
