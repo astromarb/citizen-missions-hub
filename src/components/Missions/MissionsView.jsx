@@ -345,27 +345,28 @@ export default function MissionsView({ sessions, myProfileId, profile, avatarUrl
           </>
         ) : (
           <>
-          {/* Desktop: banner bleeds from top, callsign + stats below */}
+          {/* Desktop: avatar top-left, name top-right, open middle */}
           <div style={{ border: '2px solid var(--border)', background: bannerObj ? bannerObj.fallbackBg : 'var(--bg-1)', marginBottom: 16, position: 'relative', overflow: 'hidden' }}>
             {bannerObj && (
               <>
                 <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: '100%', backgroundImage: `url(${bannerSrc ?? bannerObj.src})`, backgroundSize: 'cover', backgroundPosition: 'top center', backgroundColor: bannerObj.fallbackBg, zIndex: 0 }} />
-                <div style={{ position: 'absolute', zIndex: 1, pointerEvents: 'none', top: '45%', left: 0, right: 0, height: '55%', background: 'linear-gradient(to bottom, transparent, rgba(0,0,0,0.72))' }} />
+                <div style={{ position: 'absolute', zIndex: 1, pointerEvents: 'none', top: '40%', left: 0, right: 0, height: '60%', background: 'linear-gradient(to bottom, transparent, rgba(0,0,0,0.80))' }} />
               </>
             )}
             <div style={{ position: 'relative', zIndex: 2 }}>
-              <div style={{ background: bannerObj ? 'transparent' : '#1a1a1a', padding: '24px 18px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 14 }}>
+              {/* Top row: avatar top-left, callsign top-right */}
+              <div style={{ background: bannerObj ? 'transparent' : '#1a1a1a', padding: '14px 18px', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', minHeight: 80 }}>
                 {avatarUrl ? (
-                  <img src={avatarUrl} alt={callsign} style={{ width: 90, height: 90, borderRadius: '50%', border: `4px solid ${color}`, objectFit: 'cover' }} />
+                  <img src={avatarUrl} alt={callsign} style={{ width: 45, height: 45, borderRadius: '50%', border: `3px solid ${color}`, objectFit: 'cover', flexShrink: 0 }} />
                 ) : (
-                  <div style={{ width: 90, height: 90, borderRadius: '50%', background: color, border: `4px solid ${color}`, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                    <span style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 35, color: '#fff' }}>{callsign[0]?.toUpperCase()}</span>
+                  <div style={{ width: 45, height: 45, borderRadius: '50%', background: color, border: `3px solid ${color}`, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                    <span style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 18, color: '#fff' }}>{callsign[0]?.toUpperCase()}</span>
                   </div>
                 )}
-                <div style={{ textAlign: 'center' }}>
+                <div style={{ textAlign: 'right', flexShrink: 0 }}>
                   <div style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 20, color: bannerObj ? txtCol : '#fff', textTransform: 'uppercase', letterSpacing: '0.04em', lineHeight: 1, textShadow: shadow }}>{callsign}</div>
+                  <div style={{ height: 4, background: color, marginTop: 6 }} />
                 </div>
-                <div style={{ width: '100%', height: 4, background: color }} />
               </div>
               <div style={{ padding: '18px 20px' }}>
                 {statsRows.map(([label, val]) => (

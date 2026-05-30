@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import TypeBadge from '../shared/TypeBadge.jsx';
 import SessionChat from './SessionChat.jsx';
 import { keyToLabel } from '../../utils/dateUtils.js';
@@ -7,6 +7,53 @@ import { isHaulingType } from '../../data/contractTypes.js';
 import { A } from '../../styles/animations.js';
 
 const wpName = (w) => (typeof w === 'object' ? w.name : w) || '';
+
+function LocationInput({ value, onChange, placeholder, allLocations, borderColor = '#c41e3a', onKeyDown, style }) {
+  const [q, setQ] = useState(value || '');
+  const [open, setOpen] = useState(false);
+  const ref = useRef(null);
+
+  useEffect(() => { setQ(value || ''); }, [value]);
+
+  const hits = q.trim()
+    ? (allLocations || []).filter(l => l.name.toLowerCase().includes(q.toLowerCase())).slice(0, 8)
+    : [];
+
+  useEffect(() => {
+    const fn = e => { if (!ref.current?.contains(e.target)) setOpen(false); };
+    document.addEventListener('mousedown', fn);
+    return () => document.removeEventListener('mousedown', fn);
+  }, []);
+
+  return (
+    <div style={{ position: 'relative', ...style }} ref={ref}>
+      <input
+        autoFocus
+        value={q}
+        onChange={e => { setQ(e.target.value); onChange(e.target.value); setOpen(true); }}
+        onFocus={() => setOpen(true)}
+        onKeyDown={onKeyDown}
+        placeholder={placeholder || 'Search location…'}
+        style={{ width: '100%', boxSizing: 'border-box', padding: '3px 6px', border: `2px solid ${borderColor}`, background: 'var(--bg-1)', color: 'var(--text)', fontFamily: 'var(--font-sans)', fontSize: 12, fontWeight: 500, outline: 'none' }}
+      />
+      {open && hits.length > 0 && (
+        <div style={{ position: 'absolute', top: '100%', left: 0, zIndex: 300, background: 'var(--bg-1)', border: `2px solid ${borderColor}`, borderTop: 'none', maxHeight: 200, overflowY: 'auto', minWidth: 200 }}>
+          {hits.map(({ name, body, system }) => (
+            <div key={name + (system || '')}
+              onMouseDown={() => { onChange(name); setQ(name); setOpen(false); }}
+              style={{ padding: '5px 8px', cursor: 'pointer', fontSize: 11, fontFamily: 'var(--font-mono)', display: 'flex', justifyContent: 'space-between', gap: 8, borderBottom: '1px solid var(--bg-3)', color: 'var(--text)' }}
+              onMouseEnter={e => { e.currentTarget.style.background = borderColor; e.currentTarget.style.color = '#fff'; }}
+              onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = 'var(--text)'; }}
+            >
+              <span>{name}</span>
+              {system && <span style={{ fontSize: 9, color: 'var(--muted)', letterSpacing: '0.06em', flexShrink: 0 }}>{system}{body ? ` › ${body}` : ''}</span>}
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
 
 function SessionTimer({ session, onStart, onPause, onResume, onEnd }) {
   const [now, setNow] = useState(Date.now());
@@ -165,37 +212,20 @@ function WaypointRow({ waypoint, myProfileId, members, onSetStatus, canEdit, kin
         <span style={{ color: 'var(--muted)', fontSize: 12, flexShrink: 0 }}>{isPickup ? '↑' : '↓'}</span>
 
         {editingLoc ? (
-          <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, flexWrap: 'wrap' }}>
-            <select
-              autoFocus
+          <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, flex: 1, minWidth: 0 }}>
+            <LocationInput
               value={locVal}
-              onChange={e => setLocVal(e.target.value)}
+              onChange={setLocVal}
+              placeholder="Search location…"
+              allLocations={allLocations}
+              borderColor="#c41e3a"
               onKeyDown={e => { if (e.key === 'Enter') saveLocEdit(); if (e.key === 'Escape') cancelLocEdit(); }}
-              style={{
-                maxWidth: 220, padding: '2px 4px',
-                border: '2px solid #c41e3a', background: 'var(--bg-1)', color: '#c41e3a',
-                fontFamily: 'var(--font-sans)', fontSize: 12, fontWeight: 500, outline: 'none',
-              }}
-            >
-              <option value="">— pick location —</option>
-              {(() => {
-                const grouped = {};
-                (allLocations || []).forEach(l => {
-                  const key = `${l.system} → ${l.body}`;
-                  if (!grouped[key]) grouped[key] = [];
-                  grouped[key].push(l);
-                });
-                return Object.entries(grouped).sort().map(([groupKey, locs]) => (
-                  <optgroup key={groupKey} label={groupKey}>
-                    {locs.map(l => <option key={l.name} value={l.name}>{l.name}</option>)}
-                  </optgroup>
-                ));
-              })()}
-            </select>
+              style={{ flex: 1, maxWidth: 220 }}
+            />
             <button onClick={saveLocEdit}
-              style={{ background: '#2d8659', border: 'none', color: '#fff', cursor: 'pointer', padding: '2px 7px', fontWeight: 700, fontSize: 11 }}>✓</button>
+              style={{ background: '#2d8659', border: 'none', color: '#fff', cursor: 'pointer', padding: '2px 7px', fontWeight: 700, fontSize: 11, flexShrink: 0 }}>✓</button>
             <button onClick={cancelLocEdit}
-              style={{ background: 'none', border: '1px solid var(--border)', color: 'var(--muted)', cursor: 'pointer', padding: '2px 6px', fontSize: 11 }}>✗</button>
+              style={{ background: 'none', border: '1px solid var(--border)', color: 'var(--muted)', cursor: 'pointer', padding: '2px 6px', fontSize: 11, flexShrink: 0 }}>✗</button>
           </span>
         ) : (
           <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5, overflow: 'hidden' }}>
@@ -399,32 +429,20 @@ function RefuelingWaypointRow({ waypoint, myProfileId, members, onSetStatus, can
         <span style={{ color: '#0891b2', fontSize: 13, flexShrink: 0 }}>⛽</span>
 
         {editingLoc ? (
-          <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, flexWrap: 'wrap' }}>
-            <select
-              autoFocus value={locVal}
-              onChange={e => setLocVal(e.target.value)}
+          <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, flex: 1, minWidth: 0 }}>
+            <LocationInput
+              value={locVal}
+              onChange={setLocVal}
+              placeholder="Search location…"
+              allLocations={allLocations}
+              borderColor="#0891b2"
               onKeyDown={e => { if (e.key === 'Enter') saveLocEdit(); if (e.key === 'Escape') cancelLocEdit(); }}
-              style={{ maxWidth: 220, padding: '2px 4px', border: '2px solid #0891b2', background: 'var(--bg-1)', color: '#0891b2', fontFamily: 'var(--font-sans)', fontSize: 12, fontWeight: 500, outline: 'none' }}
-            >
-              <option value="">— pick location —</option>
-              {(() => {
-                const grouped = {};
-                (allLocations || []).forEach(l => {
-                  const key = `${l.system} → ${l.body}`;
-                  if (!grouped[key]) grouped[key] = [];
-                  grouped[key].push(l);
-                });
-                return Object.entries(grouped).sort().map(([groupKey, locs]) => (
-                  <optgroup key={groupKey} label={groupKey}>
-                    {locs.map(l => <option key={l.name} value={l.name}>{l.name}</option>)}
-                  </optgroup>
-                ));
-              })()}
-            </select>
+              style={{ flex: 1, maxWidth: 220 }}
+            />
             <button onClick={saveLocEdit}
-              style={{ background: '#2d8659', border: 'none', color: '#fff', cursor: 'pointer', padding: '2px 7px', fontWeight: 700, fontSize: 11 }}>✓</button>
+              style={{ background: '#2d8659', border: 'none', color: '#fff', cursor: 'pointer', padding: '2px 7px', fontWeight: 700, fontSize: 11, flexShrink: 0 }}>✓</button>
             <button onClick={cancelLocEdit}
-              style={{ background: 'none', border: '1px solid var(--border)', color: 'var(--muted)', cursor: 'pointer', padding: '2px 6px', fontSize: 11 }}>✗</button>
+              style={{ background: 'none', border: '1px solid var(--border)', color: 'var(--muted)', cursor: 'pointer', padding: '2px 6px', fontSize: 11, flexShrink: 0 }}>✗</button>
           </span>
         ) : (
           <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5, overflow: 'hidden' }}>
@@ -587,24 +605,6 @@ function TradingPanel({ contract, sessionEnded, isSessionMember, allLocations, c
     setSellState(p => ({ ...p, [cargoId]: { ...p[cargoId], open: false } }));
   };
 
-  const grouped = {};
-  (allLocations || []).forEach(l => {
-    const key = `${l.system} → ${l.body}`;
-    if (!grouped[key]) grouped[key] = [];
-    grouped[key].push(l);
-  });
-
-  const locationSelect = (value, onChange, placeholder) => (
-    <select value={value} onChange={e => onChange(e.target.value)}
-      style={{ flex: 1, padding: '5px 6px', border: `1.5px solid ${TRADE_COLOR}`, background: 'var(--bg-1)', color: value ? 'var(--text)' : 'var(--muted)', fontFamily: 'var(--font-sans)', fontSize: 11, outline: 'none' }}>
-      <option value="">{placeholder}</option>
-      {Object.entries(grouped).sort().map(([gk, locs]) => (
-        <optgroup key={gk} label={gk}>
-          {locs.map(l => <option key={l.name} value={l.name}>{l.name}</option>)}
-        </optgroup>
-      ))}
-    </select>
-  );
 
   return (
     <div>
@@ -654,7 +654,7 @@ function TradingPanel({ contract, sessionEnded, isSessionMember, allLocations, c
                       onChange={e => setSellState(p => ({ ...p, [c.id]: { ...p[c.id], price: e.target.value } }))}
                       style={{ width: 90, padding: '4px 6px', border: `1.5px solid ${TRADE_COLOR}`, background: 'var(--bg-1)', color: 'var(--text)', fontFamily: 'var(--font-mono)', fontSize: 11, outline: 'none' }}
                     />
-                    {locationSelect(ss.loc || '', (v) => setSellState(p => ({ ...p, [c.id]: { ...p[c.id], loc: v } })), '— sell location —')}
+                    <LocationInput value={ss.loc || ''} onChange={v => setSellState(p => ({ ...p, [c.id]: { ...p[c.id], loc: v } }))} placeholder="— sell location —" allLocations={allLocations} borderColor={TRADE_COLOR} style={{ flex: 1, minWidth: 130 }} />
                     <button onClick={() => commitSell(c.id)}
                       style={{ padding: '4px 12px', background: '#2d8659', border: 'none', color: '#fff', cursor: 'pointer', fontWeight: 700, fontSize: 11 }}>✓ Save</button>
                   </div>
@@ -703,7 +703,7 @@ function TradingPanel({ contract, sessionEnded, isSessionMember, allLocations, c
               />
             </div>
             <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
-              {locationSelect(form.fromLocation, (v) => setForm(f => ({ ...f, fromLocation: v })), '— buy location (optional) —')}
+              <LocationInput value={form.fromLocation} onChange={v => setForm(f => ({ ...f, fromLocation: v }))} placeholder="— buy location (optional) —" allLocations={allLocations} borderColor={TRADE_COLOR} style={{ flex: 1, minWidth: 130 }} />
               <button onClick={addEntry} disabled={!canAdd || saving}
                 style={{ padding: '5px 14px', background: canAdd ? TRADE_COLOR : 'var(--bg-3)', border: 'none', color: canAdd ? '#fff' : 'var(--muted)', cursor: canAdd ? 'pointer' : 'default', fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 11, textTransform: 'uppercase', flexShrink: 0 }}>
                 {saving ? '…' : '+ Add'}
@@ -727,36 +727,20 @@ function SalvageSiteRow({ contractId, onAddWaypoint, allLocations }) {
     setSaving(false);
   };
 
-  const grouped = {};
-  (allLocations || []).forEach(l => {
-    const key = `${l.system} → ${l.body}`;
-    if (!grouped[key]) grouped[key] = [];
-    grouped[key].push(l);
-  });
-
   return (
     <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
       <span style={{ color: '#7c3aed', fontSize: 13, flexShrink: 0 }}>↑</span>
-      <select
+      <LocationInput
         value={locVal}
-        onChange={e => setLocVal(e.target.value)}
-        style={{
-          flex: 1, maxWidth: 240, padding: '4px 6px',
-          border: '2px solid #7c3aed', background: 'var(--bg-1)',
-          color: locVal ? 'var(--text)' : 'var(--muted)',
-          fontFamily: 'var(--font-sans)', fontSize: 12, outline: 'none',
-        }}
-      >
-        <option value="">— set salvage site location —</option>
-        {Object.entries(grouped).sort().map(([groupKey, locs]) => (
-          <optgroup key={groupKey} label={groupKey}>
-            {locs.map(l => <option key={l.name} value={l.name}>{l.name}</option>)}
-          </optgroup>
-        ))}
-      </select>
+        onChange={setLocVal}
+        placeholder="Search salvage site…"
+        allLocations={allLocations}
+        borderColor="#7c3aed"
+        style={{ flex: 1, maxWidth: 240 }}
+      />
       {locVal && (
         <button onClick={save} disabled={saving}
-          style={{ background: '#2d8659', border: 'none', color: '#fff', cursor: 'pointer', padding: '4px 10px', fontWeight: 700, fontSize: 12 }}>
+          style={{ background: '#2d8659', border: 'none', color: '#fff', cursor: 'pointer', padding: '4px 10px', fontWeight: 700, fontSize: 12, flexShrink: 0 }}>
           {saving ? '…' : '✓ Set'}
         </button>
       )}
@@ -852,20 +836,6 @@ export default function SessionView({
     });
     setContractEditId(null);
   };
-  const renderLocationOptions = () => {
-    const grouped = {};
-    allLocations.forEach(l => {
-      const key = `${l.system} → ${l.body}`;
-      if (!grouped[key]) grouped[key] = [];
-      grouped[key].push(l);
-    });
-    return Object.entries(grouped).sort().map(([groupKey, locs]) => (
-      <optgroup key={groupKey} label={groupKey}>
-        {locs.map(l => <option key={l.name} value={l.name}>{l.name}</option>)}
-      </optgroup>
-    ));
-  };
-
   return (
     <div style={{ display: 'flex', flexDirection: 'column', minHeight: '100%' }}>
 
@@ -1670,14 +1640,13 @@ export default function SessionView({
                       {editPanel.pickups.map((ep, i) => (
                         <div key={ep.id || i} style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 6 }}>
                           <span style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--muted)', width: 14, flexShrink: 0, textAlign: 'center' }}>↑</span>
-                          <select
+                          <LocationInput
                             value={ep.name}
-                            onChange={e => setEditPanel(p => ({ ...p, pickups: p.pickups.map((x, j) => j === i ? { ...x, name: e.target.value } : x) }))}
-                            style={{ flex: 1, padding: '4px 6px', border: '2px solid var(--border)', background: 'var(--bg-1)', color: 'var(--text)', fontFamily: 'var(--font-sans)', fontSize: 12, outline: 'none' }}
-                          >
-                            <option value="">— pick location —</option>
-                            {renderLocationOptions()}
-                          </select>
+                            onChange={v => setEditPanel(p => ({ ...p, pickups: p.pickups.map((x, j) => j === i ? { ...x, name: v } : x) }))}
+                            placeholder="Search pickup location…"
+                            allLocations={allLocations}
+                            style={{ flex: 1 }}
+                          />
                         </div>
                       ))}
                     </div>
@@ -1689,14 +1658,13 @@ export default function SessionView({
                       {editPanel.dropoffs.map((ep, i) => (
                         <div key={ep.id || i} style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 6 }}>
                           <span style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--muted)', width: 14, flexShrink: 0, textAlign: 'center' }}>↓</span>
-                          <select
+                          <LocationInput
                             value={ep.name}
-                            onChange={e => setEditPanel(p => ({ ...p, dropoffs: p.dropoffs.map((x, j) => j === i ? { ...x, name: e.target.value } : x) }))}
-                            style={{ flex: 1, padding: '4px 6px', border: '2px solid var(--border)', background: 'var(--bg-1)', color: 'var(--text)', fontFamily: 'var(--font-sans)', fontSize: 12, outline: 'none' }}
-                          >
-                            <option value="">— pick location —</option>
-                            {renderLocationOptions()}
-                          </select>
+                            onChange={v => setEditPanel(p => ({ ...p, dropoffs: p.dropoffs.map((x, j) => j === i ? { ...x, name: v } : x) }))}
+                            placeholder="Search dropoff location…"
+                            allLocations={allLocations}
+                            style={{ flex: 1 }}
+                          />
                         </div>
                       ))}
                     </div>
