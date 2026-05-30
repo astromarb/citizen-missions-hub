@@ -39,7 +39,7 @@ function sessionDurationMs(session) {
   return end - start - (session.totalPausedMs || 0);
 }
 
-function SessionDebrief({ session, myProfileId, onOpenSession, cardTheme }) {
+function SessionDebrief({ session, myProfileId, onOpenSession, cardTheme, sessionNumber }) {
   const isMobile = useIsMobile();
   const totalSCU = session.contracts.reduce((t, c) =>
     t + c.cargo.reduce((s, ci) => s + Number(ci.scu || 0), 0), 0);
@@ -63,10 +63,13 @@ function SessionDebrief({ session, myProfileId, onOpenSession, cardTheme }) {
 
       {/* ── Day-colored header ── */}
       <div style={{ background: headerBg, padding: '12px 16px' }}>
-        {/* Row 1: date + OPEN */}
+        {/* Row 1: date left, session name middle, OPEN right */}
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12, marginBottom: 6 }}>
-          <div style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 15, color: headerText, textTransform: 'uppercase', letterSpacing: '-0.01em' }}>
+          <div style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 13, color: headerText, textTransform: 'uppercase', letterSpacing: '-0.01em', flexShrink: 0 }}>
             {dateLabel}
+          </div>
+          <div style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 12, color: isDark ? 'rgba(255,255,255,0.85)' : 'rgba(0,0,0,0.75)', textTransform: 'uppercase', letterSpacing: '0.04em', flex: 1, textAlign: 'center', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', padding: '0 8px' }}>
+            {session.name || `Session ${sessionNumber}`}
           </div>
           {onOpenSession && (
             <button
@@ -88,19 +91,16 @@ function SessionDebrief({ session, myProfileId, onOpenSession, cardTheme }) {
             >Open →</button>
           )}
         </div>
-        {/* Row 2: contracts + timer + status */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
-          <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: mutedColor, letterSpacing: '0.06em' }}>
-            {session.contracts.length} contract{session.contracts.length !== 1 ? 's' : ''}
+        {/* Row 2: status left, timer right */}
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 8 }}>
+          <span style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 11, color: headerText, letterSpacing: '0.08em', textTransform: 'uppercase' }}>
+            {statusText === 'IN PROGRESS' ? '● IN PROGRESS' : statusText === 'COMPLETE' ? '✓ COMPLETE' : statusText}
           </span>
           {durationMs ? (
-            <span style={{ fontFamily: 'var(--font-mono)', fontWeight: 700, fontSize: 13, color: mutedColor, letterSpacing: '0.02em' }}>
+            <span style={{ fontFamily: 'var(--font-mono)', fontWeight: 700, fontSize: 11, color: mutedColor, letterSpacing: '0.02em' }}>
               ⏱ {formatDuration(durationMs)}
             </span>
           ) : null}
-          <span style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 13, color: headerText, letterSpacing: '0.04em' }}>
-            {statusText}
-          </span>
         </div>
       </div>
 
@@ -134,16 +134,13 @@ function SessionDebrief({ session, myProfileId, onOpenSession, cardTheme }) {
         </div>
       </div>
 
-      {/* ── Crew performance ── */}
+      {/* ── Crew ── */}
       {session.members?.length > 0 && (
         <div style={{ padding: '16px 20px', borderBottom: '1px solid var(--bg-3)' }}>
-          <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, letterSpacing: '0.12em', textTransform: 'uppercase', color: 'var(--muted)', marginBottom: 12 }}>
-            Crew Performance
-          </div>
           <table style={{ width: '100%', borderCollapse: 'collapse', fontFamily: 'var(--font-display)', fontSize: 12 }}>
             <thead>
               <tr style={{ borderBottom: '2px solid var(--border)' }}>
-                {['Pilot', 'Payout Share'].map(h => (
+                {['Crewmember', 'Payout Share'].map(h => (
                   <th key={h} style={{ padding: '6px 10px', textAlign: 'left', fontWeight: 700, fontSize: 10, letterSpacing: '0.08em', textTransform: 'uppercase', color: 'var(--muted)' }}>{h}</th>
                 ))}
               </tr>
@@ -177,11 +174,11 @@ function SessionDebrief({ session, myProfileId, onOpenSession, cardTheme }) {
         </div>
       )}
 
-      {/* ── Contract breakdown ── */}
+      {/* ── Contracts ── */}
       {session.contracts.length > 0 && (
         <div style={{ padding: '16px 20px' }}>
-          <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, letterSpacing: '0.12em', textTransform: 'uppercase', color: 'var(--muted)', marginBottom: 12 }}>
-            Contract Breakdown
+          <div style={{ fontFamily: 'var(--font-mono)', fontSize: 12, letterSpacing: '0.12em', textTransform: 'uppercase', color: 'var(--muted)', marginBottom: 12, textDecoration: 'underline', textUnderlineOffset: 3 }}>
+            Contracts
           </div>
           {session.contracts.map(c => {
             const cSCU = c.cargo.reduce((t, ci) => t + Number(ci.scu || 0), 0);
@@ -421,11 +418,11 @@ export default function MissionsView({ sessions, myProfileId, profile, avatarUrl
           <EmptyState icon="◎" title="No Missions Yet" message="Join a session from the Calendar tab to see your mission history here." />
         ) : isMobile ? (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-            {mySessions.map(s => <SessionDebrief key={s.id} session={s} myProfileId={myProfileId} onOpenSession={onOpenSession} cardTheme={cardTheme} />)}
+            {mySessions.map((s, i) => <SessionDebrief key={s.id} session={s} myProfileId={myProfileId} onOpenSession={onOpenSession} cardTheme={cardTheme} sessionNumber={mySessions.length - i} />)}
           </div>
         ) : (
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: 16 }}>
-            {mySessions.map(s => <SessionDebrief key={s.id} session={s} myProfileId={myProfileId} onOpenSession={onOpenSession} cardTheme={cardTheme} />)}
+            {mySessions.map((s, i) => <SessionDebrief key={s.id} session={s} myProfileId={myProfileId} onOpenSession={onOpenSession} cardTheme={cardTheme} sessionNumber={mySessions.length - i} />)}
           </div>
         )}
       </div>

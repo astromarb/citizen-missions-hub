@@ -482,7 +482,7 @@ export default function SettingsView({ profile, updateProfile, checkCallsign, sy
       </div>
 
       {/* ── Display Color ───────────────────────────────────────────────────── */}
-      <div style={{ border: '2px solid #000', background: '#fff', padding: '20px', marginBottom: 16 }}>
+      <div style={{ border: '2px solid var(--border)', background: 'var(--bg-1)', padding: '20px', marginBottom: 16 }}>
         {sectionTitle('Display Color')}
 
         {/* Preview */}
@@ -505,7 +505,7 @@ export default function SettingsView({ profile, updateProfile, checkCallsign, sy
       </div>
 
       {/* ── Session Card Theme ──────────────────────────────────────────────── */}
-      <div style={{ border: '2px solid #000', background: '#fff', padding: '20px', marginBottom: 16 }}>
+      <div style={{ border: '2px solid var(--border)', background: 'var(--bg-1)', padding: '20px', marginBottom: 16 }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 }}>
           {sectionTitle('Session Card Theme')}
           {cardThemeSaved && <span style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: '#2d8659' }}>Saved ✓</span>}

@@ -33,7 +33,7 @@ function FriendBubbles({ friends, onViewProfile }) {
     <div style={{ marginBottom: 4 }}>
       <div style={sectionLabel}>Friends ({friends.length})</div>
       <div style={{
-        border: '2px solid #000', background: '#fff', padding: '16px',
+        border: '2px solid var(--border)', background: 'var(--bg-1)', padding: '16px',
         display: 'flex', flexWrap: 'wrap', gap: friends.length >= 25 ? 10 : 14,
       }}>
         {shown.map(f => (
@@ -49,7 +49,7 @@ function FriendBubbles({ friends, onViewProfile }) {
             <Avatar profile={f} size={bubbleSize} />
             <span style={{
               fontFamily: 'var(--font-display)', fontWeight: 700,
-              fontSize: fontSize, color: '#000',
+              fontSize: fontSize, color: 'var(--text)',
               maxWidth: bubbleSize + 8, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
             }}>{f.callsign}</span>
           </button>
@@ -96,9 +96,9 @@ export default function FriendsView({ friends, pending, sent, sessionInvites, se
 
   const actionBtn = (label, onClick, variant = 'default') => {
     const styles = {
-      default: { border: '2px solid #000', background: '#fff', color: '#000' },
+      default: { border: '2px solid var(--border)', background: 'var(--bg-1)', color: 'var(--text)' },
       primary: { border: '2px solid #c41e3a', background: '#c41e3a', color: '#fff' },
-      muted:   { border: '2px solid #ccc', background: '#f5f5f5', color: '#999' },
+      muted:   { border: '2px solid var(--bg-3)', background: 'var(--bg-2)', color: 'var(--muted)' },
       green:   { border: '2px solid #2D7A1F', background: '#fff', color: '#2D7A1F' },
       danger:  { border: '2px solid #c41e3a', background: '#fff', color: '#c41e3a' },
     };
@@ -113,10 +113,10 @@ export default function FriendsView({ friends, pending, sent, sessionInvites, se
   };
 
   const ProfileRow = ({ profile, actions }) => (
-    <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '10px 0', borderBottom: '1px solid #f0f0f0' }}>
+    <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '10px 0', borderBottom: '1px solid var(--bg-3)' }}>
       <Avatar profile={profile} />
       <div style={{ flex: 1, minWidth: 0 }}>
-        <div style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 13, color: '#000' }}>{profile.callsign}</div>
+        <div style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 13, color: 'var(--text)' }}>{profile.callsign}</div>
         {profile.home_region && (
           <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '0.08em', marginTop: 2 }}>{profile.home_region}</div>
         )}
@@ -136,7 +136,7 @@ export default function FriendsView({ friends, pending, sent, sessionInvites, se
       <FriendBubbles friends={friends} onViewProfile={onViewProfile} />
 
       {/* ── Divider ── */}
-      <div style={{ borderTop: '2px solid #000', margin: '24px 0' }} />
+      <div style={{ borderTop: '2px solid var(--border)', margin: '24px 0' }} />
 
       {/* ── 2. Messages ── */}
       <MessagesSection
@@ -150,10 +150,10 @@ export default function FriendsView({ friends, pending, sent, sessionInvites, se
       />
 
       {/* ── 3. Search ── */}
-      <div style={{ border: '2px solid #000', background: '#fff', padding: 16, marginTop: 20 }}>
+      <div style={{ border: '2px solid var(--border)', background: 'var(--bg-1)', padding: 16, marginTop: 20 }}>
         <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, textTransform: 'uppercase', letterSpacing: '0.1em', color: 'var(--muted)', marginBottom: 8 }}>Search Pilots</div>
         <input
-          style={{ width: '100%', padding: '9px 12px', border: '2px solid #000', fontFamily: 'var(--font-mono)', fontSize: 13, outline: 'none', boxSizing: 'border-box' }}
+          style={{ width: '100%', padding: '9px 12px', border: '2px solid var(--border)', background: 'var(--bg-0)', color: 'var(--text)', fontFamily: 'var(--font-mono)', fontSize: 13, outline: 'none', boxSizing: 'border-box' }}
           placeholder="Search by callsign…"
           value={query}
           onChange={e => setQuery(e.target.value)}
@@ -187,13 +187,13 @@ export default function FriendsView({ friends, pending, sent, sessionInvites, se
       {sent.length > 0 && (
         <div>
           <div style={sectionLabel}>Sent Requests ({sent.length})</div>
-          <div style={{ border: '2px solid #000', background: '#fff', padding: '0 16px' }}>
+          <div style={{ border: '2px solid var(--border)', background: 'var(--bg-1)', padding: '0 16px' }}>
             {sent.map(p => (
               <ProfileRow key={p.friendshipId} profile={p} actions={
                 confirmRemoveId === p.friendshipId ? [
                   <span key="lbl" style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: 'var(--muted)', whiteSpace: 'nowrap' }}>Cancel request?</span>,
                   <button key="yes" onClick={() => { remove(p.friendshipId); setConfirmRemoveId(null); }} style={{ border: '2px solid #c41e3a', background: '#c41e3a', color: '#fff', padding: '5px 12px', cursor: 'pointer', fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.04em' }}>Yes</button>,
-                  <button key="no" onClick={() => setConfirmRemoveId(null)} style={{ border: '2px solid #ccc', background: '#f5f5f5', color: '#999', padding: '5px 12px', cursor: 'pointer', fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.04em' }}>No</button>,
+                  <button key="no" onClick={() => setConfirmRemoveId(null)} style={{ border: '2px solid #ccc', background: 'var(--bg-2)', color: 'var(--muted)', padding: '5px 12px', cursor: 'pointer', fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.04em' }}>No</button>,
                 ] : [
                   <span key="s" style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--muted)' }}>Pending</span>,
                   actionBtn('Cancel', () => setConfirmRemoveId(p.friendshipId), 'danger'),
@@ -212,7 +212,7 @@ export default function FriendsView({ friends, pending, sent, sessionInvites, se
           </div>
 
           {pendingInvites.length > 0 && (
-            <div style={{ border: '2px solid #c41e3a', background: '#fff', padding: '0 16px', marginBottom: 8 }}>
+            <div style={{ border: '2px solid #c41e3a', background: 'var(--bg-1)', padding: '0 16px', marginBottom: 8 }}>
               {pendingInvites.map(inv => {
                 const d = inv.session?.date
                   ? new Date(inv.session.date + 'T12:00:00').toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })
@@ -220,7 +220,7 @@ export default function FriendsView({ friends, pending, sent, sessionInvites, se
                 return (
                   <div key={inv.id} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '12px 0', borderBottom: '1px solid #f0f0f0' }}>
                     <div style={{ flex: 1, minWidth: 0 }}>
-                      <div style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 13, color: '#000' }}>
+                      <div style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 13, color: 'var(--text)' }}>
                         Session Invite · {d}
                       </div>
                       <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '0.08em', marginTop: 2 }}>
@@ -241,7 +241,7 @@ export default function FriendsView({ friends, pending, sent, sessionInvites, se
           )}
 
           {pending.length > 0 && (
-            <div style={{ border: '2px solid #000', background: '#fff', padding: '0 16px' }}>
+            <div style={{ border: '2px solid var(--border)', background: 'var(--bg-1)', padding: '0 16px' }}>
               {pending.map(p => (
                 <ProfileRow key={p.friendshipId} profile={p} actions={[
                   actionBtn('Accept', () => respond(p.friendshipId, true), 'green'),
@@ -257,13 +257,13 @@ export default function FriendsView({ friends, pending, sent, sessionInvites, se
       {friends.length > 0 ? (
         <div>
           <div style={sectionLabel}>All Friends ({friends.length})</div>
-          <div style={{ border: '2px solid #000', background: '#fff', padding: '0 16px' }}>
+          <div style={{ border: '2px solid var(--border)', background: 'var(--bg-1)', padding: '0 16px' }}>
             {friends.map(f => (
               <ProfileRow key={f.friendshipId} profile={f} actions={
                 confirmRemoveId === f.friendshipId ? [
                   <span key="lbl" style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: 'var(--muted)', whiteSpace: 'nowrap' }}>Remove friend?</span>,
                   <button key="confirm" onClick={() => { remove(f.friendshipId); setConfirmRemoveId(null); }} style={{ border: '2px solid #c41e3a', background: '#c41e3a', color: '#fff', padding: '5px 12px', cursor: 'pointer', fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.04em' }}>Confirm</button>,
-                  <button key="cancel" onClick={() => setConfirmRemoveId(null)} style={{ border: '2px solid #ccc', background: '#f5f5f5', color: '#999', padding: '5px 12px', cursor: 'pointer', fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.04em' }}>Cancel</button>,
+                  <button key="cancel" onClick={() => setConfirmRemoveId(null)} style={{ border: '2px solid #ccc', background: 'var(--bg-2)', color: 'var(--muted)', padding: '5px 12px', cursor: 'pointer', fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.04em' }}>Cancel</button>,
                 ] : [
                   onViewProfile && actionBtn('View Profile', () => onViewProfile(f), 'default'),
                   actionBtn('Remove', () => setConfirmRemoveId(f.friendshipId), 'danger'),

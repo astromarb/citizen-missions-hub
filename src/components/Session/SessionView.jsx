@@ -773,6 +773,8 @@ export default function SessionView({
   const [editPanel, setEditPanel]                             = useState({ pickups: [], dropoffs: [], cargo: [] });
   const [confirmDeleteContractId, setConfirmDeleteContractId] = useState(null);
   const [confirmRemovePlayerId, setConfirmRemovePlayerId]     = useState(null);
+  const [editingName, setEditingName]   = useState(false);
+  const [nameVal, setNameVal]           = useState(session.name || '');
 
   const label      = keyToLabel(session.date);
   const totalSCU   = session.contracts.reduce((t, c) => t + c.cargo.reduce((s, x) => s + Number(x.scu || 0), 0), 0);
@@ -858,8 +860,38 @@ export default function SessionView({
 
           <div>
             <div style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 18, color: 'var(--text)', letterSpacing: '-0.01em' }}>{label}</div>
-            <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--muted)', marginTop: 2 }}>
-              {session.contracts.length} contract{session.contracts.length !== 1 ? 's' : ''} · {totalSCU.toLocaleString()} SCU
+            <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 3 }}>
+              {editingName ? (
+                <>
+                  <input
+                    autoFocus
+                    value={nameVal}
+                    maxLength={24}
+                    onChange={e => setNameVal(e.target.value)}
+                    onKeyDown={e => {
+                      if (e.key === 'Enter') { onUpdateSession?.({ name: nameVal.trim() || null }); setEditingName(false); }
+                      if (e.key === 'Escape') { setNameVal(session.name || ''); setEditingName(false); }
+                    }}
+                    style={{ padding: '2px 8px', border: '2px solid #c41e3a', background: 'var(--bg-1)', color: 'var(--text)', fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 13, outline: 'none', width: 180 }}
+                    placeholder="Session name…"
+                  />
+                  <button onClick={() => { onUpdateSession?.({ name: nameVal.trim() || null }); setEditingName(false); }}
+                    style={{ background: '#2d8659', border: 'none', color: '#fff', cursor: 'pointer', padding: '2px 8px', fontWeight: 700, fontSize: 12 }}>✓</button>
+                  <button onClick={() => { setNameVal(session.name || ''); setEditingName(false); }}
+                    style={{ background: 'none', border: '1px solid var(--border)', color: 'var(--muted)', cursor: 'pointer', padding: '2px 6px', fontSize: 12 }}>✗</button>
+                </>
+              ) : (
+                <>
+                  <span style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 13, color: session.name ? 'var(--text)' : 'var(--muted)', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+                    {session.name || `${session.contracts.length} contract${session.contracts.length !== 1 ? 's' : ''} · ${totalSCU.toLocaleString()} SCU`}
+                  </span>
+                  {isSessionCreator && (
+                    <button onClick={() => { setNameVal(session.name || ''); setEditingName(true); }}
+                      style={{ background: 'none', border: 'none', color: 'var(--muted)', cursor: 'pointer', fontSize: 12, padding: '0 3px', fontFamily: 'var(--font-mono)' }}
+                      title="Rename session">✎</button>
+                  )}
+                </>
+              )}
             </div>
           </div>
         </div>

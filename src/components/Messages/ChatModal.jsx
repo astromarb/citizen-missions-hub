@@ -69,12 +69,12 @@ function Bubble({ msg, isMine, isMobile }) {
             gap: 10, marginTop: 5,
           }}>
             <span style={{ fontSize: 9, opacity: 0.55 }}>{fmtTime(msg.created_at)}</span>
-            {/* Delete */}
-            {confirmDelete ? (
+            {/* Delete — own messages only */}
+            {msg._onDelete && (confirmDelete ? (
               <span style={{ display: 'flex', gap: 4, alignItems: 'center' }}>
                 <span style={{ fontSize: 9, opacity: 0.7 }}>Delete?</span>
                 <button
-                  onClick={() => msg._onDelete?.(msg.id)}
+                  onClick={() => msg._onDelete(msg.id)}
                   style={{ ...mono, fontSize: 8, padding: '1px 5px', cursor: 'pointer', background: 'rgba(255,255,255,0.25)', border: '1px solid rgba(255,255,255,0.5)', color: 'inherit' }}
                 >Yes</button>
                 <button
@@ -89,7 +89,7 @@ function Bubble({ msg, isMine, isMobile }) {
                 onMouseEnter={e => { e.currentTarget.style.opacity = '0.85'; }}
                 onMouseLeave={e => { e.currentTarget.style.opacity = '0.4'; }}
               >×</button>
-            )}
+            ))}
           </div>
         </div>
       </div>
@@ -258,7 +258,7 @@ export default function ChatModal({ conversation, myProfileId, onClose, onSend, 
           )}
           {messages.map(msg => {
             const isMine = msg._dir === 'sent';
-            const msgWithDelete = { ...msg, _onDelete: onDelete };
+            const msgWithDelete = { ...msg, _onDelete: isMine ? onDelete : undefined };
             if (msg.is_system) return <SystemBubble key={msg.id} msg={msgWithDelete} isMobile={isMobile} />;
             return <Bubble key={msg.id} msg={msgWithDelete} isMine={isMine} isMobile={isMobile} />;
           })}

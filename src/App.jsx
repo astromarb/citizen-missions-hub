@@ -283,6 +283,31 @@ function AppInner() {
 
   const { conversations, sendMessage, markRead, deleteMessage, deleteAllSystemMessages, unreadCount: msgUnread } = useMessages(myProfileId, !!authSession, handleNewMessage);
 
+  const [sysPopup, setSysPopup] = useState(null);
+  useEffect(() => {
+    if (!myProfileId) return;
+    let seen;
+    try { seen = new Set(JSON.parse(localStorage.getItem('cmh-seen-sys-msgs') || '[]')); }
+    catch { seen = new Set(); }
+    const unseen = conversations
+      .filter(c => c.isSystem)
+      .flatMap(c => c.messages)
+      .filter(m => !seen.has(m.id))
+      .sort((a, b) => new Date(a.created_at) - new Date(b.created_at));
+    if (unseen.length > 0 && !sysPopup) setSysPopup(unseen[0]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [conversations, myProfileId]);
+
+  const dismissSysPopup = () => {
+    if (!sysPopup) return;
+    try {
+      const seen = JSON.parse(localStorage.getItem('cmh-seen-sys-msgs') || '[]');
+      seen.push(sysPopup.id);
+      localStorage.setItem('cmh-seen-sys-msgs', JSON.stringify(seen));
+    } catch { /* ignore */ }
+    setSysPopup(null);
+  };
+
   useEffect(() => {
     const timeout = new Promise((_, rej) => setTimeout(() => rej(new Error('auth-timeout')), 12000));
     Promise.race([supabase.auth.getSession(), timeout])
@@ -975,6 +1000,72 @@ function AppInner() {
           commodities={commodities}
           systemsMap={systemsMap}
         />
+      )}
+
+      {/* ── System message popup ── */}
+      {sysPopup && (
+        <div
+          onClick={dismissSysPopup}
+          style={{
+            position: 'fixed', inset: 0, zIndex: 1200,
+            background: 'rgba(0,0,0,0.75)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            padding: isMobile ? 16 : 32,
+          }}
+        >
+          <div
+            onClick={e => e.stopPropagation()}
+            style={{
+              background: 'var(--bg-1)', border: '2px solid rgba(196,30,58,0.6)',
+              boxShadow: '0 0 40px rgba(196,30,58,0.25)',
+              width: '100%', maxWidth: 480,
+              display: 'flex', flexDirection: 'column',
+            }}
+          >
+            {/* Header */}
+            <div style={{
+              background: '#c41e3a', padding: '10px 16px',
+              display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10,
+            }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                <span style={{ fontSize: 16 }}>⚡</span>
+                <span style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 12, textTransform: 'uppercase', letterSpacing: '0.08em', color: '#fff' }}>
+                  Nexus Hub System
+                </span>
+              </div>
+              <button
+                onClick={dismissSysPopup}
+                style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'rgba(255,255,255,0.7)', fontSize: 20, lineHeight: 1, padding: '2px 4px' }}
+                onMouseEnter={e => { e.currentTarget.style.color = '#fff'; }}
+                onMouseLeave={e => { e.currentTarget.style.color = 'rgba(255,255,255,0.7)'; }}
+              >×</button>
+            </div>
+            {/* Body */}
+            <div style={{ padding: '20px 20px 16px', fontFamily: 'var(--font-mono)', fontSize: isMobile ? 12 : 13, color: 'var(--text)', lineHeight: 1.65, whiteSpace: 'pre-wrap', wordBreak: 'break-word', maxHeight: '55vh', overflowY: 'auto' }}>
+              {sysPopup.content}
+            </div>
+            {/* Footer */}
+            <div style={{ padding: '12px 20px', borderTop: '1px solid var(--border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 10 }}>
+              <span style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: 'var(--muted)' }}>
+                {new Date(sysPopup.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+              </span>
+              <div style={{ display: 'flex', gap: 8 }}>
+                <button
+                  onClick={() => { dismissSysPopup(); switchTab('friends'); }}
+                  style={{ padding: '7px 14px', fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 10, textTransform: 'uppercase', letterSpacing: '0.06em', cursor: 'pointer', border: '2px solid var(--border)', background: 'var(--bg-2)', color: 'var(--text)' }}
+                  onMouseEnter={e => { e.currentTarget.style.background = 'var(--bg-3)'; }}
+                  onMouseLeave={e => { e.currentTarget.style.background = 'var(--bg-2)'; }}
+                >View in Messages</button>
+                <button
+                  onClick={dismissSysPopup}
+                  style={{ padding: '7px 14px', fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 10, textTransform: 'uppercase', letterSpacing: '0.06em', cursor: 'pointer', border: '2px solid #c41e3a', background: '#c41e3a', color: '#fff' }}
+                  onMouseEnter={e => { e.currentTarget.style.background = '#a01830'; e.currentTarget.style.borderColor = '#a01830'; }}
+                  onMouseLeave={e => { e.currentTarget.style.background = '#c41e3a'; e.currentTarget.style.borderColor = '#c41e3a'; }}
+                >Dismiss</button>
+              </div>
+            </div>
+          </div>
+        </div>
       )}
 
       {/* ── Mobile bottom nav ── */}

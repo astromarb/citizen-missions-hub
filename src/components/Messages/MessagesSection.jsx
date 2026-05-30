@@ -4,6 +4,22 @@ import ChatModal from './ChatModal.jsx';
 const mono    = { fontFamily: 'var(--font-mono)' };
 const display = { fontFamily: 'var(--font-display)' };
 
+function stripMarkdown(text) {
+  return (text || '')
+    .replace(/^#{1,6}\s+/gm, '')
+    .replace(/\*\*(.+?)\*\*/gs, '$1')
+    .replace(/\*(.+?)\*/gs, '$1')
+    .replace(/__(.+?)__/gs, '$1')
+    .replace(/_(.+?)_/gs, '$1')
+    .replace(/~~(.+?)~~/gs, '$1')
+    .replace(/`(.+?)`/gs, '$1')
+    .replace(/\[(.+?)\]\(.+?\)/g, '$1')
+    .replace(/^\s*[-*+]\s+/gm, '')
+    .replace(/^\s*\d+\.\s+/gm, '')
+    .replace(/\n+/g, ' ')
+    .trim();
+}
+
 function fmtTime(ts) {
   if (!ts) return '';
   const diff = Date.now() - new Date(ts);
@@ -37,7 +53,7 @@ function ConvAvatar({ profile, isSystem, size = 38 }) {
 function ConversationCard({ conv, onClick }) {
   const { profile, isSystem, subject, lastMsg, unreadCount } = conv;
   const name    = isSystem ? 'Nexus Hub System' : (profile?.callsign || '—');
-  const preview = lastMsg?.content ?? '';
+  const preview = stripMarkdown(lastMsg?.content ?? '');
   const isMine  = lastMsg?._dir === 'sent';
 
   return (
