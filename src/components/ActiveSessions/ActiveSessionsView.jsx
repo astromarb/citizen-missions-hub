@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useIsMobile } from '../../hooks/useIsMobile.js';
 import { CONTRACT_TYPES } from '../../data/contractTypes.js';
+import EmptyState from '../shared/EmptyState.jsx';
 
 const DAY_COLORS = [
   { bg: '#e8db7d', text: '#000' },
@@ -297,12 +298,7 @@ export default function ActiveSessionsView({ sessions, myProfileId, onOpenSessio
       </div>
 
       {activeSessions.length === 0 ? (
-        <div style={{ textAlign: 'center', padding: '60px 20px', border: '2px dashed var(--border)', background: 'var(--bg-1)' }}>
-          <div style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 18, marginBottom: 8 }}>No Active Sessions</div>
-          <div style={{ color: 'var(--muted)', fontSize: 13, fontFamily: 'var(--font-sans)', lineHeight: 1.6 }}>
-            Sessions appear here once a timer is started.<br />Planning-stage sessions do not show up here.
-          </div>
-        </div>
+        <EmptyState icon="▦" title="No Active Sessions" message="Start a session from the Calendar tab to begin tracking contracts and crew." />
       ) : (
         <div style={{
           display: isMobile ? 'flex' : 'grid',

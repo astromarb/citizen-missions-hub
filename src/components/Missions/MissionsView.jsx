@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useIsMobile } from '../../hooks/useIsMobile.js';
+import EmptyState from '../shared/EmptyState.jsx';
 // SessionDebrief also calls useIsMobile directly so it can adapt card internals
 import LandingZoneBadge, { AlphaBadge } from '../shared/LandingZoneBadge.jsx';
 import { typeBg } from '../../data/contractTypes.js';
@@ -411,12 +412,7 @@ export default function MissionsView({ sessions, myProfileId, profile, avatarUrl
         </div>
 
         {mySessions.length === 0 ? (
-          <div style={{ textAlign: 'center', padding: '60px 20px', border: '2px dashed var(--border)', background: 'var(--bg-1)' }}>
-            <div style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 18, marginBottom: 8 }}>No Missions Yet</div>
-            <div style={{ color: 'var(--muted)', fontSize: 13, fontFamily: 'var(--font-sans)' }}>
-              Join a session from the Calendar tab to see your mission history here.
-            </div>
-          </div>
+          <EmptyState icon="◎" title="No Missions Yet" message="Join a session from the Calendar tab to see your mission history here." />
         ) : isMobile ? (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
             {mySessions.map(s => <SessionDebrief key={s.id} session={s} myProfileId={myProfileId} onOpenSession={onOpenSession} />)}

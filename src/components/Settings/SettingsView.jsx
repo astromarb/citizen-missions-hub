@@ -123,7 +123,7 @@ function LastChangedNote({ ts }) {
   );
 }
 
-export default function SettingsView({ profile, updateProfile, checkCallsign, systemMsgCount = 0, deleteAllSystemMessages }) {
+export default function SettingsView({ profile, updateProfile, checkCallsign, systemMsgCount = 0, deleteAllSystemMessages, darkMode, setDarkMode }) {
   const isMobile = useIsMobile();
   // ── Colour ─────────────────────────────────────────────────────────────────
   const [color,      setColor]      = useState(profile?.color || '#3b82f6');
@@ -435,6 +435,34 @@ export default function SettingsView({ profile, updateProfile, checkCallsign, sy
   return (
     <div style={{ padding: '20px' }}>
       <div style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 20, letterSpacing: '-0.02em', marginBottom: 24 }}>Settings</div>
+
+      {/* ── Appearance ── */}
+      <div style={{ border: '2px solid var(--border)', background: 'var(--bg-1)', padding: '20px', marginBottom: 16 }}>
+        {sectionTitle('Appearance')}
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
+          <div>
+            <div style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 13, marginBottom: 2 }}>Dark Mode</div>
+            <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--muted)' }}>Toggle between light and dark theme</div>
+          </div>
+          <button
+            onClick={() => setDarkMode(v => !v)}
+            style={{
+              width: 52, height: 28, borderRadius: 14, border: '2px solid var(--border)',
+              background: darkMode ? '#c41e3a' : 'var(--bg-3)',
+              cursor: 'pointer', position: 'relative', flexShrink: 0,
+              transition: 'background 0.2s',
+            }}
+          >
+            <div style={{
+              position: 'absolute', top: 2, left: darkMode ? 22 : 2,
+              width: 20, height: 20, borderRadius: 10,
+              background: '#fff',
+              transition: 'left 0.2s',
+              boxShadow: '0 1px 3px rgba(0,0,0,0.3)',
+            }} />
+          </button>
+        </div>
+      </div>
 
       {/* ── Display Color ───────────────────────────────────────────────────── */}
       <div style={{ border: '2px solid #000', background: '#fff', padding: '20px', marginBottom: 16 }}>

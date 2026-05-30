@@ -16,6 +16,7 @@ import JoinSessionModal from '@/components/Session/JoinSessionModal.jsx';
 import AddContractModal from '@/components/Contract/AddContractModal.jsx';
 import SessionManageList from '@/components/Session/SessionManageList.jsx';
 import LoginScreen from '@/components/Auth/LoginScreen.jsx';
+import GuestSessionView from '@/components/Session/GuestSessionView.jsx';
 import StatsView from '@/components/Stats/StatsView.jsx';
 import FriendsView from '@/components/Friends/FriendsView.jsx';
 import SettingsView from '@/components/Settings/SettingsView.jsx';
@@ -29,6 +30,7 @@ import AdminView from '@/components/Admin/AdminView.jsx';
 import { ToastProvider, useToast } from '@/components/shared/Toast.jsx';
 import { PLAYER_COLORS } from '@/data/players.js';
 import { fmtKey } from '@/utils/dateUtils.js';
+import { useTheme } from '@/hooks/useTheme.js';
 
 const TODAY_KEY = fmtKey(new Date());
 
@@ -209,6 +211,7 @@ function NewSessionModal({ dateKey, onSave, onClose, profiles, friends }) {
 function AppInner() {
   const showToast = useToast();
   const isMobile = useIsMobile();
+  const [darkMode, setDarkMode] = useTheme();
 
   // ── Auth ──
   const [authSession, setAuthSession] = useState(null);
@@ -537,7 +540,15 @@ function AppInner() {
         />
       );
     }
-    return <LoginScreen />;
+    if (joinToken && !forceLogin) {
+      return (
+        <GuestSessionView
+          inviteToken={joinToken}
+          onSignIn={() => setForceLogin(true)}
+        />
+      );
+    }
+    return <LoginScreen joinToken={joinToken} />;
   }
 
   if (sessionsLoading || profileLoading) {
@@ -575,14 +586,14 @@ function AppInner() {
   const totalPendingRequests = (pending?.length || 0) + (sessionInvites?.length || 0);
   const socialBadge = totalPendingRequests + msgUnread;
   const TABS = [
-    ['missions',        'Missions'],
-    ['calendar',        'Calendar'],
-    ['active-sessions', 'Sessions'],
-    ['stats',           'Stats'],
-    ['leaderboard',     'Leaderboards'],
-    ['friends',         socialBadge > 0 ? `Social (${socialBadge})` : 'Social'],
-    ['settings',        'Settings'],
-    ...(profile?.is_admin ? [['admin', 'Admin']] : []),
+    ['missions',        'Missions',     '◎'],
+    ['calendar',        'Calendar',     '⊞'],
+    ['active-sessions', 'Sessions',     '▦'],
+    ['stats',           'Stats',        '◷'],
+    ['leaderboard',     'Leaderboards', '★'],
+    ['friends',         socialBadge > 0 ? `Social (${socialBadge})` : 'Social', '◈'],
+    ['settings',        'Settings',     '⊡'],
+    ...(profile?.is_admin ? [['admin', 'Admin', '⊘']] : []),
   ];
 
   return (
@@ -654,13 +665,13 @@ function AppInner() {
       <div className="no-scrollbar" style={{
         background: 'var(--bg-1)',
         borderBottom: '2px solid #000',
-        display: 'flex',
+        display: isMobile ? 'none' : 'flex',
         padding: isMobile ? '0 8px' : '0 24px',
         flexShrink: 0,
         overflowX: 'auto',
         WebkitOverflowScrolling: 'touch',
       }}>
-        {TABS.map(([tab, label]) => (
+        {TABS.map(([tab, label, icon]) => (
           <button key={tab}
             onClick={() => switchTab(tab)}
             style={{
@@ -684,7 +695,7 @@ function AppInner() {
       </div>
 
       {/* ── Content ── */}
-      <div style={{ flex: 1, overflowY: 'auto', overflowX: 'hidden', display: 'flex', flexDirection: 'column' }}>
+      <div style={{ flex: 1, overflowY: 'auto', overflowX: 'hidden', display: 'flex', flexDirection: 'column', paddingBottom: isMobile ? 64 : 0 }}>
         <div style={{ maxWidth: (activeTab === 'calendar' && view === 'calendar') ? '100%' : isMobile ? '100%' : 1400, width: '100%', margin: '0 auto', flex: 1, display: 'flex', flexDirection: 'column' }}>
 
           {/* Calendar tab — full width */}
@@ -869,6 +880,8 @@ function AppInner() {
                 checkCallsign={checkCallsign}
                 systemMsgCount={conversations.filter(c => c.isSystem).length}
                 deleteAllSystemMessages={deleteAllSystemMessages}
+                darkMode={darkMode}
+                setDarkMode={setDarkMode}
               />
             </div>
           )}
@@ -880,6 +893,32 @@ function AppInner() {
           )}
         </div>
       </div>
+
+      {/* ── Mobile bottom nav ── */}
+      {isMobile && (
+        <div style={{
+          position: 'fixed', bottom: 0, left: 0, right: 0, zIndex: 500,
+          background: 'var(--bg-1)', borderTop: '2px solid #000',
+          display: 'flex', alignItems: 'stretch',
+        }}>
+          {TABS.map(([tab, label, icon]) => (
+            <button key={tab}
+              onClick={() => switchTab(tab)}
+              style={{
+                flex: 1, padding: '8px 2px 6px', border: 'none', cursor: 'pointer',
+                background: 'transparent', display: 'flex', flexDirection: 'column',
+                alignItems: 'center', justifyContent: 'center', gap: 2,
+                color: activeTab === tab ? '#c41e3a' : 'var(--muted)',
+                borderTop: activeTab === tab ? '2px solid #c41e3a' : '2px solid transparent',
+                marginTop: -2,
+              }}
+            >
+              <span style={{ fontSize: 16, lineHeight: 1 }}>{icon}</span>
+              <span style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 8, textTransform: 'uppercase', letterSpacing: '0.06em', lineHeight: 1 }}>{label.split(' (')[0]}</span>
+            </button>
+          ))}
+        </div>
+      )}
 
       {/* ── Join Session Modal (from invite link ?join=TOKEN) ── */}
       {joinToken && myProfileId && (
@@ -961,6 +1000,36 @@ function AppInner() {
           commodities={commodities}
           systemsMap={systemsMap}
         />
+      )}
+
+      {/* ── Mobile bottom nav ── */}
+      {isMobile && (
+        <div style={{
+          position: 'fixed', bottom: 0, left: 0, right: 0, zIndex: 200,
+          background: 'var(--bg-1)', borderTop: '2px solid var(--border)',
+          display: 'flex', alignItems: 'stretch',
+          paddingBottom: 'env(safe-area-inset-bottom, 0px)',
+        }}>
+          {TABS.slice(0, 6).map(([tab, label, icon]) => {
+            const active = activeTab === tab;
+            const hasBadge = tab === 'friends' && socialBadge > 0;
+            return (
+              <button key={tab} onClick={() => switchTab(tab)}
+                style={{
+                  flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+                  padding: '8px 4px 6px', border: 'none', background: 'transparent', cursor: 'pointer',
+                  borderTop: active ? '2px solid #c41e3a' : '2px solid transparent',
+                  marginTop: -2, position: 'relative',
+                }}>
+                {hasBadge && (
+                  <div style={{ position: 'absolute', top: 6, right: '50%', marginRight: -16, width: 7, height: 7, borderRadius: '50%', background: '#c41e3a' }} />
+                )}
+                <span style={{ fontSize: 16, lineHeight: 1, color: active ? '#c41e3a' : 'var(--muted)', marginBottom: 3 }}>{icon}</span>
+                <span style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 8, textTransform: 'uppercase', letterSpacing: '0.06em', color: active ? '#c41e3a' : 'var(--muted)' }}>{label}</span>
+              </button>
+            );
+          })}
+        </div>
       )}
 
     </div>

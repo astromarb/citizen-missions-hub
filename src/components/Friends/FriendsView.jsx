@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import MessagesSection from '@/components/Messages/MessagesSection.jsx';
+import EmptyState from '../shared/EmptyState.jsx';
 
 function Avatar({ profile, size = 36 }) {
   const color = profile?.color || '#8b949e';
@@ -272,9 +273,8 @@ export default function FriendsView({ friends, pending, sent, sessionInvites, se
           </div>
         </div>
       ) : (
-        <div style={{ textAlign: 'center', padding: '40px 20px', border: '2px dashed #000', background: '#fff', marginTop: 20 }}>
-          <div style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 16, marginBottom: 6 }}>No crew yet</div>
-          <div style={{ color: 'var(--muted)', fontSize: 12 }}>Search for pilots above to send friend requests.</div>
+        <div style={{ marginTop: 20 }}>
+          <EmptyState icon="◈" title="No Friends Yet" message="Search for pilots by callsign to add them to your crew network." />
         </div>
       )}
     </div>
