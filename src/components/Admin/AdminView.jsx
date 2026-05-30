@@ -745,11 +745,158 @@ function StatsPanel() {
   );
 }
 
+// ── Badge definitions (editable) ────────────────────────────────────────────
+const DEFAULT_BADGE_DEFS = [
+  { id: 'alpha',              label: 'α',           description: 'Been around since the very beginning.',      bgColor: '#100d00', accentColor: '#e8c030', shape: 'square' },
+  { id: 'home_region_area18', label: 'AREA18',       description: 'Primary residence: Area 18, ArcCorp.',      bgColor: '#0b1f0b', accentColor: '#5dd65d', shape: 'square' },
+  { id: 'home_region_lorville',label: 'LORVILLE',    description: 'Primary residence: Lorville, Hurston.',     bgColor: '#060d1c', accentColor: '#4d8fd4', shape: 'square' },
+  { id: 'home_region_orison', label: 'ORISON',       description: 'Primary residence: Orison, Crusader.',      bgColor: '#040f14', accentColor: '#2ec9d4', shape: 'square' },
+  { id: 'home_region_new_babbage', label: 'NEW BABBAGE', description: 'Primary residence: New Babbage, MicroTech.', bgColor: '#060b1f', accentColor: '#55aaff', shape: 'square' },
+];
+
+const SHAPE_OPTIONS = [
+  { key: 'square',   label: 'Square' },
+  { key: 'rounded',  label: 'Rounded' },
+  { key: 'circle',   label: 'Circle' },
+  { key: 'diamond',  label: 'Diamond' },
+];
+
+function BadgeEditorPanel() {
+  const [defs, setDefs]       = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving]   = useState({});
+  const [saved, setSaved]     = useState({});
+
+  useEffect(() => {
+    supabase.from('badge_config').select('*').then(({ data }) => {
+      if (data && data.length > 0) {
+        // Merge DB data with defaults (DB wins)
+        const merged = DEFAULT_BADGE_DEFS.map(def => {
+          const db = data.find(d => d.badge_id === def.id);
+          return db ? { id: db.badge_id, label: db.label, description: db.description, bgColor: db.bg_color, accentColor: db.accent_color, shape: db.shape } : def;
+        });
+        setDefs(merged);
+      } else {
+        setDefs(DEFAULT_BADGE_DEFS);
+      }
+      setLoading(false);
+    });
+  }, []);
+
+  const update = (id, field, value) =>
+    setDefs(prev => prev.map(d => d.id === id ? { ...d, [field]: value } : d));
+
+  const saveBadge = async (def) => {
+    setSaving(p => ({ ...p, [def.id]: true }));
+    await supabase.from('badge_config').upsert({
+      badge_id: def.id,
+      label: def.label,
+      description: def.description,
+      bg_color: def.bgColor,
+      accent_color: def.accentColor,
+      shape: def.shape,
+      updated_at: new Date().toISOString(),
+    }, { onConflict: 'badge_id' });
+    setSaving(p => ({ ...p, [def.id]: false }));
+    setSaved(p => ({ ...p, [def.id]: true }));
+    setTimeout(() => setSaved(p => ({ ...p, [def.id]: false })), 2000);
+  };
+
+  if (loading) return <div style={{ ...mono, fontSize: 12, color: 'var(--muted)', padding: 20 }}>Loading…</div>;
+
+  return (
+    <div>
+      <div style={{ ...display, fontWeight: 700, fontSize: 14, marginBottom: 6 }}>Badge Definitions</div>
+      <div style={{ ...mono, fontSize: 10, color: 'var(--muted)', marginBottom: 20 }}>
+        Edit badge appearance and descriptions. Changes affect all users globally.
+      </div>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+        {defs.map(def => (
+          <div key={def.id} style={{ border: '2px solid var(--border)', background: 'var(--bg-1)', padding: '16px 18px' }}>
+            {/* Preview + ID row */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 14 }}>
+              {/* Live preview */}
+              <div style={{
+                width: 44, height: 44, background: def.bgColor,
+                border: `1.5px solid ${def.accentColor}66`,
+                display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+                flexShrink: 0, gap: 2,
+                borderRadius: def.shape === 'circle' ? '50%' : def.shape === 'rounded' ? '8px' : 0,
+                transform: def.shape === 'diamond' ? 'rotate(45deg)' : 'none',
+                boxShadow: `0 0 8px ${def.accentColor}22`,
+              }}>
+                <span style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: def.accentColor, fontWeight: 700, transform: def.shape === 'diamond' ? 'rotate(-45deg)' : 'none' }}>
+                  {def.shape === 'diamond' ? def.label.slice(0,2) : def.label.slice(0,6)}
+                </span>
+              </div>
+              <div>
+                <div style={{ ...mono, fontWeight: 700, fontSize: 11 }}>{def.id}</div>
+                <div style={{ ...mono, fontSize: 9, color: 'var(--muted)' }}>badge_id</div>
+              </div>
+              {saved[def.id] && <span style={{ ...mono, fontSize: 10, color: '#2d8659', marginLeft: 'auto' }}>Saved ✓</span>}
+            </div>
+
+            {/* Fields */}
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 10 }}>
+              {/* Label */}
+              <div>
+                <div style={{ ...mono, fontSize: 9, color: 'var(--muted)', marginBottom: 4, textTransform: 'uppercase', letterSpacing: '0.08em' }}>Label</div>
+                <input value={def.label} onChange={e => update(def.id, 'label', e.target.value)}
+                  style={{ width: '100%', padding: '6px 8px', border: '1.5px solid var(--border)', background: 'var(--bg-0)', color: 'var(--text)', fontFamily: 'var(--font-mono)', fontSize: 11, outline: 'none', boxSizing: 'border-box' }} />
+              </div>
+              {/* Shape */}
+              <div>
+                <div style={{ ...mono, fontSize: 9, color: 'var(--muted)', marginBottom: 4, textTransform: 'uppercase', letterSpacing: '0.08em' }}>Shape</div>
+                <select value={def.shape} onChange={e => update(def.id, 'shape', e.target.value)}
+                  style={{ width: '100%', padding: '6px 8px', border: '1.5px solid var(--border)', background: 'var(--bg-0)', color: 'var(--text)', fontFamily: 'var(--font-mono)', fontSize: 11, outline: 'none', boxSizing: 'border-box' }}>
+                  {SHAPE_OPTIONS.map(s => <option key={s.key} value={s.key}>{s.label}</option>)}
+                </select>
+              </div>
+              {/* BG Color */}
+              <div>
+                <div style={{ ...mono, fontSize: 9, color: 'var(--muted)', marginBottom: 4, textTransform: 'uppercase', letterSpacing: '0.08em' }}>Background Color</div>
+                <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
+                  <input type="color" value={def.bgColor} onChange={e => update(def.id, 'bgColor', e.target.value)}
+                    style={{ width: 36, height: 28, padding: 2, border: '1.5px solid var(--border)', cursor: 'pointer', background: 'none' }} />
+                  <input value={def.bgColor} onChange={e => update(def.id, 'bgColor', e.target.value)}
+                    style={{ flex: 1, padding: '6px 8px', border: '1.5px solid var(--border)', background: 'var(--bg-0)', color: 'var(--text)', fontFamily: 'var(--font-mono)', fontSize: 11, outline: 'none' }} />
+                </div>
+              </div>
+              {/* Accent Color */}
+              <div>
+                <div style={{ ...mono, fontSize: 9, color: 'var(--muted)', marginBottom: 4, textTransform: 'uppercase', letterSpacing: '0.08em' }}>Accent / Icon Color</div>
+                <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
+                  <input type="color" value={def.accentColor} onChange={e => update(def.id, 'accentColor', e.target.value)}
+                    style={{ width: 36, height: 28, padding: 2, border: '1.5px solid var(--border)', cursor: 'pointer', background: 'none' }} />
+                  <input value={def.accentColor} onChange={e => update(def.id, 'accentColor', e.target.value)}
+                    style={{ flex: 1, padding: '6px 8px', border: '1.5px solid var(--border)', background: 'var(--bg-0)', color: 'var(--text)', fontFamily: 'var(--font-mono)', fontSize: 11, outline: 'none' }} />
+                </div>
+              </div>
+            </div>
+            {/* Description */}
+            <div style={{ marginBottom: 12 }}>
+              <div style={{ ...mono, fontSize: 9, color: 'var(--muted)', marginBottom: 4, textTransform: 'uppercase', letterSpacing: '0.08em' }}>Tooltip Description</div>
+              <input value={def.description} onChange={e => update(def.id, 'description', e.target.value)}
+                style={{ width: '100%', padding: '6px 8px', border: '1.5px solid var(--border)', background: 'var(--bg-0)', color: 'var(--text)', fontFamily: 'var(--font-mono)', fontSize: 11, outline: 'none', boxSizing: 'border-box' }} />
+            </div>
+            {/* Save */}
+            <button onClick={() => saveBadge(def)} disabled={saving[def.id]}
+              style={{ padding: '7px 18px', background: '#c41e3a', border: 'none', color: '#fff', cursor: 'pointer', fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.04em', opacity: saving[def.id] ? 0.6 : 1 }}>
+              {saving[def.id] ? 'Saving…' : 'Save Badge'}
+            </button>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 const PANELS = [
   { key: 'stats',      label: 'Stats' },
   { key: 'users',      label: 'Users' },
   { key: 'sessions',   label: 'Sessions & Contracts' },
   { key: 'banners',    label: 'Banner Manager' },
+  { key: 'badges',     label: 'Badges' },
   { key: 'broadcasts', label: 'Broadcasts' },
 ];
 
@@ -783,6 +930,7 @@ export default function AdminView() {
       {panel === 'users'      && <UsersPanel />}
       {panel === 'sessions'   && <SessionsPanel />}
       {panel === 'banners'    && <BannerManagerPanel />}
+      {panel === 'badges'     && <BadgeEditorPanel />}
       {panel === 'broadcasts' && <BroadcastsPanel />}
     </div>
   );

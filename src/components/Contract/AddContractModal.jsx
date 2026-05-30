@@ -58,7 +58,9 @@ const MISSION_CATEGORIES = [
   { key: 'refueling', label: 'Refueling',      available: true },
   { key: 'bounty',    label: 'Bounty Hunting', available: false },
   { key: 'mining',    label: 'Hand Mining',    available: true  },
-  { key: 'trading',   label: 'Trading (New!)', available: true  },
+  { key: 'trading',     label: 'Trading (New!)', available: true  },
+  { key: 'medical',    label: 'Medical',        available: true  },
+  { key: 'ship_mining', label: 'Ship Mining',   available: true  },
   { key: 'security',  label: 'Security',       available: false },
 ];
 
@@ -79,6 +81,12 @@ export default function AddContractModal({ onSave, onClose, commodities, systems
 
   // ── Trading state ────────────────────────────────────────────────
   const [tradingNotes, setTradingNotes] = useState('');
+
+  // ── Medical state ────────────────────────────────────────────────
+  const [medicalNotes, setMedicalNotes] = useState('');
+
+  // ── Ship Mining state ────────────────────────────────────────────
+  const [shipMiningLocation, setShipMiningLocation] = useState(emptyWp());
 
   // ── Mining state ────────────────────────────────────────────────
   const [miningLocation, setMiningLocation] = useState(emptyWp());
@@ -110,6 +118,13 @@ export default function AddContractModal({ onSave, onClose, commodities, systems
   // ── Trading derived ──────────────────────────────────────────────
   const tradingSteps = 2; // category → notes/intent (can start with nothing)
 
+  // ── Medical derived ──────────────────────────────────────────────
+  const medicalSteps = 2;
+
+  // ── Ship Mining derived ──────────────────────────────────────────
+  const shipMiningSystem = deriveSalvageSystem(shipMiningLocation, systemsMap);
+  const shipMiningSteps  = 2;
+
   // ── Mining derived ───────────────────────────────────────────────
   const miningSystem = deriveSalvageSystem(miningLocation, systemsMap);
   const hasMiningLoc = !!miningLocation.name?.trim();
@@ -124,16 +139,20 @@ export default function AddContractModal({ onSave, onClose, commodities, systems
   // ── Refueling derived ────────────────────────────────────────────
   const refuelSystem = deriveSalvageSystem(refuelLocation, systemsMap);
 
-  const totalSteps = category === 'salvage'   ? salvageSteps
-    : category === 'refueling' ? 2
-    : category === 'mining'    ? miningSteps
-    : category === 'trading'   ? tradingSteps
+  const totalSteps = category === 'salvage'    ? salvageSteps
+    : category === 'refueling'  ? 2
+    : category === 'mining'     ? miningSteps
+    : category === 'trading'    ? tradingSteps
+    : category === 'medical'    ? medicalSteps
+    : category === 'ship_mining' ? shipMiningSteps
     : haulingSteps;
 
   const canAdvance =
-    category === 'salvage'   ? true
-    : category === 'trading' ? true   // start a trading run with zero info; fill in live
-    : category === 'mining'  ? hasMiningLoc
+    category === 'salvage'    ? true
+    : category === 'trading'  ? true   // start a trading run with zero info; fill in live
+    : category === 'medical'  ? true
+    : category === 'ship_mining' ? true
+    : category === 'mining'   ? hasMiningLoc
     : category === 'refueling' ? !!refuelLocation.name?.trim()
     : step === 1 ? hasPickup && hasDropoff
     : step === 2 ? hasAnyCargo
@@ -184,6 +203,23 @@ export default function AddContractModal({ onSave, onClose, commodities, systems
         cargo:    [],
         payout:   0,
         notes:    tradingNotes.trim() || null,
+      });
+      return;
+    }
+
+    if (category === 'medical') {
+      onSave({ type: 'Medical', system: 'Unknown', pickups: [], dropoffs: [], cargo: [], payout: 0, notes: medicalNotes.trim() || null });
+      return;
+    }
+
+    if (category === 'ship_mining') {
+      onSave({
+        type:    'Ship Mining',
+        system:  shipMiningSystem || shipMiningLocation.body || shipMiningLocation.name || 'Unknown',
+        pickups: shipMiningLocation.name ? [shipMiningLocation] : [],
+        dropoffs: [],
+        cargo:   [],
+        payout:  0,
       });
       return;
     }
@@ -303,7 +339,7 @@ export default function AddContractModal({ onSave, onClose, commodities, systems
 
   const handleNext = () => {
     if (!canAdvance) return;
-    if (category === 'salvage' || category === 'refueling' || category === 'mining' || category === 'trading') {
+    if (category === 'salvage' || category === 'refueling' || category === 'mining' || category === 'trading' || category === 'medical' || category === 'ship_mining') {
       save();
     } else {
       if (step === 1) advanceToCargo();
@@ -312,10 +348,12 @@ export default function AddContractModal({ onSave, onClose, commodities, systems
     }
   };
 
-  const isFinalStep = category === 'salvage'   ? step === salvageSteps - 1
-    : category === 'refueling' ? step === 1
-    : category === 'mining'    ? step === miningSteps - 1
-    : category === 'trading'   ? step === tradingSteps - 1
+  const isFinalStep = category === 'salvage'    ? step === salvageSteps - 1
+    : category === 'refueling'  ? step === 1
+    : category === 'mining'     ? step === miningSteps - 1
+    : category === 'trading'    ? step === tradingSteps - 1
+    : category === 'medical'    ? step === medicalSteps - 1
+    : category === 'ship_mining' ? step === shipMiningSteps - 1
     : step === haulingSteps - 1;
 
   return (
@@ -417,6 +455,56 @@ export default function AddContractModal({ onSave, onClose, commodities, systems
                 ↑ Buy location · Commodity · SCU bought · Buy price/unit<br />
                 ↓ Sell location · Sell price/unit per commodity<br />
                 Multiple commodities and stops in one contract
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* ── MEDICAL STEP 1 ── */}
+        {category === 'medical' && step === 1 && (
+          <div>
+            <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--muted)', letterSpacing: '0.08em', marginBottom: 6, textTransform: 'uppercase' }}>Medical Response</div>
+            <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: 'var(--muted)', marginBottom: 18, lineHeight: 1.6 }}>
+              Responding to a beacon? Head straight into session. Log earnings once the patient pays — tips can be added too.
+            </div>
+            <div style={{ marginBottom: 20 }}>
+              <span style={lbl}>Notes (optional)</span>
+              <input autoFocus type="text"
+                style={{ width: '100%', padding: '8px 10px', background: 'var(--bg-1)', border: '2px solid var(--border)', color: 'var(--text)', fontSize: 13, fontFamily: 'var(--font-mono)', outline: 'none', boxSizing: 'border-box' }}
+                placeholder="e.g. Beacon — Daymar"
+                value={medicalNotes}
+                onChange={e => setMedicalNotes(e.target.value)}
+              />
+            </div>
+            <div style={{ padding: '10px 14px', background: 'rgba(220,38,38,0.06)', border: '1.5px solid #dc2626' }}>
+              <div style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 10, color: '#dc2626', letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: 4 }}>How it works</div>
+              <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: 'var(--muted)', lineHeight: 1.7 }}>
+                Save and go straight to session<br />
+                Log base pay + optional tip when the patient pays<br />
+                Submit manually when ready
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* ── SHIP MINING STEP 1 ── */}
+        {category === 'ship_mining' && step === 1 && (
+          <div>
+            <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--muted)', letterSpacing: '0.08em', marginBottom: 6, textTransform: 'uppercase' }}>Ship Mining Run</div>
+            <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: 'var(--muted)', marginBottom: 18, lineHeight: 1.6 }}>
+              Enter your mining destination (optional). Log ore, refining costs and sell prices live in-session.
+            </div>
+            <div style={{ marginBottom: 18 }}>
+              <span style={lbl}>Mining Location (optional)</span>
+              <LocationAutocomplete value={shipMiningLocation} onChange={setShipMiningLocation} placeholder="e.g. Yela Belt, CRU-L4…" systemsMap={systemsMap} />
+              {shipMiningSystem && <div style={{ marginTop: 6, fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--muted)' }}>System: {shipMiningSystem}</div>}
+            </div>
+            <div style={{ padding: '10px 14px', background: 'rgba(202,138,4,0.06)', border: '1.5px solid #ca8a04' }}>
+              <div style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 10, color: '#ca8a04', letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: 4 }}>Ship-minable ores</div>
+              <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: 'var(--muted)', lineHeight: 1.7 }}>
+                High value: Quantanium · Bexalite · Laranite · Taranite · Borase<br />
+                Mid value: Agricium · Titanite · Hephaestanite · Diamond<br />
+                Common: Gold · Copper · Aluminium · Tungsten · Iron · Corundum
               </div>
             </div>
           </div>
@@ -691,9 +779,11 @@ export default function AddContractModal({ onSave, onClose, commodities, systems
           {step > 0 && (
             <button style={primaryBtn(!canAdvance)} onClick={handleNext}>
               {isFinalStep ? (
-                category === 'salvage' ? 'Fly to Site →' :
-                category === 'mining'  ? 'Head to Site →' :
-                category === 'trading' ? 'Start Trading Run →' :
+                category === 'salvage'    ? 'Fly to Site →' :
+                category === 'mining'     ? 'Head to Site →' :
+                category === 'trading'    ? 'Start Trading Run →' :
+                category === 'medical'    ? 'Respond to Beacon →' :
+                category === 'ship_mining' ? 'Head to Belt →' :
                 'Save Contract'
               ) : 'Continue →'}
             </button>

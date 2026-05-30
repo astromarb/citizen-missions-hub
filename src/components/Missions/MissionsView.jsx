@@ -326,10 +326,11 @@ export default function MissionsView({ sessions, myProfileId, profile, avatarUrl
             </div>
             {displayBadges.length > 0 && (
               <div style={{
-                border: '2px solid var(--border)', borderTop: 'none',
+                border: '2px solid var(--border)',
                 background: 'var(--bg-1)', padding: '8px 12px',
                 display: 'flex', flexDirection: 'row', gap: 6, flexWrap: 'wrap',
                 justifyContent: 'center',
+                position: 'relative', zIndex: 10,
               }}>
                 {displayBadges.map(id => renderBadge(id, 'xs'))}
               </div>
@@ -338,7 +339,7 @@ export default function MissionsView({ sessions, myProfileId, profile, avatarUrl
         ) : (
           <>
           {/* Desktop: banner bleeds from top, callsign + stats below */}
-          <div style={{ border: '2px solid var(--border)', background: bannerObj ? bannerObj.fallbackBg : 'var(--bg-1)', marginBottom: displayBadges.length > 0 ? 0 : 16, position: 'relative', overflow: 'hidden' }}>
+          <div style={{ border: '2px solid var(--border)', background: bannerObj ? bannerObj.fallbackBg : 'var(--bg-1)', marginBottom: 16, position: 'relative', overflow: 'hidden' }}>
             {bannerObj && (
               <>
                 <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: '100%', backgroundImage: `url(${bannerSrc ?? bannerObj.src})`, backgroundSize: 'cover', backgroundPosition: 'top center', backgroundColor: bannerObj.fallbackBg, zIndex: 0 }} />
@@ -371,10 +372,12 @@ export default function MissionsView({ sessions, myProfileId, profile, avatarUrl
           </div>
           {displayBadges.length > 0 && (
             <div style={{
-              border: '2px solid var(--border)', borderTop: 'none',
+              border: '2px solid var(--border)',
               background: 'var(--bg-1)', padding: '10px 18px',
               display: 'flex', flexDirection: 'row', gap: 8, flexWrap: 'wrap',
               justifyContent: 'center', marginBottom: 16,
+              marginTop: 10,
+              position: 'relative', zIndex: 10,
             }}>
               {displayBadges.map(id => renderBadge(id, 'sm'))}
             </div>

@@ -189,7 +189,6 @@ function WalletBoard({ rows, myProfileId, emptyMsg, title = 'Verified Balance', 
 export default function LeaderboardView({ sessions, myProfileId, profiles = [], friends = [] }) {
   const isMobile = useIsMobile();
   const [scope, setScope] = useState('global');
-  const [haulingOpen, setHaulingOpen] = useState(true);
   const [walletOpen, setWalletOpen] = useState(true);
   const [netWorthOpen, setNetWorthOpen] = useState(true);
 
@@ -270,21 +269,10 @@ export default function LeaderboardView({ sessions, myProfileId, profiles = [], 
         {scopeTab('friends', 'Friends')}
       </div>
 
-      {/* ── HAULING section ── */}
-      <Section title="Hauling" open={haulingOpen} onToggle={() => setHaulingOpen(v => !v)}>
-        {players.length === 0 ? (
-          <div style={{ padding: '32px 20px', textAlign: 'center', border: '2px dashed var(--border)', background: 'var(--bg-1)', fontFamily: 'var(--font-mono)', fontSize: 12, color: 'var(--muted)', marginBottom: 16, animation: A.fadeIn() }}>
-            {isFriendsScope ? 'No friends have session data yet.' : 'No session data yet.'}
-          </div>
-        ) : (
-          <div key={scope} style={{ display: 'flex', flexDirection: 'column', gap: 12, marginBottom: 16 }}>
-            <Board title="SCU Hauled"          rows={bySCU}        valueKey="scu"       format={fmtSCU}  myProfileId={myProfileId} />
-            <Board title="aUEC Earned"         rows={byPayout}     valueKey="payout"    format={fmtAUEC} myProfileId={myProfileId} />
-            <Board title="Sessions Flown"      rows={bySessions}   valueKey="sessions"  format={fmt}     myProfileId={myProfileId} />
-            <Board title="Waypoints Completed" rows={byWaypoints}  valueKey="waypoints" format={fmt}     myProfileId={myProfileId} />
-          </div>
-        )}
-      </Section>
+      {/* ── Sessions Logged ── */}
+      <div style={{ marginBottom: 16 }}>
+        <Board title="Sessions Logged" rows={bySessions} valueKey="sessions" format={fmt} myProfileId={myProfileId} />
+      </div>
 
       {/* ── WALLET section ── */}
       <Section title="Wallet" open={walletOpen} onToggle={() => setWalletOpen(v => !v)}>

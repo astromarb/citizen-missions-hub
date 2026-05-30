@@ -63,19 +63,20 @@ const AlphaIcon = ({ c, s }) => (
 );
 
 function BadgeTooltip({ text, children }) {
-  const [visible, setVisible] = useState(false);
+  const [pos, setPos] = useState(null);
   return (
     <div
       style={{ position: 'relative', display: 'inline-flex' }}
-      onMouseEnter={() => setVisible(true)}
-      onMouseLeave={() => setVisible(false)}
+      onMouseEnter={(e) => setPos({ x: e.clientX, y: e.clientY })}
+      onMouseMove={(e) => setPos({ x: e.clientX, y: e.clientY })}
+      onMouseLeave={() => setPos(null)}
     >
       {children}
-      {visible && (
+      {pos && (
         <div style={{
-          position: 'absolute',
-          bottom: 'calc(100% + 8px)',
-          left: '50%',
+          position: 'fixed',
+          left: pos.x,
+          top: pos.y - 44,
           transform: 'translateX(-50%)',
           background: '#1a1a1a',
           color: '#f0f0f0',
@@ -83,7 +84,7 @@ function BadgeTooltip({ text, children }) {
           fontSize: 11,
           padding: '6px 10px',
           whiteSpace: 'nowrap',
-          zIndex: 9999,
+          zIndex: 99999,
           pointerEvents: 'none',
           border: '1px solid #444',
           lineHeight: 1.4,

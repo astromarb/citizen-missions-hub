@@ -503,6 +503,49 @@ const SCU_SIZES        = [1, 2, 4, 8, 16, 32, 64];
 const MINING_SCU_SIZES = [0.25, 0.5, 1, 2, 4];
 const HAND_MINING_ORES = ['Quantainium', 'Hadanite', 'Taranite', 'Aphorite', 'Dolivine'];
 const TRADE_COLOR      = '#b45309';
+const SHIP_MINING_COLOR = '#ca8a04';
+const SHIP_MINING_ORES = {
+  'High Value': ['Quantanium', 'Bexalite', 'Laranite', 'Taranite', 'Borase'],
+  'Mid Value':  ['Agricium', 'Titanite', 'Diamond', 'Hephaestanite', 'Gold'],
+  'Common':     ['Copper', 'Aluminium', 'Tungsten', 'Iron', 'Corundum', 'Carbon'],
+};
+
+function MedicalPayPanel({ contractId, currentPayout, onUpdateContract }) {
+  const [base,   setBase]   = useState('');
+  const [tip,    setTip]    = useState('');
+  const [saving, setSaving] = useState(false);
+
+  const total = (Number(base) || 0) + (Number(tip) || 0);
+
+  const save = async () => {
+    if (!total || saving) return;
+    setSaving(true);
+    await onUpdateContract?.(contractId, { payout: (currentPayout || 0) + total });
+    setBase(''); setTip('');
+    setSaving(false);
+  };
+
+  return (
+    <div style={{ border: '2px solid #dc2626', padding: '10px 12px' }}>
+      <div style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 10, color: '#dc2626', letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: 8 }}>Log Payment</div>
+      <div style={{ display: 'flex', gap: 6, alignItems: 'center', flexWrap: 'wrap' }}>
+        <input type="number" min="0" placeholder="Base pay (aUEC)" value={base} onChange={e => setBase(e.target.value)}
+          style={{ flex: 1, minWidth: 120, padding: '6px 8px', border: '1.5px solid #dc2626', background: 'var(--bg-1)', color: 'var(--text)', fontFamily: 'var(--font-mono)', fontSize: 11, outline: 'none' }} />
+        <input type="number" min="0" placeholder="Tip (optional)" value={tip} onChange={e => setTip(e.target.value)}
+          style={{ flex: 1, minWidth: 100, padding: '6px 8px', border: '1.5px solid #dc2626', background: 'var(--bg-1)', color: 'var(--text)', fontFamily: 'var(--font-mono)', fontSize: 11, outline: 'none' }} />
+        <button onClick={save} disabled={!total || saving}
+          style={{ padding: '6px 14px', background: total ? '#dc2626' : 'var(--bg-3)', border: 'none', color: total ? '#fff' : 'var(--muted)', cursor: total ? 'pointer' : 'default', fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 11, textTransform: 'uppercase', flexShrink: 0 }}>
+          {saving ? '…' : `+${total.toLocaleString()} aUEC`}
+        </button>
+      </div>
+      {tip > 0 && (
+        <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: 'var(--muted)', marginTop: 5 }}>
+          Base {Number(base).toLocaleString()} + Tip {Number(tip).toLocaleString()} = {total.toLocaleString()} aUEC
+        </div>
+      )}
+    </div>
+  );
+}
 
 function TradingPanel({ contract, sessionEnded, isSessionMember, allLocations, commodities, onAddCargoItemLive, onLogTradeSell }) {
   const [form, setForm]         = useState({ commodity: '', scu: '', buyPrice: '', fromLocation: '' });
@@ -1549,6 +1592,69 @@ export default function SessionView({
                     onAddCargoItemLive={onAddCargoItemLive}
                     onLogTradeSell={onLogTradeSell}
                   />
+                </div>
+              )}
+
+              {/* ── Medical ── */}
+              {contract.type === 'Medical' && (
+                <div style={{ marginBottom: 14 }}>
+                  {contract.payout > 0 && (
+                    <div style={{ marginBottom: 10, padding: '8px 12px', background: 'rgba(220,38,38,0.06)', border: '1.5px solid #dc2626', display: 'flex', gap: 16, alignItems: 'center', flexWrap: 'wrap' }}>
+                      <span style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 16, color: '#dc2626' }}>+{contract.payout.toLocaleString()} aUEC</span>
+                      <span style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: 'var(--muted)' }}>logged</span>
+                    </div>
+                  )}
+                  {isSessionMember && !session.endedAt && (
+                    <MedicalPayPanel
+                      contractId={contract.id}
+                      currentPayout={contract.payout}
+                      onUpdateContract={onUpdateContract}
+                    />
+                  )}
+                </div>
+              )}
+
+              {/* ── Ship Mining ── */}
+              {contract.type === 'Ship Mining' && (
+                <div style={{ marginBottom: 14 }}>
+                  {contract.cargo.some(c => c.source === 'found') && (
+                    <div style={{ marginBottom: 8 }}>
+                      <div style={sectionLbl}>Mined Ore</div>
+                      <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                        {contract.cargo.filter(c => c.source === 'found').map((c, i) => (
+                          <div key={c.id || i} style={{ padding: '6px 10px', background: 'transparent', border: `2px solid ${SHIP_MINING_COLOR}`, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 3, minWidth: 72 }}>
+                            <span style={{ fontFamily: 'var(--font-display)', fontSize: 10, fontWeight: 700, color: SHIP_MINING_COLOR, letterSpacing: '0.04em' }}>{c.commodity}</span>
+                            <span style={{ fontFamily: 'var(--font-mono)', fontSize: 14, fontWeight: 700, color: 'var(--muted)', lineHeight: 1 }}>{c.scu} SCU</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                  {isSessionMember && !session.endedAt && (
+                    <div>
+                      <div style={sectionLbl}>Ship Mining</div>
+                      <div style={{ border: `2px solid ${SHIP_MINING_COLOR}`, padding: '10px 12px', display: 'flex', flexDirection: 'column', gap: 10 }}>
+                        {Object.entries(SHIP_MINING_ORES).map(([tier, ores]) => (
+                          <div key={tier}>
+                            <div style={{ fontFamily: 'var(--font-mono)', fontSize: 8, color: SHIP_MINING_COLOR, textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: 5, opacity: 0.7 }}>{tier}</div>
+                            {ores.map(commodity => (
+                              <div key={commodity} style={{ display: 'flex', alignItems: 'center', gap: 5, flexWrap: 'wrap', marginBottom: 4 }}>
+                                <span style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 11, color: SHIP_MINING_COLOR, width: 100, flexShrink: 0 }}>{commodity}</span>
+                                {SCU_SIZES.map(scu => (
+                                  <button key={scu}
+                                    onClick={() => onAddCargoItemLive?.(contract.id, { commodity, scu, source: 'found' })}
+                                    style={{ padding: '4px 7px', cursor: 'pointer', border: `1.5px solid ${SHIP_MINING_COLOR}`, background: 'transparent', color: SHIP_MINING_COLOR, fontFamily: 'var(--font-mono)', fontSize: 11, fontWeight: 700 }}
+                                    onMouseEnter={e => { e.currentTarget.style.background = SHIP_MINING_COLOR; e.currentTarget.style.color = '#fff'; }}
+                                    onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = SHIP_MINING_COLOR; }}
+                                  >+{scu}</button>
+                                ))}
+                              </div>
+                            ))}
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
                 </div>
               )}
 
