@@ -142,7 +142,7 @@ export default function OnboardingFlow({ profile, updateProfile, checkCallsign, 
             <div style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 16, marginBottom: 4 }}>Pick your crew color</div>
             <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--muted)', marginBottom: 18 }}>Can be changed later in Settings.</div>
             <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 20 }}>
-              <div style={{ width: 64, height: 64, borderRadius: '50%', background: color, border: '2px solid #000' }} />
+              <div style={{ width: 64, height: 64, background: color, border: '2px solid #000' }} />
             </div>
             <div style={{ display: 'grid', gridTemplateColumns: `repeat(${isMobile ? 6 : 4}, 1fr)`, gap: 10 }}>
               {SWATCH_COLORS.map(c => (

@@ -499,7 +499,9 @@ function RefuelingWaypointRow({ waypoint, myProfileId, members, onSetStatus, can
   );
 }
 
-const SCU_SIZES = [1, 2, 4, 8, 16, 32, 64];
+const SCU_SIZES        = [1, 2, 4, 8, 16, 32, 64];
+const MINING_SCU_SIZES = [0.25, 0.5, 1, 2, 4];
+const HAND_MINING_ORES = ['Quantainium', 'Hadanite', 'Taranite', 'Aphorite', 'Dolivine'];
 
 function SalvageSiteRow({ contractId, onAddWaypoint, allLocations }) {
   const [locVal, setLocVal] = useState('');
@@ -1315,6 +1317,47 @@ export default function SessionView({
                                 }}
                                 onMouseEnter={e => { e.currentTarget.style.background = '#7c3aed'; e.currentTarget.style.color = '#fff'; }}
                                 onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = '#7c3aed'; }}
+                              >+{scu}</button>
+                            ))}
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* ── Hand Mining ── */}
+              {contract.type === 'Hand Mining' && (
+                <div style={{ marginBottom: 14 }}>
+                  {/* Mined ore pills */}
+                  {contract.cargo.some(c => c.source === 'found') && (
+                    <div style={{ marginBottom: 8 }}>
+                      <div style={sectionLbl}>Mined Ore</div>
+                      <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                        {contract.cargo.filter(c => c.source === 'found').map((c, i) => (
+                          <div key={c.id || i} style={{ padding: '6px 10px', background: 'transparent', border: '2px solid #16a34a', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 3, minWidth: 72 }}>
+                            <span style={{ fontFamily: 'var(--font-display)', fontSize: 10, fontWeight: 700, color: '#16a34a', letterSpacing: '0.04em' }}>{c.commodity}</span>
+                            <span style={{ fontFamily: 'var(--font-mono)', fontSize: 14, fontWeight: 700, color: 'var(--muted)', lineHeight: 1 }}>{c.scu} SCU</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                  {/* Mining quick-add */}
+                  {isSessionMember && !session.endedAt && (
+                    <div>
+                      <div style={sectionLbl}>Hand Mining</div>
+                      <div style={{ border: '2px solid #16a34a', padding: '10px 12px', display: 'flex', flexDirection: 'column', gap: 8 }}>
+                        {HAND_MINING_ORES.map(commodity => (
+                          <div key={commodity} style={{ display: 'flex', alignItems: 'center', gap: 5, flexWrap: 'wrap' }}>
+                            <span style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 11, color: '#16a34a', width: 86, flexShrink: 0 }}>{commodity}</span>
+                            {MINING_SCU_SIZES.map(scu => (
+                              <button key={scu}
+                                onClick={() => onAddCargoItemLive?.(contract.id, { commodity, scu, source: 'found' })}
+                                style={{ padding: '4px 7px', cursor: 'pointer', border: '1.5px solid #16a34a', background: 'transparent', color: '#16a34a', fontFamily: 'var(--font-mono)', fontSize: 11, fontWeight: 700 }}
+                                onMouseEnter={e => { e.currentTarget.style.background = '#16a34a'; e.currentTarget.style.color = '#fff'; }}
+                                onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = '#16a34a'; }}
                               >+{scu}</button>
                             ))}
                           </div>

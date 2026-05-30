@@ -57,7 +57,7 @@ const MISSION_CATEGORIES = [
   { key: 'salvage',   label: 'Salvage',        available: true },
   { key: 'refueling', label: 'Refueling',      available: true },
   { key: 'bounty',    label: 'Bounty Hunting', available: false },
-  { key: 'mining',    label: 'Mining',         available: false },
+  { key: 'mining',    label: 'Hand Mining',    available: true  },
   { key: 'security',  label: 'Security',       available: false },
 ];
 
@@ -75,6 +75,9 @@ export default function AddContractModal({ onSave, onClose, commodities, systems
   // ── Refueling state ─────────────────────────────────────────────
   const [refuelLocation, setRefuelLocation] = useState(emptyWp());
   const [refuelPayout,   setRefuelPayout]   = useState('');
+
+  // ── Mining state ────────────────────────────────────────────────
+  const [miningLocation, setMiningLocation] = useState(emptyWp());
 
   // ── Salvage state ───────────────────────────────────────────────
   const [salvageLocation,  setSalvageLocation]  = useState(emptyWp());
@@ -100,6 +103,11 @@ export default function AddContractModal({ onSave, onClose, commodities, systems
 
   const haulingSteps = multiDropoff ? 4 : 3;
 
+  // ── Mining derived ───────────────────────────────────────────────
+  const miningSystem = deriveSalvageSystem(miningLocation, systemsMap);
+  const hasMiningLoc = !!miningLocation.name?.trim();
+  const miningSteps  = 2;
+
   // ── Salvage derived ─────────────────────────────────────────────
   const salvageSystem = deriveSalvageSystem(salvageLocation, systemsMap);
   const hasSalvageLoc = !!salvageLocation.name?.trim();
@@ -109,16 +117,18 @@ export default function AddContractModal({ onSave, onClose, commodities, systems
   // ── Refueling derived ────────────────────────────────────────────
   const refuelSystem = deriveSalvageSystem(refuelLocation, systemsMap);
 
-  const totalSteps = category === 'salvage' ? salvageSteps : category === 'refueling' ? 2 : haulingSteps;
+  const totalSteps = category === 'salvage'   ? salvageSteps
+    : category === 'refueling' ? 2
+    : category === 'mining'    ? miningSteps
+    : haulingSteps;
 
   const canAdvance =
-    category === 'salvage'
-      ? true  // claim cost defaults to 0; everything else set in-session
-      : category === 'refueling'
-      ? !!refuelLocation.name?.trim()
-      : step === 1 ? hasPickup && hasDropoff
-      : step === 2 ? hasAnyCargo
-      : true;
+    category === 'salvage'   ? true
+    : category === 'mining'  ? hasMiningLoc
+    : category === 'refueling' ? !!refuelLocation.name?.trim()
+    : step === 1 ? hasPickup && hasDropoff
+    : step === 2 ? hasAnyCargo
+    : true;
 
   // ── Cargo helpers (hauling) ──────────────────────────────────────
   const updateCargoItem = (pi, ii, patch) =>
@@ -152,6 +162,18 @@ export default function AddContractModal({ onSave, onClose, commodities, systems
         dropoffs: [],
         cargo:    [],
         payout:   Number(refuelPayout) || 0,
+      });
+      return;
+    }
+
+    if (category === 'mining') {
+      onSave({
+        type:    'Hand Mining',
+        system:  miningSystem || miningLocation.body || miningLocation.name || 'Unknown',
+        pickups: [miningLocation],
+        dropoffs: [],
+        cargo:   [],
+        payout:  0,
       });
       return;
     }
@@ -259,9 +281,7 @@ export default function AddContractModal({ onSave, onClose, commodities, systems
 
   const handleNext = () => {
     if (!canAdvance) return;
-    if (category === 'salvage') {
-      save(); // only 1 input step; save immediately
-    } else if (category === 'refueling') {
+    if (category === 'salvage' || category === 'refueling' || category === 'mining') {
       save();
     } else {
       if (step === 1) advanceToCargo();
@@ -270,10 +290,9 @@ export default function AddContractModal({ onSave, onClose, commodities, systems
     }
   };
 
-  const isFinalStep = category === 'salvage'
-    ? step === salvageSteps - 1
-    : category === 'refueling'
-    ? step === 1
+  const isFinalStep = category === 'salvage'   ? step === salvageSteps - 1
+    : category === 'refueling' ? step === 1
+    : category === 'mining'    ? step === miningSteps - 1
     : step === haulingSteps - 1;
 
   return (
@@ -345,6 +364,32 @@ export default function AddContractModal({ onSave, onClose, commodities, systems
                 />
                 <span style={{ fontSize: 11, color: 'var(--muted)', fontFamily: 'var(--font-mono)', flexShrink: 0 }}>aUEC</span>
               </div>
+            </div>
+          </div>
+        )}
+
+        {/* ── MINING STEP 1: Assigned Location ── */}
+        {category === 'mining' && step === 1 && (
+          <div>
+            <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--muted)', letterSpacing: '0.08em', marginBottom: 6, textTransform: 'uppercase' }}>
+              Assigned Mining Location
+            </div>
+            <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: 'var(--muted)', marginBottom: 18, lineHeight: 1.6 }}>
+              Where are you assigned to mine? You'll log what you find once you arrive — no need to know the ore beforehand.
+            </div>
+            <div style={{ marginBottom: 20 }}>
+              <span style={lbl}>Mining Location</span>
+              <LocationAutocomplete
+                value={miningLocation}
+                onChange={setMiningLocation}
+                placeholder="Search location…"
+                systemsMap={systemsMap}
+              />
+              {miningSystem && (
+                <div style={{ marginTop: 6, fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--muted)' }}>
+                  System: {miningSystem}
+                </div>
+              )}
             </div>
           </div>
         )}
@@ -591,7 +636,11 @@ export default function AddContractModal({ onSave, onClose, commodities, systems
           </button>
           {step > 0 && (
             <button style={primaryBtn(!canAdvance)} onClick={handleNext}>
-              {isFinalStep ? (category === 'salvage' ? 'Fly to Site →' : 'Save Contract') : 'Continue →'}
+              {isFinalStep ? (
+                category === 'salvage' ? 'Fly to Site →' :
+                category === 'mining'  ? 'Head to Site →' :
+                'Save Contract'
+              ) : 'Continue →'}
             </button>
           )}
         </div>

@@ -401,7 +401,7 @@ export default function SettingsView({ profile, updateProfile, checkCallsign, sy
   const renderColorColumn = (rows) => (
     <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 2 }}>
       {rows.map(row => (
-        <div key={row.label} style={{ display: 'flex', gap: 2 }}>
+        <div key={row.label} style={{ display: 'grid', gridTemplateColumns: `repeat(${row.colors.length}, 1fr)`, gap: 2 }}>
           {row.colors.map(c => {
             const selected = color === c;
             const light = isLight(c);
@@ -411,7 +411,7 @@ export default function SettingsView({ profile, updateProfile, checkCallsign, sy
                 title={`${row.label} · ${c}`}
                 onClick={() => setColor(c)}
                 style={{
-                  flex: 1, height: 26, background: c,
+                  width: '100%', aspectRatio: '1', background: c,
                   border: 'none', cursor: 'pointer', padding: 0, position: 'relative',
                   outline: selected ? `2px solid ${light ? '#000' : '#fff'}` : 'none',
                   outlineOffset: -2,
@@ -442,7 +442,7 @@ export default function SettingsView({ profile, updateProfile, checkCallsign, sy
 
         {/* Preview */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 14 }}>
-          <div style={{ width: 44, height: 44, borderRadius: '50%', background: color, border: '2px solid #000', flexShrink: 0 }} />
+          <div style={{ width: 44, height: 44, background: color, border: '2px solid #000', flexShrink: 0 }} />
           <span style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--muted)' }}>{color.toUpperCase()}</span>
         </div>
 
