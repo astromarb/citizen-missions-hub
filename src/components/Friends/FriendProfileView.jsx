@@ -1,6 +1,6 @@
 import { useIsMobile } from '../../hooks/useIsMobile.js';
 import LandingZoneBadge, { AlphaBadge } from '../shared/LandingZoneBadge.jsx';
-import { typeBg } from '../../data/contractTypes.js';
+import { typeBg, isHaulingType } from '../../data/contractTypes.js';
 import { getContractSize } from '../../utils/contractSize.js';
 import { getBanner } from '../../data/profileBanners.js';
 import { useBannerUrl } from '../../hooks/useBanners.js';
@@ -192,10 +192,12 @@ function SessionDebrief({ session, myProfileId, onOpenSession }) {
                   fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 10,
                   letterSpacing: '0.06em', textTransform: 'uppercase', whiteSpace: 'nowrap',
                 }}>{c.type}</span>
-                <span title={sz.tip} style={{
-                  fontFamily: 'var(--font-display)', fontSize: 13, fontWeight: 800, flexShrink: 0,
-                  color: 'var(--text)', textDecoration: 'underline', letterSpacing: '0.02em',
-                }}>{'{ '}{sz.label}{' }'}</span>
+                {isHaulingType(c.type) && (
+                  <span title={sz.tip} style={{
+                    fontFamily: 'var(--font-display)', fontSize: 13, fontWeight: 800, flexShrink: 0,
+                    color: 'var(--text)', textDecoration: 'underline', letterSpacing: '0.02em',
+                  }}>{'{ '}{sz.label}{' }'}</span>
+                )}
                 <span style={{ color: 'var(--border)', fontSize: 13, flexShrink: 0 }}>|</span>
                 <span style={{
                   fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 12, textTransform: 'uppercase',

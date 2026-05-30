@@ -1,4 +1,6 @@
-export default function StatsView({ sessions, myProfileId }) {
+import LeaderboardView from '../Leaderboard/LeaderboardView.jsx';
+
+export default function StatsView({ sessions, myProfileId, profiles = [], friends = [] }) {
   const allSessions = Object.values(sessions);
   const allContracts = allSessions.flatMap(s => s.contracts);
   const totalSCU = allContracts.reduce((t, c) => t + c.cargo.reduce((s, ci) => s + Number(ci.scu || 0), 0), 0);
@@ -53,19 +55,27 @@ export default function StatsView({ sessions, myProfileId }) {
     </div>
   );
 
+  const leaderboards = (
+    <LeaderboardView sessions={sessions} myProfileId={myProfileId} profiles={profiles} friends={friends} />
+  );
+
   if (allContracts.length === 0) {
     return (
-      <div style={{ padding: '20px' }}>
-        <div style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 20, letterSpacing: '-0.02em', marginBottom: 20 }}>Stats</div>
-        <div style={{ textAlign: 'center', padding: '60px 20px', border: '2px dashed var(--border)', background: 'var(--bg-1)' }}>
-          <div style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 18, marginBottom: 8 }}>No Data Yet</div>
-          <div style={{ color: 'var(--muted)', fontSize: 13 }}>Log some contracts to see stats here.</div>
+      <>
+        <div style={{ padding: '20px' }}>
+          <div style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 20, letterSpacing: '-0.02em', marginBottom: 20 }}>Stats</div>
+          <div style={{ textAlign: 'center', padding: '60px 20px', border: '2px dashed var(--border)', background: 'var(--bg-1)' }}>
+            <div style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 18, marginBottom: 8 }}>No Data Yet</div>
+            <div style={{ color: 'var(--muted)', fontSize: 13 }}>Log some contracts to see stats here.</div>
+          </div>
         </div>
-      </div>
+        {leaderboards}
+      </>
     );
   }
 
   return (
+    <>
     <div style={{ padding: '20px' }}>
       <div style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 20, letterSpacing: '-0.02em', marginBottom: 20 }}>Stats</div>
 
@@ -151,5 +161,7 @@ export default function StatsView({ sessions, myProfileId }) {
         </div>
       </div>
     </div>
+    {leaderboards}
+    </>
   );
 }

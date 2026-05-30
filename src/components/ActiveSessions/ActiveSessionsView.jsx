@@ -34,6 +34,7 @@ function fmtElapsed(ms) {
 }
 
 function ActiveSessionCard({ session, myProfileId, onOpen, now, cardTheme }) {
+  const isMobile = useIsMobile();
   const d = new Date(session.date + 'T12:00:00');
   const dayOfWeek = d.getDay();
   const themeColor = cardTheme?.colors?.[dayOfWeek] ?? null;
@@ -69,13 +70,13 @@ function ActiveSessionCard({ session, myProfileId, onOpen, now, cardTheme }) {
       onMouseLeave={e => { e.currentTarget.style.borderColor = 'var(--border)'; }}
     >
       {/* Day-color header */}
-      <div style={{ background: headerBg, padding: '14px 20px' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12 }}>
-          <div style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 15, color: headerText, textTransform: 'uppercase', letterSpacing: '0.04em', lineHeight: 1 }}>
+      <div style={{ background: headerBg, padding: isMobile ? '14px 20px' : '10px 12px' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+          <div style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: isMobile ? 15 : 12, color: headerText, textTransform: 'uppercase', letterSpacing: '0.04em', lineHeight: 1 }}>
             {dateLabel}
           </div>
           <div style={{
-            fontFamily: 'var(--font-mono)', fontWeight: 700, fontSize: 14, letterSpacing: '0.04em',
+            fontFamily: 'var(--font-mono)', fontWeight: 700, fontSize: isMobile ? 14 : 11, letterSpacing: '0.04em',
             color: isPaused ? '#ff9800' : (isDark ? 'rgba(255,255,255,0.9)' : 'rgba(0,0,0,0.7)'),
           }}>
             ⏱ {isPaused ? fmtElapsed(now - new Date(session.startedAt).getTime() - (session.totalPausedMs || 0) - (now - new Date(session.pausedAt).getTime())) : fmtElapsed(elapsed)}
@@ -83,15 +84,15 @@ function ActiveSessionCard({ session, myProfileId, onOpen, now, cardTheme }) {
         </div>
         <div style={{ marginTop: 6, display: 'flex', alignItems: 'center', gap: 8 }}>
           <span style={{
-            fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 10,
-            letterSpacing: '0.14em', textTransform: 'uppercase',
+            fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: isMobile ? 10 : 8,
+            letterSpacing: '0.12em', textTransform: 'uppercase',
             color: isPaused ? '#ff9800' : (isDark ? 'rgba(255,255,255,0.75)' : 'rgba(0,0,0,0.6)'),
           }}>
             {isPaused ? '⏸ PAUSED' : '● IN PROGRESS'}
           </span>
           {isMySession && (
             <span style={{
-              fontFamily: 'var(--font-mono)', fontSize: 9, letterSpacing: '0.1em', textTransform: 'uppercase',
+              fontFamily: 'var(--font-mono)', fontSize: isMobile ? 9 : 8, letterSpacing: '0.1em', textTransform: 'uppercase',
               color: isDark ? 'rgba(255,255,255,0.55)' : 'rgba(0,0,0,0.45)',
               border: `1px solid ${isDark ? 'rgba(255,255,255,0.25)' : 'rgba(0,0,0,0.2)'}`,
               padding: '1px 5px',
@@ -101,53 +102,56 @@ function ActiveSessionCard({ session, myProfileId, onOpen, now, cardTheme }) {
       </div>
 
       {/* Crew row */}
-      <div style={{ padding: '16px 20px', borderBottom: '1px solid var(--bg-3)' }}>
-        <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--muted)', marginBottom: 10 }}>Crew</div>
-        <div style={{ display: 'flex', gap: 14, flexWrap: 'wrap', alignItems: 'flex-start' }}>
-          {session.members?.map(m => (
-            <div key={m.id} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 5 }}>
-              <div style={{ width: 40, height: 40, borderRadius: '50%', overflow: 'hidden', border: `2px solid ${m.id === myProfileId ? '#c41e3a' : (m.color || '#8b949e')}`, flexShrink: 0 }}>
+      <div style={{ padding: isMobile ? '16px 20px' : '10px 12px', borderBottom: '1px solid var(--bg-3)' }}>
+        <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--muted)', marginBottom: isMobile ? 10 : 8 }}>Crew</div>
+        <div style={{ display: 'flex', gap: isMobile ? 14 : 8, flexWrap: 'wrap', alignItems: 'flex-start' }}>
+          {session.members?.map(m => {
+            const av = isMobile ? 40 : 28;
+            return (
+            <div key={m.id} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4 }}>
+              <div style={{ width: av, height: av, borderRadius: '50%', overflow: 'hidden', border: `2px solid ${m.id === myProfileId ? '#c41e3a' : (m.color || '#8b949e')}`, flexShrink: 0 }}>
                 {m.avatar_url
                   ? <img src={m.avatar_url} alt={m.callsign} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                   : <div style={{ width: '100%', height: '100%', background: m.color || '#8b949e', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                      <span style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 15, color: '#fff' }}>{m.callsign?.[0]?.toUpperCase()}</span>
+                      <span style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: isMobile ? 15 : 11, color: '#fff' }}>{m.callsign?.[0]?.toUpperCase()}</span>
                     </div>
                 }
               </div>
               <span style={{
-                fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 9, textTransform: 'uppercase',
-                letterSpacing: '0.06em', color: m.id === myProfileId ? '#c41e3a' : 'var(--muted)',
+                fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: isMobile ? 9 : 8, textTransform: 'uppercase',
+                letterSpacing: '0.04em', color: m.id === myProfileId ? '#c41e3a' : 'var(--muted)',
+                maxWidth: av + 6, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
               }}>{m.callsign}</span>
             </div>
-          ))}
+          );})}
         </div>
       </div>
 
       {/* Stats */}
-      <div style={{ padding: '16px 20px', flex: 1 }}>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 12 }}>
+      <div style={{ padding: isMobile ? '16px 20px' : '10px 12px', flex: 1 }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: isMobile ? 12 : 6 }}>
           <div>
-            <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, letterSpacing: '0.08em', textTransform: 'uppercase', color: 'var(--muted)', marginBottom: 4 }}>SCU</div>
-            <div style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 26, color: '#c41e3a', lineHeight: 1 }}>{totalSCU.toLocaleString()}</div>
+            <div style={{ fontFamily: 'var(--font-mono)', fontSize: isMobile ? 9 : 8, letterSpacing: '0.06em', textTransform: 'uppercase', color: 'var(--muted)', marginBottom: 4 }}>SCU</div>
+            <div style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: isMobile ? 26 : 18, color: '#c41e3a', lineHeight: 1 }}>{totalSCU.toLocaleString()}</div>
           </div>
           <div>
-            <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, letterSpacing: '0.08em', textTransform: 'uppercase', color: 'var(--muted)', marginBottom: 4 }}>Payout</div>
-            <div style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 22, color: '#2e7d32', lineHeight: 1 }}>
+            <div style={{ fontFamily: 'var(--font-mono)', fontSize: isMobile ? 9 : 8, letterSpacing: '0.06em', textTransform: 'uppercase', color: 'var(--muted)', marginBottom: 4 }}>Payout</div>
+            <div style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: isMobile ? 22 : 15, color: '#2e7d32', lineHeight: 1 }}>
               {totalPayout > 0 ? `${(totalPayout / 1000).toFixed(1)}k` : '—'}
             </div>
           </div>
           <div>
-            <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, letterSpacing: '0.08em', textTransform: 'uppercase', color: 'var(--muted)', marginBottom: 4 }}>Runs</div>
-            <div style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 26, color: 'var(--text)', lineHeight: 1 }}>
-              {completedContracts}<span style={{ fontSize: 14, color: 'var(--muted)', fontWeight: 700 }}>/{session.contracts.length}</span>
+            <div style={{ fontFamily: 'var(--font-mono)', fontSize: isMobile ? 9 : 8, letterSpacing: '0.06em', textTransform: 'uppercase', color: 'var(--muted)', marginBottom: 4 }}>Runs</div>
+            <div style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: isMobile ? 26 : 18, color: 'var(--text)', lineHeight: 1 }}>
+              {completedContracts}<span style={{ fontSize: isMobile ? 14 : 11, color: 'var(--muted)', fontWeight: 700 }}>/{session.contracts.length}</span>
             </div>
           </div>
         </div>
       </div>
 
       {canOpen && (
-        <div style={{ padding: '8px 20px 12px', borderTop: '1px solid var(--bg-3)', textAlign: 'center' }}>
-          <span style={{ fontFamily: 'var(--font-mono)', fontSize: 9, letterSpacing: '0.12em', textTransform: 'uppercase', color: 'var(--muted)' }}>
+        <div style={{ padding: isMobile ? '8px 20px 12px' : '6px 12px 8px', borderTop: '1px solid var(--bg-3)', textAlign: 'center' }}>
+          <span style={{ fontFamily: 'var(--font-mono)', fontSize: 8, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--muted)' }}>
             Click to open →
           </span>
         </div>
@@ -278,7 +282,7 @@ export default function ActiveSessionsView({ sessions, myProfileId, onOpenSessio
   const activeSessions = Object.values(sessions)
     .filter(s => s.startedAt && !s.endedAt)
     .sort((a, b) => new Date(a.startedAt) - new Date(b.startedAt))
-    .slice(0, 6);
+    .slice(0, 8);
 
   const completedContracts = Object.values(sessions)
     .flatMap(s =>
@@ -307,8 +311,8 @@ export default function ActiveSessionsView({ sessions, myProfileId, onOpenSessio
         <div style={{
           display: isMobile ? 'flex' : 'grid',
           flexDirection: isMobile ? 'column' : undefined,
-          gridTemplateColumns: isMobile ? undefined : 'repeat(2, 1fr)',
-          gap: 20,
+          gridTemplateColumns: isMobile ? undefined : 'repeat(4, minmax(0, 1fr))',
+          gap: isMobile ? 16 : 12,
         }}>
           {activeSessions.map(s => (
             <ActiveSessionCard
@@ -323,9 +327,9 @@ export default function ActiveSessionsView({ sessions, myProfileId, onOpenSessio
         </div>
       )}
 
-      {activeSessions.length >= 6 && (
+      {activeSessions.length >= 8 && (
         <div style={{ marginTop: 16, fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--muted)', textAlign: 'center', letterSpacing: '0.08em' }}>
-          Showing 6 most recently started sessions
+          Showing 8 most recently started sessions
         </div>
       )}
 

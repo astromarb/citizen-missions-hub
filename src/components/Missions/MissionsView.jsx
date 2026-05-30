@@ -3,7 +3,7 @@ import { useIsMobile } from '../../hooks/useIsMobile.js';
 import EmptyState from '../shared/EmptyState.jsx';
 // SessionDebrief also calls useIsMobile directly so it can adapt card internals
 import LandingZoneBadge, { AlphaBadge } from '../shared/LandingZoneBadge.jsx';
-import { typeBg } from '../../data/contractTypes.js';
+import { typeBg, isHaulingType } from '../../data/contractTypes.js';
 import { getContractSize } from '../../utils/contractSize.js';
 import { getBanner } from '../../data/profileBanners.js';
 import { useBannerUrl } from '../../hooks/useBanners.js';
@@ -186,6 +186,7 @@ function SessionDebrief({ session, myProfileId, onOpenSession, cardTheme }) {
           {session.contracts.map(c => {
             const cSCU = c.cargo.reduce((t, ci) => t + Number(ci.scu || 0), 0);
             const sz = getContractSize(cSCU);
+            const showSize = isHaulingType(c.type);
             return (
               <div key={c.id} style={{
                 display: 'flex', alignItems: 'center', gap: 8,
@@ -200,10 +201,12 @@ function SessionDebrief({ session, myProfileId, onOpenSession, cardTheme }) {
                   fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 10,
                   letterSpacing: '0.06em', textTransform: 'uppercase', whiteSpace: 'nowrap',
                 }}>{c.type}</span>
-                <span title={sz.tip} style={{
-                  fontFamily: 'var(--font-display)', fontSize: 13, fontWeight: 800, flexShrink: 0,
-                  color: 'var(--text)', textDecoration: 'underline', letterSpacing: '0.02em',
-                }}>{'{ '}{sz.label}{' }'}</span>
+                {showSize && (
+                  <span title={sz.tip} style={{
+                    fontFamily: 'var(--font-display)', fontSize: 13, fontWeight: 800, flexShrink: 0,
+                    color: 'var(--text)', textDecoration: 'underline', letterSpacing: '0.02em',
+                  }}>{'{ '}{sz.label}{' }'}</span>
+                )}
                 <span style={{ color: 'var(--border)', fontSize: 13, flexShrink: 0 }}>|</span>
                 <span style={{
                   fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 12, textTransform: 'uppercase',
@@ -331,8 +334,7 @@ export default function MissionsView({ sessions, myProfileId, profile, avatarUrl
             </div>
             {displayBadges.length > 0 && (
               <div style={{
-                border: '2px solid var(--border)',
-                background: 'var(--bg-1)', padding: '8px 12px',
+                padding: '10px 0 0',
                 display: 'flex', flexDirection: 'row', gap: 6, flexWrap: 'wrap',
                 justifyContent: 'center',
                 position: 'relative', zIndex: 10,
@@ -377,11 +379,10 @@ export default function MissionsView({ sessions, myProfileId, profile, avatarUrl
           </div>
           {displayBadges.length > 0 && (
             <div style={{
-              border: '2px solid var(--border)',
-              background: 'var(--bg-1)', padding: '10px 18px',
+              padding: '4px 0',
               display: 'flex', flexDirection: 'row', gap: 8, flexWrap: 'wrap',
               justifyContent: 'center', marginBottom: 16,
-              marginTop: 10,
+              marginTop: 4,
               position: 'relative', zIndex: 10,
             }}>
               {displayBadges.map(id => renderBadge(id, 'sm'))}

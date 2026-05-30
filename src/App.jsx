@@ -23,7 +23,6 @@ import FriendsView from '@/components/Friends/FriendsView.jsx';
 import SettingsView from '@/components/Settings/SettingsView.jsx';
 import OnboardingFlow from '@/components/Onboarding/OnboardingFlow.jsx';
 import MissionsView from '@/components/Missions/MissionsView.jsx';
-import LeaderboardView from '@/components/Leaderboard/LeaderboardView.jsx';
 import FriendProfileView from '@/components/Friends/FriendProfileView.jsx';
 import PublicProfileView from '@/components/Public/PublicProfileView.jsx';
 import ActiveSessionsView from '@/components/ActiveSessions/ActiveSessionsView.jsx';
@@ -589,7 +588,6 @@ function AppInner() {
     ['calendar',        'Calendar',     '⊞'],
     ['active-sessions', 'Sessions',     '▦'],
     ['stats',           'Stats',        '◷'],
-    ['leaderboard',     'Leaderboards', '★'],
     ['friends',         socialBadge > 0 ? `Social (${socialBadge})` : 'Social', '◈'],
     ['settings',        'Settings',     '⊡'],
     ...(profile?.is_admin ? [['admin', 'Admin', '⊘']] : []),
@@ -835,12 +833,7 @@ function AppInner() {
           )}
           {activeTab === 'stats' && (
             <div style={{ animation: A.fadeUp(), flex: 1, minHeight: 0 }}>
-              <StatsView sessions={sessions} myProfileId={myProfileId} />
-            </div>
-          )}
-          {activeTab === 'leaderboard' && (
-            <div style={{ animation: A.fadeUp(), flex: 1, minHeight: 0 }}>
-              <LeaderboardView sessions={sessions} myProfileId={myProfileId} profiles={profiles} friends={friends} />
+              <StatsView sessions={sessions} myProfileId={myProfileId} profiles={profiles} friends={friends} />
             </div>
           )}
           {activeTab === 'friends' && !viewingFriend && (

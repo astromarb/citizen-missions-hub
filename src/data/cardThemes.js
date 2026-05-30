@@ -5,6 +5,11 @@ export const CARD_THEMES = {
     desc: 'Status colors only (default)',
     colors: [null, null, null, null, null, null, null],
   },
+  'Alpha Color Set': {
+    label: 'Alpha Color Set',
+    desc: 'The original day-of-week palette',
+    colors: ['#e8db7d', '#19535f', '#0b7a75', '#d7c9aa', '#7b2d26', '#f0f3f5', '#c0d684'],
+  },
   'Spectrum': {
     label: 'Spectrum',
     desc: 'A different hue for every day',

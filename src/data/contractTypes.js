@@ -13,3 +13,6 @@ export const CONTRACT_TYPES = {
 
 export const typeBg    = (type) => CONTRACT_TYPES[type]?.bg    ?? '#555';
 export const typeColor = (type) => CONTRACT_TYPES[type]?.color ?? '#fff';
+
+// Cargo size markers ({ S }, { M }, { L }) only apply to hauling contracts.
+export const isHaulingType = (type) => typeof type === 'string' && type.startsWith('Hauling');

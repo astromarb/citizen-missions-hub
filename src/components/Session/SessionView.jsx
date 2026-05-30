@@ -3,6 +3,7 @@ import TypeBadge from '../shared/TypeBadge.jsx';
 import SessionChat from './SessionChat.jsx';
 import { keyToLabel } from '../../utils/dateUtils.js';
 import { getContractSize } from '../../utils/contractSize.js';
+import { isHaulingType } from '../../data/contractTypes.js';
 import { A } from '../../styles/animations.js';
 
 const wpName = (w) => (typeof w === 'object' ? w.name : w) || '';
@@ -1206,7 +1207,7 @@ export default function SessionView({
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 5, flexShrink: 0 }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                     <TypeBadge type={contract.type} />
-                    {contract.type !== 'Refueling' && (
+                    {isHaulingType(contract.type) && (
                       <span title={sz.tip} style={{
                         fontFamily: 'var(--font-display)', fontSize: contract.done ? 22 : 15, fontWeight: 800,
                         color: 'var(--text)', textDecoration: 'underline', letterSpacing: '0.02em',
