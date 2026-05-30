@@ -325,14 +325,20 @@ export default function MissionsView({ sessions, myProfileId, profile, avatarUrl
               </div>
             </div>
             {displayBadges.length > 0 && (
-              <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', justifyContent: 'center', marginTop: 8 }}>
+              <div style={{
+                border: '2px solid var(--border)', borderTop: 'none',
+                background: 'var(--bg-1)', padding: '8px 12px',
+                display: 'flex', flexDirection: 'row', gap: 6, flexWrap: 'wrap',
+                justifyContent: 'center',
+              }}>
                 {displayBadges.map(id => renderBadge(id, 'xs'))}
               </div>
             )}
           </>
         ) : (
-          /* Desktop: banner bleeds from top, callsign + stats below */
-          <div style={{ border: '2px solid var(--border)', background: bannerObj ? bannerObj.fallbackBg : 'var(--bg-1)', marginBottom: 16, position: 'relative', overflow: 'hidden' }}>
+          <>
+          {/* Desktop: banner bleeds from top, callsign + stats below */}
+          <div style={{ border: '2px solid var(--border)', background: bannerObj ? bannerObj.fallbackBg : 'var(--bg-1)', marginBottom: displayBadges.length > 0 ? 0 : 16, position: 'relative', overflow: 'hidden' }}>
             {bannerObj && (
               <>
                 <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: '100%', backgroundImage: `url(${bannerSrc ?? bannerObj.src})`, backgroundSize: 'cover', backgroundPosition: 'top center', backgroundColor: bannerObj.fallbackBg, zIndex: 0 }} />
@@ -353,11 +359,6 @@ export default function MissionsView({ sessions, myProfileId, profile, avatarUrl
                 </div>
                 <div style={{ width: '100%', height: 4, background: color }} />
               </div>
-              {displayBadges.length > 0 && (
-                <div style={{ display: 'flex', flexDirection: 'row', gap: 6, flexWrap: 'wrap', justifyContent: 'center', padding: '10px 18px 2px' }}>
-                  {displayBadges.map(id => renderBadge(id, 'sm'))}
-                </div>
-              )}
               <div style={{ padding: '18px 20px' }}>
                 {statsRows.map(([label, val]) => (
                   <div key={label} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', padding: '9px 0', borderBottom: `1px solid ${bannerObj ? 'rgba(255,255,255,0.15)' : 'var(--bg-2)'}` }}>
@@ -368,6 +369,17 @@ export default function MissionsView({ sessions, myProfileId, profile, avatarUrl
               </div>
             </div>
           </div>
+          {displayBadges.length > 0 && (
+            <div style={{
+              border: '2px solid var(--border)', borderTop: 'none',
+              background: 'var(--bg-1)', padding: '10px 18px',
+              display: 'flex', flexDirection: 'row', gap: 8, flexWrap: 'wrap',
+              justifyContent: 'center', marginBottom: 16,
+            }}>
+              {displayBadges.map(id => renderBadge(id, 'sm'))}
+            </div>
+          )}
+          </>
         )}
       </div>
 

@@ -746,6 +746,7 @@ function AppInner() {
               onUpdateWaypoint={updateWaypoint}
               onUpdateCargoItem={updateCargoItem}
               onAddCargoItemLive={addCargoItemLive}
+              onAddWaypointLive={addWaypointLive}
               onLeaveSession={handleLeaveSession}
               onRemovePlayer={handleRemovePlayer}
               commodities={commodities}

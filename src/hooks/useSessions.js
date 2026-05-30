@@ -359,6 +359,20 @@ export function useSessions(enabled = true, userId) {
     return true;
   }, [load]);
 
+  // ── addWaypointLive ────────────────────────────────────────
+  const addWaypointLive = useCallback(async (contractId, { kind, locationName, body }) => {
+    const { error } = await supabase.from('contract_waypoints').insert({
+      contract_id: contractId,
+      kind: kind || 'pickup',
+      body: body || '',
+      location_name: locationName,
+      sort_order: 0,
+    });
+    if (error) { console.error('addWaypointLive:', error); return false; }
+    await load();
+    return true;
+  }, [load]);
+
   // ── addCargoItemLive ────────────────────────────────────────
   // For adding found cargo live during a salvage session
   const addCargoItemLive = useCallback(async (contractId, { commodity, scu, source }) => {
@@ -423,7 +437,7 @@ export function useSessions(enabled = true, userId) {
     setWaypointStatus, castRemovalVote, withdrawRemovalVote, addPlayerToSession,
     startSession, pauseSession, resumeSession, endSession,
     deleteSession, updateSession, updateContract,
-    updateWaypoint, updateCargoItem, addCargoItemLive,
+    updateWaypoint, updateCargoItem, addCargoItemLive, addWaypointLive,
     leaveSession, removePlayerFromSession,
   };
 }

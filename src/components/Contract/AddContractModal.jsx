@@ -104,7 +104,7 @@ export default function AddContractModal({ onSave, onClose, commodities, systems
   const salvageSystem = deriveSalvageSystem(salvageLocation, systemsMap);
   const hasSalvageLoc = !!salvageLocation.name?.trim();
   const hasSalvageMaterials = salvageMaterials.some(m => Number(m.scu) > 0);
-  const salvageSteps = 4; // category → location+cost → materials → sell run
+  const salvageSteps = 2; // category → claim cost (location set in-session)
 
   // ── Refueling derived ────────────────────────────────────────────
   const refuelSystem = deriveSalvageSystem(refuelLocation, systemsMap);
@@ -113,10 +113,7 @@ export default function AddContractModal({ onSave, onClose, commodities, systems
 
   const canAdvance =
     category === 'salvage'
-      ? step === 1 ? hasSalvageLoc
-        : step === 2 ? true  // materials optional at creation
-        : step === 3 ? (Number(salvageSalePrice) > 0)
-        : true
+      ? true  // claim cost defaults to 0; everything else set in-session
       : category === 'refueling'
       ? !!refuelLocation.name?.trim()
       : step === 1 ? hasPickup && hasDropoff
@@ -160,22 +157,15 @@ export default function AddContractModal({ onSave, onClose, commodities, systems
     }
 
     if (category === 'salvage') {
-      const materialCargo = salvageMaterials
-        .filter(m => Number(m.scu) > 0)
-        .map(m => ({ commodity: m.commodity, scu: Number(m.scu), fromLocation: salvageLocation.name || null, toLocation: salvageSellLoc.name || null, source: 'material' }));
-
-      const pickupWp  = salvageLocation.name ? [salvageLocation] : [];
-      const dropoffWp = salvageSellLoc.name  ? [salvageSellLoc]  : [];
-
       onSave({
         type:         'Salvaging',
-        system:       salvageSystem || salvageLocation.body || 'Unknown',
-        pickups:      pickupWp,
-        dropoffs:     dropoffWp,
-        cargo:        materialCargo,
-        payout:       Number(salvageSalePrice) || 0,
+        system:       'Unknown',
+        pickups:      [],
+        dropoffs:     [],
+        cargo:        [],
+        payout:       0,
         claimCost:    Number(salvageClaimCost) || 0,
-        refiningCost: Number(salvageRefining) || 0,
+        refiningCost: 0,
       });
       return;
     }
@@ -270,8 +260,7 @@ export default function AddContractModal({ onSave, onClose, commodities, systems
   const handleNext = () => {
     if (!canAdvance) return;
     if (category === 'salvage') {
-      if (step < salvageSteps - 1) setStep(s => s + 1);
-      else save();
+      save(); // only 1 input step; save immediately
     } else if (category === 'refueling') {
       save();
     } else {
@@ -334,32 +323,20 @@ export default function AddContractModal({ onSave, onClose, commodities, systems
           </div>
         )}
 
-        {/* ── SALVAGE STEP 1: Location + Claim Cost ── */}
+        {/* ── SALVAGE STEP 1: Claim Cost ── */}
         {category === 'salvage' && step === 1 && (
           <div>
-            <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--muted)', letterSpacing: '0.08em', marginBottom: 18, textTransform: 'uppercase' }}>
-              Salvage Site
+            <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--muted)', letterSpacing: '0.08em', marginBottom: 6, textTransform: 'uppercase' }}>
+              Claim Cost
             </div>
-
-            <div style={{ marginBottom: 20 }}>
-              <span style={lbl}>Wreck / Site Location</span>
-              <LocationAutocomplete
-                value={salvageLocation}
-                onChange={setSalvageLocation}
-                placeholder="Search location…"
-                systemsMap={systemsMap}
-              />
-              {salvageSystem && (
-                <div style={{ marginTop: 6, fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--muted)' }}>
-                  System: {salvageSystem}
-                </div>
-              )}
+            <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: 'var(--muted)', marginBottom: 18, lineHeight: 1.6 }}>
+              Enter what you paid to claim the wreck. Site location, materials, and sell info are all logged live in the session.
             </div>
-
             <div style={{ marginBottom: 20 }}>
               <span style={lbl}>Claim Cost (aUEC)</span>
               <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                 <input
+                  autoFocus
                   type="number" min="0" step="1000"
                   style={{ flex: 1, padding: '8px 10px', background: 'var(--bg-1)', border: '2px solid var(--border)', color: 'var(--text)', fontSize: 13, fontFamily: 'var(--font-mono)', outline: 'none' }}
                   placeholder="0 if free / open wreck"
@@ -369,129 +346,6 @@ export default function AddContractModal({ onSave, onClose, commodities, systems
                 <span style={{ fontSize: 11, color: 'var(--muted)', fontFamily: 'var(--font-mono)', flexShrink: 0 }}>aUEC</span>
               </div>
             </div>
-          </div>
-        )}
-
-        {/* ── SALVAGE STEP 2: Materials Collected ── */}
-        {category === 'salvage' && step === 2 && (
-          <div>
-            <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--muted)', letterSpacing: '0.08em', marginBottom: 6, textTransform: 'uppercase' }}>
-              Materials Collected
-            </div>
-            <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: 'var(--muted)', marginBottom: 16, lineHeight: 1.6 }}>
-              Record RMC / CMATS harvested. Skip if adding live during the session.
-            </div>
-
-            {salvageMaterials.map((m, i) => (
-              <div key={i} style={{ display: 'flex', gap: 8, alignItems: 'center', marginBottom: 8 }}>
-                <select
-                  value={m.commodity}
-                  onChange={e => updateSalvageMaterial(i, { commodity: e.target.value })}
-                  style={{ padding: '8px 10px', background: 'var(--bg-1)', border: '2px solid var(--border)', color: 'var(--text)', fontSize: 13, fontFamily: 'var(--font-mono)', outline: 'none', minWidth: 90 }}
-                >
-                  <option value="RMC">RMC</option>
-                  <option value="CMATS">CMATS</option>
-                </select>
-                <input
-                  type="number" min="0"
-                  style={{ width: 80, padding: '8px 8px', background: 'var(--bg-1)', border: '2px solid var(--border)', color: 'var(--text)', fontSize: 13, textAlign: 'right', fontFamily: 'var(--font-mono)', outline: 'none' }}
-                  placeholder="SCU"
-                  value={m.scu}
-                  onChange={e => updateSalvageMaterial(i, { scu: e.target.value })}
-                />
-                <span style={{ fontSize: 11, color: 'var(--muted)', fontFamily: 'var(--font-mono)', width: 28, flexShrink: 0 }}>SCU</span>
-                {salvageMaterials.length > 1 && (
-                  <button style={{ background: 'none', border: 'none', color: '#c41e3a', cursor: 'pointer', fontSize: 18, fontWeight: 700, flexShrink: 0 }}
-                    onClick={() => removeSalvageMaterial(i)}>×</button>
-                )}
-              </div>
-            ))}
-
-            <button style={{ background: 'none', border: 'none', color: 'var(--muted)', cursor: 'pointer', fontSize: 11, fontFamily: 'var(--font-display)', fontWeight: 700, textDecoration: 'underline', padding: '2px 0', marginBottom: 16 }}
-              onClick={addSalvageMaterial}>
-              + Add material type
-            </button>
-          </div>
-        )}
-
-        {/* ── SALVAGE STEP 3: First Sell Run ── */}
-        {category === 'salvage' && step === 3 && (
-          <div>
-            <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--muted)', letterSpacing: '0.08em', marginBottom: 6, textTransform: 'uppercase' }}>
-              First Sell Run
-            </div>
-            <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: 'var(--muted)', marginBottom: 16, lineHeight: 1.6 }}>
-              More sell runs can be added live during the session.
-            </div>
-
-            <div style={{ marginBottom: 20 }}>
-              <span style={lbl}>Sell / Refinery Location</span>
-              <LocationAutocomplete
-                value={salvageSellLoc}
-                onChange={setSalvageSellLoc}
-                placeholder="Search location…"
-                systemsMap={systemsMap}
-              />
-            </div>
-
-            <div style={{ marginBottom: 20 }}>
-              <span style={lbl}>Sale Price (aUEC)</span>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                <input
-                  type="number" min="0" step="1000"
-                  style={{ flex: 1, padding: '8px 10px', background: 'var(--bg-1)', border: '2px solid var(--border)', color: 'var(--text)', fontSize: 13, fontFamily: 'var(--font-mono)', outline: 'none' }}
-                  placeholder="e.g. 250000"
-                  value={salvageSalePrice}
-                  onChange={e => setSalvageSalePrice(e.target.value)}
-                />
-                <span style={{ fontSize: 11, color: 'var(--muted)', fontFamily: 'var(--font-mono)', flexShrink: 0 }}>aUEC</span>
-              </div>
-            </div>
-
-            <div style={{ marginBottom: 20 }}>
-              <span style={lbl}>Refining / Unloading Cost (aUEC)</span>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                <input
-                  type="number" min="0" step="100"
-                  style={{ flex: 1, padding: '8px 10px', background: 'var(--bg-1)', border: '2px solid var(--border)', color: 'var(--text)', fontSize: 13, fontFamily: 'var(--font-mono)', outline: 'none' }}
-                  placeholder="0 if none"
-                  value={salvageRefining}
-                  onChange={e => setSalvageRefining(e.target.value)}
-                />
-                <span style={{ fontSize: 11, color: 'var(--muted)', fontFamily: 'var(--font-mono)', flexShrink: 0 }}>aUEC</span>
-              </div>
-            </div>
-
-            {/* Summary */}
-            {Number(salvageSalePrice) > 0 && (
-              <div style={{ padding: '12px 14px', background: 'var(--bg-2)', border: '2px solid #000', marginTop: 8 }}>
-                <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--muted)', marginBottom: 8 }}>Run Summary</div>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-                  {Number(salvageClaimCost) > 0 && (
-                    <div style={{ display: 'flex', justifyContent: 'space-between', fontFamily: 'var(--font-mono)', fontSize: 11 }}>
-                      <span style={{ color: 'var(--muted)' }}>Claim cost</span>
-                      <span style={{ color: '#c41e3a' }}>−{Number(salvageClaimCost).toLocaleString()}</span>
-                    </div>
-                  )}
-                  <div style={{ display: 'flex', justifyContent: 'space-between', fontFamily: 'var(--font-mono)', fontSize: 11 }}>
-                    <span style={{ color: 'var(--muted)' }}>Sale price</span>
-                    <span style={{ color: '#2d8659' }}>+{Number(salvageSalePrice).toLocaleString()}</span>
-                  </div>
-                  {Number(salvageRefining) > 0 && (
-                    <div style={{ display: 'flex', justifyContent: 'space-between', fontFamily: 'var(--font-mono)', fontSize: 11 }}>
-                      <span style={{ color: 'var(--muted)' }}>Refining cost</span>
-                      <span style={{ color: '#c41e3a' }}>−{Number(salvageRefining).toLocaleString()}</span>
-                    </div>
-                  )}
-                  <div style={{ borderTop: '1px solid var(--bg-3)', paddingTop: 4, display: 'flex', justifyContent: 'space-between', fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 14 }}>
-                    <span>Net</span>
-                    <span style={{ color: (() => { const n = Number(salvageSalePrice) - Number(salvageClaimCost || 0) - Number(salvageRefining || 0); return n >= 0 ? '#2d8659' : '#c41e3a'; })() }}>
-                      {(Number(salvageSalePrice) - Number(salvageClaimCost || 0) - Number(salvageRefining || 0)).toLocaleString()} aUEC
-                    </span>
-                  </div>
-                </div>
-              </div>
-            )}
           </div>
         )}
 
@@ -737,7 +591,7 @@ export default function AddContractModal({ onSave, onClose, commodities, systems
           </button>
           {step > 0 && (
             <button style={primaryBtn(!canAdvance)} onClick={handleNext}>
-              {isFinalStep ? 'Save Contract' : 'Continue →'}
+              {isFinalStep ? (category === 'salvage' ? 'Fly to Site →' : 'Save Contract') : 'Continue →'}
             </button>
           )}
         </div>

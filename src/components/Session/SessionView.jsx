@@ -499,12 +499,62 @@ function RefuelingWaypointRow({ waypoint, myProfileId, members, onSetStatus, can
   );
 }
 
+const SCU_SIZES = [1, 2, 4, 8, 16, 32, 64];
+
+function SalvageSiteRow({ contractId, onAddWaypoint, allLocations }) {
+  const [locVal, setLocVal] = useState('');
+  const [saving, setSaving] = useState(false);
+
+  const save = async () => {
+    if (!locVal || saving) return;
+    setSaving(true);
+    await onAddWaypoint?.(contractId, { kind: 'pickup', locationName: locVal, body: '' });
+    setSaving(false);
+  };
+
+  const grouped = {};
+  (allLocations || []).forEach(l => {
+    const key = `${l.system} → ${l.body}`;
+    if (!grouped[key]) grouped[key] = [];
+    grouped[key].push(l);
+  });
+
+  return (
+    <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+      <span style={{ color: '#7c3aed', fontSize: 13, flexShrink: 0 }}>↑</span>
+      <select
+        value={locVal}
+        onChange={e => setLocVal(e.target.value)}
+        style={{
+          flex: 1, maxWidth: 240, padding: '4px 6px',
+          border: '2px solid #7c3aed', background: 'var(--bg-1)',
+          color: locVal ? 'var(--text)' : 'var(--muted)',
+          fontFamily: 'var(--font-sans)', fontSize: 12, outline: 'none',
+        }}
+      >
+        <option value="">— set salvage site location —</option>
+        {Object.entries(grouped).sort().map(([groupKey, locs]) => (
+          <optgroup key={groupKey} label={groupKey}>
+            {locs.map(l => <option key={l.name} value={l.name}>{l.name}</option>)}
+          </optgroup>
+        ))}
+      </select>
+      {locVal && (
+        <button onClick={save} disabled={saving}
+          style={{ background: '#2d8659', border: 'none', color: '#fff', cursor: 'pointer', padding: '4px 10px', fontWeight: 700, fontSize: 12 }}>
+          {saving ? '…' : '✓ Set'}
+        </button>
+      )}
+    </div>
+  );
+}
+
 export default function SessionView({
   session, onBack, onAddContract, onToggleDone, onDeleteContract,
   onSetWaypointStatus, onCastRemovalVote, onWithdrawVote, onInvitePlayer,
   onStartSession, onPauseSession, onResumeSession, onEndSession,
   onDeleteSession, onUpdateSession, onUpdateContract,
-  onUpdateWaypoint, onUpdateCargoItem, onAddCargoItemLive,
+  onUpdateWaypoint, onUpdateCargoItem, onAddCargoItemLive, onAddWaypointLive,
   commodities, systemsMap,
   playerColors, myProfileId, myCallsign, friends,
   onCopyInviteLink, onLeaveSession, onRemovePlayer,
@@ -524,10 +574,6 @@ export default function SessionView({
   const [editPanel, setEditPanel]                             = useState({ pickups: [], dropoffs: [], cargo: [] });
   const [confirmDeleteContractId, setConfirmDeleteContractId] = useState(null);
   const [confirmRemovePlayerId, setConfirmRemovePlayerId]     = useState(null);
-  const [addCargoContractId, setAddCargoContractId]           = useState(null);
-  const [addCargoCommodity, setAddCargoCommodity]             = useState('RMC');
-  const [addCargoScu, setAddCargoScu]                         = useState('');
-  const [addCargoSource, setAddCargoSource]                   = useState('found');
 
   const label      = keyToLabel(session.date);
   const totalSCU   = session.contracts.reduce((t, c) => t + c.cargo.reduce((s, x) => s + Number(x.scu || 0), 0), 0);
@@ -1076,6 +1122,14 @@ export default function SessionView({
                 </div>
               )}
 
+              {/* ── Salvage Site (set location en route) ── */}
+              {contract.type === 'Salvaging' && contract.pickups.length === 0 && isSessionMember && (
+                <div style={{ marginBottom: 12 }}>
+                  <div style={sectionLbl}>Salvage Site</div>
+                  <SalvageSiteRow contractId={contract.id} onAddWaypoint={onAddWaypointLive} allLocations={allLocations} />
+                </div>
+              )}
+
               {/* ── Pickups ── */}
               {contract.type !== 'Refueling' && contract.pickups.length > 0 && (
                 <div style={{ marginBottom: 12 }}>
@@ -1243,49 +1297,30 @@ export default function SessionView({
                     </div>
                   )}
 
-                  {/* Add found cargo form */}
+                  {/* ── Salvaging quick-add ── */}
                   {isSessionMember && !session.endedAt && (
-                    addCargoContractId === contract.id ? (
-                      <div style={{ padding: '10px 12px', border: '2px solid #d97706', background: 'var(--bg-2)', display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
-                        <span style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: '#d97706', textTransform: 'uppercase', letterSpacing: '0.1em', flexShrink: 0 }}>Found Cargo</span>
-                        <input
-                          placeholder="Commodity"
-                          value={addCargoCommodity}
-                          onChange={e => setAddCargoCommodity(e.target.value)}
-                          style={{ width: 110, padding: '4px 8px', border: '2px solid var(--border)', background: 'var(--bg-1)', color: 'var(--text)', fontFamily: 'var(--font-mono)', fontSize: 12, outline: 'none' }}
-                        />
-                        <input
-                          type="number" min="0" placeholder="SCU"
-                          value={addCargoScu}
-                          onChange={e => setAddCargoScu(e.target.value)}
-                          style={{ width: 68, padding: '4px 8px', border: '2px solid var(--border)', background: 'var(--bg-1)', color: 'var(--text)', fontFamily: 'var(--font-mono)', fontSize: 12, outline: 'none', textAlign: 'right' }}
-                        />
-                        <span style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--muted)', flexShrink: 0 }}>SCU</span>
-                        <button
-                          onClick={async () => {
-                            if (!addCargoCommodity.trim() || !Number(addCargoScu)) return;
-                            await onAddCargoItemLive?.(contract.id, { commodity: addCargoCommodity.trim(), scu: Number(addCargoScu), source: addCargoSource });
-                            setAddCargoContractId(null);
-                            setAddCargoCommodity('RMC');
-                            setAddCargoScu('');
-                          }}
-                          disabled={!addCargoCommodity.trim() || !Number(addCargoScu)}
-                          style={{ padding: '4px 12px', background: '#d97706', border: 'none', color: '#fff', cursor: 'pointer', fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 10, textTransform: 'uppercase' }}
-                        >Add</button>
-                        <button onClick={() => setAddCargoContractId(null)}
-                          style={{ padding: '4px 10px', background: 'transparent', border: '1px solid var(--border)', color: 'var(--muted)', cursor: 'pointer', fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 10 }}>✗</button>
+                    <div>
+                      <div style={sectionLbl}>Salvaging</div>
+                      <div style={{ border: '2px solid #7c3aed', padding: '10px 12px', display: 'flex', flexDirection: 'column', gap: 8 }}>
+                        {['RMC', 'CMATS'].map(commodity => (
+                          <div key={commodity} style={{ display: 'flex', alignItems: 'center', gap: 5, flexWrap: 'wrap' }}>
+                            <span style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 11, color: '#7c3aed', width: 46, flexShrink: 0 }}>{commodity}</span>
+                            {SCU_SIZES.map(scu => (
+                              <button key={scu}
+                                onClick={() => onAddCargoItemLive?.(contract.id, { commodity, scu, source: 'found' })}
+                                style={{
+                                  padding: '4px 7px', cursor: 'pointer',
+                                  border: '1.5px solid #7c3aed', background: 'transparent', color: '#7c3aed',
+                                  fontFamily: 'var(--font-mono)', fontSize: 11, fontWeight: 700,
+                                }}
+                                onMouseEnter={e => { e.currentTarget.style.background = '#7c3aed'; e.currentTarget.style.color = '#fff'; }}
+                                onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = '#7c3aed'; }}
+                              >+{scu}</button>
+                            ))}
+                          </div>
+                        ))}
                       </div>
-                    ) : (
-                      <button
-                        onClick={() => { setAddCargoContractId(contract.id); setAddCargoCommodity('RMC'); setAddCargoScu(''); setAddCargoSource('found'); }}
-                        style={{
-                          background: 'none', border: '2px dashed #d97706', color: '#d97706',
-                          padding: '6px 14px', cursor: 'pointer',
-                          fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 10,
-                          textTransform: 'uppercase', letterSpacing: '0.06em',
-                        }}
-                      >+ Add Found Cargo</button>
-                    )
+                    </div>
                   )}
                 </div>
               )}
