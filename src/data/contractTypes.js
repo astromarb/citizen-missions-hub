@@ -6,6 +6,7 @@ export const CONTRACT_TYPES = {
   'Salvaging':              { bg: '#7c3aed', color: '#fff' },
   'Refueling':              { bg: '#0891b2', color: '#fff' },
   'Hand Mining':            { bg: '#16a34a', color: '#fff' },
+  'Trading':                { bg: '#b45309', color: '#fff' },
 };
 
 export const typeBg    = (type) => CONTRACT_TYPES[type]?.bg    ?? '#555';

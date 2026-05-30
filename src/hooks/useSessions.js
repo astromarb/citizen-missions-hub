@@ -45,7 +45,7 @@ const xf = (s) => ({
       })),
     claimCost:    Number(c.claim_cost)    || 0,
     refiningCost: Number(c.refining_cost) || 0,
-    cargo: (c.cargo_items || []).map(ci => ({ id: ci.id, commodity: ci.commodity, scu: ci.scu, fromLocation: ci.from_location || null, toLocation: ci.to_location || null, source: ci.cargo_source || null })),
+    cargo: (c.cargo_items || []).map(ci => ({ id: ci.id, commodity: ci.commodity, scu: ci.scu, fromLocation: ci.from_location || null, toLocation: ci.to_location || null, source: ci.cargo_source || null, buyPrice: Number(ci.buy_price) || 0, sellPrice: Number(ci.sell_price) || 0 })),
   })),
 });
 
@@ -72,7 +72,7 @@ export function useSessions(enabled = true, userId) {
               id, kind, location_name, body, sort_order,
               waypoint_completions ( profile_id, status )
             ),
-            cargo_items ( id, commodity, scu, from_location, to_location, cargo_source )
+            cargo_items ( id, commodity, scu, from_location, to_location, cargo_source, buy_price, sell_price )
           )
         `)
         .order('date', { ascending: false });
@@ -374,15 +374,29 @@ export function useSessions(enabled = true, userId) {
   }, [load]);
 
   // ── addCargoItemLive ────────────────────────────────────────
-  // For adding found cargo live during a salvage session
-  const addCargoItemLive = useCallback(async (contractId, { commodity, scu, source }) => {
+  const addCargoItemLive = useCallback(async (contractId, { commodity, scu, source, buyPrice, fromLocation, toLocation }) => {
     const { error } = await supabase.from('cargo_items').insert({
       contract_id: contractId,
       commodity,
       scu: Number(scu),
       cargo_source: source || null,
+      buy_price: Number(buyPrice) || 0,
+      sell_price: 0,
+      from_location: fromLocation || null,
+      to_location: toLocation || null,
     });
     if (error) { console.error('addCargoItemLive:', error); return false; }
+    await load();
+    return true;
+  }, [load]);
+
+  // ── logTradeSell ────────────────────────────────────────────
+  // Record sell price + location on an existing trade cargo item
+  const logTradeSell = useCallback(async (cargoItemId, { sellPrice, toLocation }) => {
+    const { error } = await supabase.from('cargo_items')
+      .update({ sell_price: Number(sellPrice) || 0, to_location: toLocation || null })
+      .eq('id', cargoItemId);
+    if (error) { console.error('logTradeSell:', error); return false; }
     await load();
     return true;
   }, [load]);
@@ -437,7 +451,7 @@ export function useSessions(enabled = true, userId) {
     setWaypointStatus, castRemovalVote, withdrawRemovalVote, addPlayerToSession,
     startSession, pauseSession, resumeSession, endSession,
     deleteSession, updateSession, updateContract,
-    updateWaypoint, updateCargoItem, addCargoItemLive, addWaypointLive,
+    updateWaypoint, updateCargoItem, addCargoItemLive, addWaypointLive, logTradeSell,
     leaveSession, removePlayerFromSession,
   };
 }

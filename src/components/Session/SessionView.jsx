@@ -502,6 +502,175 @@ function RefuelingWaypointRow({ waypoint, myProfileId, members, onSetStatus, can
 const SCU_SIZES        = [1, 2, 4, 8, 16, 32, 64];
 const MINING_SCU_SIZES = [0.25, 0.5, 1, 2, 4];
 const HAND_MINING_ORES = ['Quantainium', 'Hadanite', 'Taranite', 'Aphorite', 'Dolivine'];
+const TRADE_COLOR      = '#b45309';
+
+function TradingPanel({ contract, sessionEnded, isSessionMember, allLocations, commodities, onAddCargoItemLive, onLogTradeSell }) {
+  const [form, setForm]         = useState({ commodity: '', scu: '', buyPrice: '', fromLocation: '' });
+  const [saving, setSaving]     = useState(false);
+  const [sellState, setSellState] = useState({}); // cargoId → { price: '', loc: '', open: false }
+
+  const tradeCargo = contract.cargo.filter(c => c.source === 'trade');
+
+  const totalBought  = tradeCargo.reduce((t, c) => t + (c.scu * c.buyPrice), 0);
+  const totalSold    = tradeCargo.filter(c => c.sellPrice > 0).reduce((t, c) => t + (c.scu * c.sellPrice), 0);
+  const soldScu      = tradeCargo.filter(c => c.sellPrice > 0).reduce((t, c) => t + c.scu, 0);
+  const totalScu     = tradeCargo.reduce((t, c) => t + c.scu, 0);
+  const netProfit    = totalSold - tradeCargo.filter(c => c.sellPrice > 0).reduce((t, c) => t + (c.scu * c.buyPrice), 0);
+
+  const canAdd = form.commodity.trim() || form.fromLocation.trim();
+
+  const addEntry = async () => {
+    if (!canAdd || saving) return;
+    setSaving(true);
+    await onAddCargoItemLive?.(contract.id, {
+      commodity:   form.commodity.trim() || '(unknown)',
+      scu:         Number(form.scu) || 0,
+      source:      'trade',
+      buyPrice:    Number(form.buyPrice) || 0,
+      fromLocation: form.fromLocation.trim() || null,
+    });
+    setForm({ commodity: '', scu: '', buyPrice: '', fromLocation: '' });
+    setSaving(false);
+  };
+
+  const toggleSell = (id) =>
+    setSellState(p => ({ ...p, [id]: { price: '', loc: '', ...p[id], open: !p[id]?.open } }));
+
+  const commitSell = async (cargoId) => {
+    const s = sellState[cargoId];
+    if (!s) return;
+    await onLogTradeSell?.(cargoId, { sellPrice: Number(s.price) || 0, toLocation: s.loc || null });
+    setSellState(p => ({ ...p, [cargoId]: { ...p[cargoId], open: false } }));
+  };
+
+  const grouped = {};
+  (allLocations || []).forEach(l => {
+    const key = `${l.system} → ${l.body}`;
+    if (!grouped[key]) grouped[key] = [];
+    grouped[key].push(l);
+  });
+
+  const locationSelect = (value, onChange, placeholder) => (
+    <select value={value} onChange={e => onChange(e.target.value)}
+      style={{ flex: 1, padding: '5px 6px', border: `1.5px solid ${TRADE_COLOR}`, background: 'var(--bg-1)', color: value ? 'var(--text)' : 'var(--muted)', fontFamily: 'var(--font-sans)', fontSize: 11, outline: 'none' }}>
+      <option value="">{placeholder}</option>
+      {Object.entries(grouped).sort().map(([gk, locs]) => (
+        <optgroup key={gk} label={gk}>
+          {locs.map(l => <option key={l.name} value={l.name}>{l.name}</option>)}
+        </optgroup>
+      ))}
+    </select>
+  );
+
+  return (
+    <div>
+      {/* ── Trade entries table ── */}
+      {tradeCargo.length > 0 && (
+        <div style={{ marginBottom: 12 }}>
+          {tradeCargo.map((c) => {
+            const ss = sellState[c.id];
+            const sold = c.sellPrice > 0;
+            const profit = sold ? (c.sellPrice - c.buyPrice) * c.scu : null;
+            return (
+              <div key={c.id} style={{ marginBottom: 6, border: `1.5px solid ${sold ? '#2d8659' : TRADE_COLOR}`, background: 'var(--bg-2)' }}>
+                {/* Summary row */}
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '6px 10px', flexWrap: 'wrap' }}>
+                  <span style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 12, color: TRADE_COLOR, minWidth: 60 }}>{c.commodity}</span>
+                  <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--text)', fontWeight: 700 }}>{c.scu} SCU</span>
+                  {c.buyPrice > 0 && (
+                    <span style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: '#c41e3a' }}>
+                      ↑ {c.buyPrice.toLocaleString()} /SCU{c.fromLocation ? ` · ${c.fromLocation}` : ''}
+                    </span>
+                  )}
+                  {sold ? (
+                    <>
+                      <span style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: '#2d8659' }}>
+                        ↓ {c.sellPrice.toLocaleString()} /SCU{c.toLocation ? ` · ${c.toLocation}` : ''}
+                      </span>
+                      {profit !== null && (
+                        <span style={{ fontFamily: 'var(--font-mono)', fontSize: 10, fontWeight: 700, color: profit >= 0 ? '#2d8659' : '#c41e3a', marginLeft: 'auto' }}>
+                          {profit >= 0 ? '+' : ''}{profit.toLocaleString()} net
+                        </span>
+                      )}
+                    </>
+                  ) : (
+                    !sessionEnded && isSessionMember && (
+                      <button onClick={() => toggleSell(c.id)}
+                        style={{ marginLeft: 'auto', padding: '3px 10px', border: `1.5px solid ${TRADE_COLOR}`, background: ss?.open ? TRADE_COLOR : 'transparent', color: ss?.open ? '#fff' : TRADE_COLOR, cursor: 'pointer', fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 10, textTransform: 'uppercase', letterSpacing: '0.06em' }}>
+                        {ss?.open ? 'Cancel' : '↓ Log Sale'}
+                      </button>
+                    )
+                  )}
+                </div>
+                {/* Sell form */}
+                {ss?.open && (
+                  <div style={{ display: 'flex', gap: 6, padding: '6px 10px', borderTop: `1px solid var(--border)`, flexWrap: 'wrap', alignItems: 'center' }}>
+                    <span style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: 'var(--muted)', flexShrink: 0 }}>Sell price /SCU</span>
+                    <input type="number" min="0" placeholder="aUEC" value={ss.price}
+                      onChange={e => setSellState(p => ({ ...p, [c.id]: { ...p[c.id], price: e.target.value } }))}
+                      style={{ width: 90, padding: '4px 6px', border: `1.5px solid ${TRADE_COLOR}`, background: 'var(--bg-1)', color: 'var(--text)', fontFamily: 'var(--font-mono)', fontSize: 11, outline: 'none' }}
+                    />
+                    {locationSelect(ss.loc || '', (v) => setSellState(p => ({ ...p, [c.id]: { ...p[c.id], loc: v } })), '— sell location —')}
+                    <button onClick={() => commitSell(c.id)}
+                      style={{ padding: '4px 12px', background: '#2d8659', border: 'none', color: '#fff', cursor: 'pointer', fontWeight: 700, fontSize: 11 }}>✓ Save</button>
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      )}
+
+      {/* ── P&L summary ── */}
+      {tradeCargo.length > 0 && (
+        <div style={{ display: 'flex', gap: 12, padding: '7px 10px', background: 'var(--bg-2)', border: `1.5px solid ${TRADE_COLOR}`, marginBottom: 12, flexWrap: 'wrap' }}>
+          <span style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: 'var(--muted)' }}>{totalScu} SCU held</span>
+          {totalBought > 0 && <span style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: '#c41e3a' }}>Invested {totalBought.toLocaleString()}</span>}
+          {totalSold > 0   && <span style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: '#2d8659' }}>Earned {totalSold.toLocaleString()}</span>}
+          {totalSold > 0 && totalBought > 0 && (
+            <span style={{ fontFamily: 'var(--font-mono)', fontSize: 9, fontWeight: 700, color: netProfit >= 0 ? '#2d8659' : '#c41e3a', marginLeft: 'auto' }}>
+              Net {netProfit >= 0 ? '+' : ''}{netProfit.toLocaleString()}
+            </span>
+          )}
+        </div>
+      )}
+
+      {/* ── Add buy entry ── */}
+      {!sessionEnded && isSessionMember && (
+        <div style={{ border: `2px solid ${TRADE_COLOR}`, padding: '10px 12px' }}>
+          <div style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 10, color: TRADE_COLOR, letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: 8 }}>↑ Log Purchase</div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+            <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+              {/* Commodity */}
+              <select value={form.commodity} onChange={e => setForm(f => ({ ...f, commodity: e.target.value }))}
+                style={{ flex: 2, minWidth: 110, padding: '5px 6px', border: `1.5px solid ${TRADE_COLOR}`, background: 'var(--bg-1)', color: form.commodity ? 'var(--text)' : 'var(--muted)', fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 11, outline: 'none' }}>
+                <option value="">— commodity —</option>
+                {(commodities || []).map(n => <option key={n} value={n}>{n}</option>)}
+              </select>
+              {/* SCU */}
+              <input type="number" min="0" placeholder="SCU" value={form.scu}
+                onChange={e => setForm(f => ({ ...f, scu: e.target.value }))}
+                style={{ width: 70, padding: '5px 6px', border: `1.5px solid ${TRADE_COLOR}`, background: 'var(--bg-1)', color: 'var(--text)', fontFamily: 'var(--font-mono)', fontSize: 11, outline: 'none' }}
+              />
+              {/* Buy price */}
+              <input type="number" min="0" placeholder="aUEC/SCU" value={form.buyPrice}
+                onChange={e => setForm(f => ({ ...f, buyPrice: e.target.value }))}
+                style={{ width: 100, padding: '5px 6px', border: `1.5px solid ${TRADE_COLOR}`, background: 'var(--bg-1)', color: 'var(--text)', fontFamily: 'var(--font-mono)', fontSize: 11, outline: 'none' }}
+              />
+            </div>
+            <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
+              {locationSelect(form.fromLocation, (v) => setForm(f => ({ ...f, fromLocation: v })), '— buy location (optional) —')}
+              <button onClick={addEntry} disabled={!canAdd || saving}
+                style={{ padding: '5px 14px', background: canAdd ? TRADE_COLOR : 'var(--bg-3)', border: 'none', color: canAdd ? '#fff' : 'var(--muted)', cursor: canAdd ? 'pointer' : 'default', fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 11, textTransform: 'uppercase', flexShrink: 0 }}>
+                {saving ? '…' : '+ Add'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
 
 function SalvageSiteRow({ contractId, onAddWaypoint, allLocations }) {
   const [locVal, setLocVal] = useState('');
@@ -556,7 +725,7 @@ export default function SessionView({
   onSetWaypointStatus, onCastRemovalVote, onWithdrawVote, onInvitePlayer,
   onStartSession, onPauseSession, onResumeSession, onEndSession,
   onDeleteSession, onUpdateSession, onUpdateContract,
-  onUpdateWaypoint, onUpdateCargoItem, onAddCargoItemLive, onAddWaypointLive,
+  onUpdateWaypoint, onUpdateCargoItem, onAddCargoItemLive, onAddWaypointLive, onLogTradeSell,
   commodities, systemsMap,
   playerColors, myProfileId, myCallsign, friends,
   onCopyInviteLink, onLeaveSession, onRemovePlayer,
@@ -1365,6 +1534,21 @@ export default function SessionView({
                       </div>
                     </div>
                   )}
+                </div>
+              )}
+
+              {/* ── Trading ── */}
+              {contract.type === 'Trading' && (
+                <div style={{ marginBottom: 14 }}>
+                  <TradingPanel
+                    contract={contract}
+                    sessionEnded={!!session.endedAt}
+                    isSessionMember={isSessionMember}
+                    allLocations={allLocations}
+                    commodities={allCommodities}
+                    onAddCargoItemLive={onAddCargoItemLive}
+                    onLogTradeSell={onLogTradeSell}
+                  />
                 </div>
               )}
 

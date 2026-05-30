@@ -245,7 +245,7 @@ function AppInner() {
     setWaypointStatus, castRemovalVote, withdrawRemovalVote, addPlayerToSession,
     startSession, pauseSession, resumeSession, endSession,
     deleteSession, updateSession, updateContract,
-    updateWaypoint, updateCargoItem, addCargoItemLive,
+    updateWaypoint, updateCargoItem, addCargoItemLive, addWaypointLive, logTradeSell,
     leaveSession, removePlayerFromSession,
   } = useSessions(!!authSession, userId);
   const { commodities, systemsMap } = useRefData(!!authSession);
@@ -747,6 +747,7 @@ function AppInner() {
               onUpdateCargoItem={updateCargoItem}
               onAddCargoItemLive={addCargoItemLive}
               onAddWaypointLive={addWaypointLive}
+              onLogTradeSell={logTradeSell}
               onLeaveSession={handleLeaveSession}
               onRemovePlayer={handleRemovePlayer}
               commodities={commodities}

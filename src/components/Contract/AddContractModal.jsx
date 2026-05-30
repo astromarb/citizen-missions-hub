@@ -58,6 +58,7 @@ const MISSION_CATEGORIES = [
   { key: 'refueling', label: 'Refueling',      available: true },
   { key: 'bounty',    label: 'Bounty Hunting', available: false },
   { key: 'mining',    label: 'Hand Mining',    available: true  },
+  { key: 'trading',   label: 'Trading (New!)', available: true  },
   { key: 'security',  label: 'Security',       available: false },
 ];
 
@@ -75,6 +76,9 @@ export default function AddContractModal({ onSave, onClose, commodities, systems
   // ── Refueling state ─────────────────────────────────────────────
   const [refuelLocation, setRefuelLocation] = useState(emptyWp());
   const [refuelPayout,   setRefuelPayout]   = useState('');
+
+  // ── Trading state ────────────────────────────────────────────────
+  const [tradingNotes, setTradingNotes] = useState('');
 
   // ── Mining state ────────────────────────────────────────────────
   const [miningLocation, setMiningLocation] = useState(emptyWp());
@@ -103,6 +107,9 @@ export default function AddContractModal({ onSave, onClose, commodities, systems
 
   const haulingSteps = multiDropoff ? 4 : 3;
 
+  // ── Trading derived ──────────────────────────────────────────────
+  const tradingSteps = 2; // category → notes/intent (can start with nothing)
+
   // ── Mining derived ───────────────────────────────────────────────
   const miningSystem = deriveSalvageSystem(miningLocation, systemsMap);
   const hasMiningLoc = !!miningLocation.name?.trim();
@@ -120,10 +127,12 @@ export default function AddContractModal({ onSave, onClose, commodities, systems
   const totalSteps = category === 'salvage'   ? salvageSteps
     : category === 'refueling' ? 2
     : category === 'mining'    ? miningSteps
+    : category === 'trading'   ? tradingSteps
     : haulingSteps;
 
   const canAdvance =
     category === 'salvage'   ? true
+    : category === 'trading' ? true   // start a trading run with zero info; fill in live
     : category === 'mining'  ? hasMiningLoc
     : category === 'refueling' ? !!refuelLocation.name?.trim()
     : step === 1 ? hasPickup && hasDropoff
@@ -162,6 +171,19 @@ export default function AddContractModal({ onSave, onClose, commodities, systems
         dropoffs: [],
         cargo:    [],
         payout:   Number(refuelPayout) || 0,
+      });
+      return;
+    }
+
+    if (category === 'trading') {
+      onSave({
+        type:     'Trading',
+        system:   'Unknown',
+        pickups:  [],
+        dropoffs: [],
+        cargo:    [],
+        payout:   0,
+        notes:    tradingNotes.trim() || null,
       });
       return;
     }
@@ -281,7 +303,7 @@ export default function AddContractModal({ onSave, onClose, commodities, systems
 
   const handleNext = () => {
     if (!canAdvance) return;
-    if (category === 'salvage' || category === 'refueling' || category === 'mining') {
+    if (category === 'salvage' || category === 'refueling' || category === 'mining' || category === 'trading') {
       save();
     } else {
       if (step === 1) advanceToCargo();
@@ -293,6 +315,7 @@ export default function AddContractModal({ onSave, onClose, commodities, systems
   const isFinalStep = category === 'salvage'   ? step === salvageSteps - 1
     : category === 'refueling' ? step === 1
     : category === 'mining'    ? step === miningSteps - 1
+    : category === 'trading'   ? step === tradingSteps - 1
     : step === haulingSteps - 1;
 
   return (
@@ -363,6 +386,37 @@ export default function AddContractModal({ onSave, onClose, commodities, systems
                   onChange={e => setSalvageClaimCost(e.target.value)}
                 />
                 <span style={{ fontSize: 11, color: 'var(--muted)', fontFamily: 'var(--font-mono)', flexShrink: 0 }}>aUEC</span>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* ── TRADING STEP 1: Optional intent notes ── */}
+        {category === 'trading' && step === 1 && (
+          <div>
+            <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--muted)', letterSpacing: '0.08em', marginBottom: 6, textTransform: 'uppercase' }}>
+              Trading Run
+            </div>
+            <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: 'var(--muted)', marginBottom: 18, lineHeight: 1.6 }}>
+              Add a note about what you're looking for — or skip straight to the session and log everything as you go. Buy locations, commodities, prices and routes are all tracked live.
+            </div>
+            <div style={{ marginBottom: 20 }}>
+              <span style={lbl}>Notes / Intent (optional)</span>
+              <input
+                autoFocus
+                type="text"
+                style={{ width: '100%', padding: '8px 10px', background: 'var(--bg-1)', border: '2px solid var(--border)', color: 'var(--text)', fontSize: 13, fontFamily: 'var(--font-mono)', outline: 'none', boxSizing: 'border-box' }}
+                placeholder="e.g. Agricium run, Pyro to Stanton"
+                value={tradingNotes}
+                onChange={e => setTradingNotes(e.target.value)}
+              />
+            </div>
+            <div style={{ padding: '10px 14px', background: 'rgba(180,83,9,0.06)', border: '1.5px solid #b45309' }}>
+              <div style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 10, color: '#b45309', letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: 4 }}>What you can log in-session</div>
+              <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: 'var(--muted)', lineHeight: 1.7 }}>
+                ↑ Buy location · Commodity · SCU bought · Buy price/unit<br />
+                ↓ Sell location · Sell price/unit per commodity<br />
+                Multiple commodities and stops in one contract
               </div>
             </div>
           </div>
@@ -639,6 +693,7 @@ export default function AddContractModal({ onSave, onClose, commodities, systems
               {isFinalStep ? (
                 category === 'salvage' ? 'Fly to Site →' :
                 category === 'mining'  ? 'Head to Site →' :
+                category === 'trading' ? 'Start Trading Run →' :
                 'Save Contract'
               ) : 'Continue →'}
             </button>
