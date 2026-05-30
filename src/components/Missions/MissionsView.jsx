@@ -290,42 +290,46 @@ export default function MissionsView({ sessions, myProfileId, profile, avatarUrl
       {/* ── Profile card ── */}
       <div style={{ width: isMobile ? '100%' : 275, flexShrink: 0, position: isMobile ? 'static' : 'sticky', top: 20 }}>
         {isMobile ? (
-          /* Mobile: full-square banner, stats overlaid at bottom, callsign hidden */
-          <div style={{ border: '2px solid var(--border)', position: 'relative', overflow: 'hidden', aspectRatio: '1 / 1', background: '#111' }}>
-            {bannerSrc ? (
-              <div style={{ position: 'absolute', inset: 0, backgroundImage: `url(${bannerSrc})`, backgroundSize: 'cover', backgroundPosition: 'center' }} />
-            ) : (
-              <div style={{ position: 'absolute', inset: 0, background: '#1a1a1a' }} />
-            )}
-            {/* Contrast gradient: subtle at top, heavy at bottom */}
-            <div style={{ position: 'absolute', inset: 0, pointerEvents: 'none', background: 'linear-gradient(to bottom, rgba(0,0,0,0.3) 0%, transparent 38%, rgba(0,0,0,0.65) 56%, rgba(0,0,0,0.93) 100%)' }} />
-            {/* Color accent bar */}
-            <div style={{ position: 'absolute', top: 0, right: 0, bottom: 0, width: 4, background: color, zIndex: 3 }} />
-            {/* Top-left: avatar + badges only (no callsign text on mobile) */}
-            <div style={{ position: 'absolute', top: 14, left: 14, zIndex: 2, display: 'flex', alignItems: 'center', gap: 10 }}>
-              {avatarUrl ? (
-                <img src={avatarUrl} alt={callsign} style={{ width: 54, height: 54, borderRadius: '50%', border: `3px solid ${color}`, objectFit: 'cover', flexShrink: 0 }} />
+          /* Mobile: full-square banner, stats overlaid at bottom, badges below */
+          <>
+            <div style={{ border: '2px solid var(--border)', position: 'relative', overflow: 'hidden', aspectRatio: '1 / 1', background: '#111' }}>
+              {bannerSrc ? (
+                <div style={{ position: 'absolute', inset: 0, backgroundImage: `url(${bannerSrc})`, backgroundSize: 'cover', backgroundPosition: 'center' }} />
               ) : (
-                <div style={{ width: 54, height: 54, borderRadius: '50%', background: color, border: `3px solid ${color}`, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                  <span style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 20, color: '#fff' }}>{callsign[0]?.toUpperCase()}</span>
-                </div>
+                <div style={{ position: 'absolute', inset: 0, background: '#1a1a1a' }} />
               )}
-              <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap' }}>
+              {/* Contrast gradient: subtle at top, heavy at bottom */}
+              <div style={{ position: 'absolute', inset: 0, pointerEvents: 'none', background: 'linear-gradient(to bottom, rgba(0,0,0,0.3) 0%, transparent 38%, rgba(0,0,0,0.65) 56%, rgba(0,0,0,0.93) 100%)' }} />
+              {/* Color accent bar */}
+              <div style={{ position: 'absolute', top: 0, right: 0, bottom: 0, width: 4, background: color, zIndex: 3 }} />
+              {/* Top-left: avatar only */}
+              <div style={{ position: 'absolute', top: 14, left: 14, zIndex: 2 }}>
+                {avatarUrl ? (
+                  <img src={avatarUrl} alt={callsign} style={{ width: 54, height: 54, borderRadius: '50%', border: `3px solid ${color}`, objectFit: 'cover', flexShrink: 0 }} />
+                ) : (
+                  <div style={{ width: 54, height: 54, borderRadius: '50%', background: color, border: `3px solid ${color}`, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                    <span style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 20, color: '#fff' }}>{callsign[0]?.toUpperCase()}</span>
+                  </div>
+                )}
+              </div>
+              {/* Bottom: stats overlaid on gradient */}
+              <div style={{ position: 'absolute', bottom: 0, left: 0, right: 4, zIndex: 2, padding: '10px 14px 14px' }}>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '4px 16px' }}>
+                  {statsRows.map(([label, val]) => (
+                    <div key={label}>
+                      <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: 'rgba(255,255,255,0.65)', letterSpacing: '0.04em' }}>{label}</div>
+                      <div style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 15, color: '#fff', letterSpacing: '-0.01em', textShadow: '0 1px 6px rgba(0,0,0,0.9)' }}>{val}</div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+            {displayBadges.length > 0 && (
+              <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', justifyContent: 'center', marginTop: 8 }}>
                 {displayBadges.map(id => renderBadge(id, 'xs'))}
               </div>
-            </div>
-            {/* Bottom: stats overlaid on gradient */}
-            <div style={{ position: 'absolute', bottom: 0, left: 0, right: 4, zIndex: 2, padding: '10px 14px 14px' }}>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '4px 16px' }}>
-                {statsRows.map(([label, val]) => (
-                  <div key={label}>
-                    <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: 'rgba(255,255,255,0.65)', letterSpacing: '0.04em' }}>{label}</div>
-                    <div style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 15, color: '#fff', letterSpacing: '-0.01em', textShadow: '0 1px 6px rgba(0,0,0,0.9)' }}>{val}</div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
+            )}
+          </>
         ) : (
           /* Desktop: banner bleeds from top, callsign + stats below */
           <div style={{ border: '2px solid var(--border)', background: bannerObj ? bannerObj.fallbackBg : 'var(--bg-1)', marginBottom: 16, position: 'relative', overflow: 'hidden' }}>
@@ -347,11 +351,13 @@ export default function MissionsView({ sessions, myProfileId, profile, avatarUrl
                 <div style={{ textAlign: 'center' }}>
                   <div style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 20, color: bannerObj ? txtCol : '#fff', textTransform: 'uppercase', letterSpacing: '0.04em', lineHeight: 1, textShadow: shadow }}>{callsign}</div>
                 </div>
-                <div style={{ display: 'flex', flexDirection: 'row', gap: 4, flexWrap: 'wrap', justifyContent: 'center' }}>
-                  {displayBadges.map(id => renderBadge(id, 'sm'))}
-                </div>
                 <div style={{ width: '100%', height: 4, background: color }} />
               </div>
+              {displayBadges.length > 0 && (
+                <div style={{ display: 'flex', flexDirection: 'row', gap: 6, flexWrap: 'wrap', justifyContent: 'center', padding: '10px 18px 2px' }}>
+                  {displayBadges.map(id => renderBadge(id, 'sm'))}
+                </div>
+              )}
               <div style={{ padding: '18px 20px' }}>
                 {statsRows.map(([label, val]) => (
                   <div key={label} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', padding: '9px 0', borderBottom: `1px solid ${bannerObj ? 'rgba(255,255,255,0.15)' : 'var(--bg-2)'}` }}>
