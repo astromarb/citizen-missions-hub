@@ -14,7 +14,7 @@ function sessionAccent(session) {
   return null;
 }
 
-function SessionBar({ session, onClick, sessionIndex, isMobile }) {
+function SessionBar({ session, onClick, sessionIndex, isMobile, themeColor }) {
   const accent  = sessionAccent(session);
   const members = session.members || [];
 
@@ -25,17 +25,20 @@ function SessionBar({ session, onClick, sessionIndex, isMobile }) {
   const dotOverflow = dots.length > 5 ? dots.length - 4 : 0;
   const visibleDots = dotOverflow ? dots.slice(0, 4) : dots;
 
+  const borderColor = themeColor || accent || 'var(--border)';
+  const bgColor     = themeColor ? 'var(--bg-1)' : (accent ? `${accent}18` : 'var(--bg-2)');
+
   return (
     <div
       onClick={e => { e.stopPropagation(); onClick(); }}
       style={{
         display: 'flex', alignItems: 'center', gap: 2,
         padding: '1px 4px 1px 3px',
-        background: accent ? `${accent}18` : 'var(--bg-2)',
-        borderLeft: `2px solid ${accent || 'var(--border)'}`,
+        background: bgColor,
+        borderLeft: `3px solid ${borderColor}`,
         height: isMobile ? 14 : 18, minHeight: isMobile ? 14 : 18,
         overflow: 'hidden', cursor: 'pointer', flexShrink: 0,
-        transition: 'filter 0.1s',
+        transition: 'filter 0.1s', position: 'relative',
       }}
       onMouseEnter={e => { e.currentTarget.style.filter = 'brightness(0.82)'; }}
       onMouseLeave={e => { e.currentTarget.style.filter = 'none'; }}
@@ -54,13 +57,21 @@ function SessionBar({ session, onClick, sessionIndex, isMobile }) {
       )}
       <span style={{
         marginLeft: 3, fontSize: isMobile ? 9 : 12, fontFamily: 'var(--font-mono)', fontWeight: 700,
-        color: accent || '#888', lineHeight: 1, whiteSpace: 'nowrap', flexShrink: 0,
+        color: themeColor ? themeColor : (accent || '#888'), lineHeight: 1, whiteSpace: 'nowrap', flexShrink: 0,
       }}>Session #{sessionIndex}</span>
+      {/* Status dot — shown when theme is active so status info isn't lost */}
+      {themeColor && accent && (
+        <div style={{
+          position: 'absolute', right: 3, top: '50%', transform: 'translateY(-50%)',
+          width: isMobile ? 4 : 5, height: isMobile ? 4 : 5, borderRadius: '50%',
+          background: accent, flexShrink: 0,
+        }} />
+      )}
     </div>
   );
 }
 
-export default function CalendarView({ sessionsByDate, viewDate, myProfileId, onSelectDate, onShowPicker, onNewSession }) {
+export default function CalendarView({ sessionsByDate, viewDate, myProfileId, onSelectDate, onShowPicker, onNewSession, cardTheme }) {
   const isMobile = useIsMobile();
   const year = viewDate.getFullYear(), month = viewDate.getMonth();
   const cells = [];
@@ -101,6 +112,8 @@ export default function CalendarView({ sessionsByDate, viewDate, myProfileId, on
             const dateSessions = sessionsByDate[key] || [];
             const isToday  = key === TODAY_KEY;
             const isFuture = key > TODAY_KEY;
+            const dayOfWeek   = new Date(key + 'T12:00:00').getDay(); // 0=Sun
+            const themeColor  = cardTheme?.colors?.[dayOfWeek] ?? null;
 
             const handleCellClick = () => {
               if (isFuture) return;
@@ -145,6 +158,7 @@ export default function CalendarView({ sessionsByDate, viewDate, myProfileId, on
                       onClick={() => onSelectDate(session.id)}
                       sessionIndex={idx + 1}
                       isMobile={isMobile}
+                      themeColor={themeColor}
                     />
                   ))}
 

@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/lib/supabase.js';
 
-const SELECT_FIELDS = 'id, callsign, color, avatar_url, home_region, onboarding_complete, auec_balance, auec_balance_verified_at, rsi_handle, badges, banner_panel, callsign_changed_at, home_region_changed_at, rsi_handle_changed_at, auec_verification_timestamps, is_admin, owned_ships';
+const SELECT_FIELDS = 'id, callsign, color, avatar_url, home_region, onboarding_complete, auec_balance, auec_balance_verified_at, rsi_handle, badges, banner_panel, callsign_changed_at, home_region_changed_at, rsi_handle_changed_at, auec_verification_timestamps, is_admin, owned_ships, card_theme';
 
 export function useProfile(userId) {
   const [profile, setProfile] = useState(null);

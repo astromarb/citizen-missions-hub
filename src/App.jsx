@@ -11,6 +11,7 @@ import { useIsMobile } from '@/hooks/useIsMobile.js';
 import { SFX } from '@/hooks/useSound.js';
 import { A } from '@/styles/animations.js';
 import CalendarView from '@/components/Calendar/CalendarView.jsx';
+import { getTheme } from '@/data/cardThemes.js';
 import SessionView from '@/components/Session/SessionView.jsx';
 import JoinSessionModal from '@/components/Session/JoinSessionModal.jsx';
 import AddContractModal from '@/components/Contract/AddContractModal.jsx';
@@ -729,6 +730,7 @@ function AppInner() {
                   if (key > TODAY_KEY) { showToast('Cannot create sessions for future dates', 'info'); SFX.halt(); return; }
                   SFX.boop(); setModal({ type: 'new-session', dateKey: key });
                 }}
+                cardTheme={getTheme(profile?.card_theme)}
               />
               <div style={{ padding: isMobile ? '6px 12px 12px' : '8px 24px 16px', fontSize: 11, color: 'var(--muted)', fontFamily: 'var(--font-mono)', letterSpacing: '0.04em' }}>
                 Click any day to open an existing session or start a new one.

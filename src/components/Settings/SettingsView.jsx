@@ -6,6 +6,7 @@ import { getBanner } from '../../data/profileBanners.js';
 import { useBanners } from '../../hooks/useBanners.js';
 import { useBannerMetadata } from '../../hooks/useBannerMetadata.js';
 import { SHIPS, searchShips, calcFleetValue } from '../../data/ships.js';
+import { CARD_THEMES } from '../../data/cardThemes.js';
 
 // ── Color palette ─────────────────────────────────────────────────────────────
 const COLOR_ROWS = [
@@ -129,6 +130,15 @@ export default function SettingsView({ profile, updateProfile, checkCallsign, sy
   const [color,      setColor]      = useState(profile?.color || '#3b82f6');
   const [colorSaved, setColorSaved] = useState(false);
   const [colorError, setColorError] = useState(null);
+
+  // ── Card theme ─────────────────────────────────────────────────────────────
+  const [cardTheme,      setCardTheme]      = useState(profile?.card_theme || 'None');
+  const [cardThemeSaved, setCardThemeSaved] = useState(false);
+  const saveCardTheme = async (name) => {
+    setCardTheme(name);
+    const { error } = await updateProfile({ card_theme: name });
+    if (!error) { setCardThemeSaved(true); setTimeout(() => setCardThemeSaved(false), 1800); }
+  };
 
   // ── Home region ─────────────────────────────────────────────────────────────
   const [region,      setRegion]      = useState(profile?.home_region || '');
@@ -485,6 +495,54 @@ export default function SettingsView({ profile, updateProfile, checkCallsign, sy
           <SavedBadge visible={colorSaved} />
         </div>
         <SaveError msg={colorError} />
+      </div>
+
+      {/* ── Session Card Theme ──────────────────────────────────────────────── */}
+      <div style={{ border: '2px solid #000', background: '#fff', padding: '20px', marginBottom: 16 }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 }}>
+          {sectionTitle('Session Card Theme')}
+          {cardThemeSaved && <span style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: '#2d8659' }}>Saved ✓</span>}
+        </div>
+        <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--muted)', marginBottom: 14, lineHeight: 1.5 }}>
+          Assigns a color to each day of the week on your session calendar cards.
+        </div>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+          {Object.entries(CARD_THEMES).map(([key, theme]) => {
+            const selected = cardTheme === key;
+            return (
+              <button
+                key={key}
+                onClick={() => saveCardTheme(key)}
+                style={{
+                  display: 'flex', alignItems: 'center', gap: 12,
+                  padding: '10px 12px', cursor: 'pointer', textAlign: 'left',
+                  border: selected ? '2px solid #000' : '2px solid var(--border)',
+                  background: selected ? 'var(--bg-2)' : 'var(--bg-1)',
+                  outline: 'none',
+                }}
+              >
+                {/* 7-swatch preview */}
+                <div style={{ display: 'flex', gap: 3, flexShrink: 0 }}>
+                  {theme.colors.map((c, i) => (
+                    <div key={i} style={{
+                      width: 14, height: 14,
+                      background: c || 'var(--border)',
+                      border: '1px solid rgba(0,0,0,0.15)',
+                      flexShrink: 0,
+                    }} />
+                  ))}
+                </div>
+                <div>
+                  <div style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 12, textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+                    {theme.label}
+                    {selected && <span style={{ marginLeft: 8, fontFamily: 'var(--font-mono)', fontSize: 9, color: '#2d8659' }}>● Active</span>}
+                  </div>
+                  <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--muted)', marginTop: 1 }}>{theme.desc}</div>
+                </div>
+              </button>
+            );
+          })}
+        </div>
       </div>
 
       {/* ── Profile Badges ───────────────────────────────────────────────────── */}

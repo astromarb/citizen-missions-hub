@@ -1,0 +1,2 @@
+ALTER TABLE public.profiles
+  ADD COLUMN IF NOT EXISTS card_theme TEXT NOT NULL DEFAULT 'None';
