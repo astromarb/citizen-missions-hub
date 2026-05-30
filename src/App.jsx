@@ -386,6 +386,7 @@ function AppInner() {
     const sess = await createSession(dateKey, players);
     if (sess) {
       setModal(null);
+      setActiveTab('calendar');
       openSession(sess.id);
     }
   };

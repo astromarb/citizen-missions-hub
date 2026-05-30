@@ -98,6 +98,8 @@ function Bubble({ msg, isMine, isMobile }) {
 }
 
 function SystemBubble({ msg, isMobile }) {
+  const [confirmDelete, setConfirmDelete] = useState(false);
+
   return (
     <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 10 }}>
       <div style={{
@@ -122,7 +124,31 @@ function SystemBubble({ msg, isMobile }) {
             li:     ({children}) => <li style={{ marginBottom: 2 }}>{children}</li>,
           }}
         >{msg.content}</ReactMarkdown>
-        <div style={{ fontSize: 9, color: 'var(--muted)', marginTop: 4 }}>{fmtTime(msg.created_at)}</div>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 8, marginTop: 4 }}>
+          <span style={{ fontSize: 9, color: 'var(--muted)' }}>{fmtTime(msg.created_at)}</span>
+          {msg._onDelete && (
+            confirmDelete ? (
+              <span style={{ display: 'flex', gap: 4, alignItems: 'center' }}>
+                <span style={{ fontSize: 9, color: 'var(--muted)' }}>Delete?</span>
+                <button
+                  onClick={() => msg._onDelete(msg.id)}
+                  style={{ ...mono, fontSize: 8, padding: '1px 5px', cursor: 'pointer', background: '#c41e3a', border: '1px solid #a01830', color: '#fff' }}
+                >Yes</button>
+                <button
+                  onClick={() => setConfirmDelete(false)}
+                  style={{ ...mono, fontSize: 8, padding: '1px 5px', cursor: 'pointer', background: 'transparent', border: '1px solid rgba(0,0,0,0.2)', color: 'var(--muted)' }}
+                >No</button>
+              </span>
+            ) : (
+              <button
+                onClick={() => setConfirmDelete(true)}
+                style={{ background: 'none', border: 'none', cursor: 'pointer', opacity: 0.35, fontSize: 12, lineHeight: 1, color: 'var(--text)', padding: 0 }}
+                onMouseEnter={e => { e.currentTarget.style.opacity = '0.8'; }}
+                onMouseLeave={e => { e.currentTarget.style.opacity = '0.35'; }}
+              >×</button>
+            )
+          )}
+        </div>
       </div>
     </div>
   );
@@ -233,7 +259,7 @@ export default function ChatModal({ conversation, myProfileId, onClose, onSend, 
           {messages.map(msg => {
             const isMine = msg._dir === 'sent';
             const msgWithDelete = { ...msg, _onDelete: onDelete };
-            if (msg.is_system) return <SystemBubble key={msg.id} msg={msg} isMobile={isMobile} />;
+            if (msg.is_system) return <SystemBubble key={msg.id} msg={msgWithDelete} isMobile={isMobile} />;
             return <Bubble key={msg.id} msg={msgWithDelete} isMine={isMine} isMobile={isMobile} />;
           })}
         </div>

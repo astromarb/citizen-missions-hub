@@ -14,7 +14,7 @@ function sessionAccent(session) {
   return null;
 }
 
-function SessionBar({ session, onClick, sessionIndex }) {
+function SessionBar({ session, onClick, sessionIndex, isMobile }) {
   const accent  = sessionAccent(session);
   const members = session.members || [];
 
@@ -33,7 +33,7 @@ function SessionBar({ session, onClick, sessionIndex }) {
         padding: '1px 4px 1px 3px',
         background: accent ? `${accent}18` : 'var(--bg-2)',
         borderLeft: `2px solid ${accent || 'var(--border)'}`,
-        height: 14, minHeight: 14,
+        height: isMobile ? 14 : 18, minHeight: isMobile ? 14 : 18,
         overflow: 'hidden', cursor: 'pointer', flexShrink: 0,
         transition: 'filter 0.1s',
       }}
@@ -48,12 +48,12 @@ function SessionBar({ session, onClick, sessionIndex }) {
         }} />
       ))}
       {dotOverflow > 0 && (
-        <span style={{ fontSize: 6, color: 'var(--muted)', fontFamily: 'var(--font-mono)', lineHeight: 1, flexShrink: 0 }}>
+        <span style={{ fontSize: isMobile ? 6 : 9, color: 'var(--muted)', fontFamily: 'var(--font-mono)', lineHeight: 1, flexShrink: 0 }}>
           +{dotOverflow}
         </span>
       )}
       <span style={{
-        marginLeft: 3, fontSize: 9, fontFamily: 'var(--font-mono)', fontWeight: 700,
+        marginLeft: 3, fontSize: isMobile ? 9 : 12, fontFamily: 'var(--font-mono)', fontWeight: 700,
         color: accent || '#888', lineHeight: 1, whiteSpace: 'nowrap', flexShrink: 0,
       }}>Session #{sessionIndex}</span>
     </div>
@@ -79,7 +79,7 @@ export default function CalendarView({ sessionsByDate, viewDate, myProfileId, on
           {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map((d, i) => (
             <div key={d} style={{
               padding: isMobile ? '7px 2px' : '11px 6px', textAlign: 'center',
-              fontFamily: 'var(--font-display)', fontSize: isMobile ? 7 : 10, fontWeight: 800,
+              fontFamily: 'var(--font-display)', fontSize: isMobile ? 7 : 13, fontWeight: 800,
               letterSpacing: '0.10em', textTransform: 'uppercase', color: 'var(--text)',
               borderRight: i < 6 ? '1px solid var(--border)' : 'none',
             }}>{isMobile ? d[0] : d}</div>
@@ -131,7 +131,7 @@ export default function CalendarView({ sessionsByDate, viewDate, myProfileId, on
                 {/* Day number */}
                 <div style={{
                   fontFamily: 'var(--font-display)', fontWeight: 800,
-                  fontSize: isMobile ? 9 : 12,
+                  fontSize: isMobile ? 9 : 15,
                   color: isToday ? '#c41e3a' : 'var(--text)',
                   lineHeight: 1, marginBottom: 4, paddingLeft: 1, flexShrink: 0,
                 }}>{day}</div>
@@ -144,6 +144,7 @@ export default function CalendarView({ sessionsByDate, viewDate, myProfileId, on
                       session={session}
                       onClick={() => onSelectDate(session.id)}
                       sessionIndex={idx + 1}
+                      isMobile={isMobile}
                     />
                   ))}
 
@@ -153,20 +154,20 @@ export default function CalendarView({ sessionsByDate, viewDate, myProfileId, on
                       onClick={e => { e.stopPropagation(); onShowPicker(key, dateSessions); }}
                       style={{
                         position: 'absolute', bottom: 0, right: 0,
-                        width: 10, height: 10,
+                        width: isMobile ? 10 : 14, height: isMobile ? 10 : 14,
                         background: '#c41e3a',
                         display: 'flex', alignItems: 'center', justifyContent: 'center',
                         cursor: 'pointer',
                       }}
                     >
-                      <span style={{ fontSize: 8, fontFamily: 'var(--font-mono)', fontWeight: 800, color: '#fff', lineHeight: 1 }}>+</span>
+                      <span style={{ fontSize: isMobile ? 8 : 11, fontFamily: 'var(--font-mono)', fontWeight: 800, color: '#fff', lineHeight: 1 }}>+</span>
                     </div>
                   )}
 
                   {dateSessions.length === 0 && !isFuture && (
                     <div style={{
                       marginTop: 'auto',
-                      fontSize: isMobile ? 8 : 9, color: 'var(--bg-3)',
+                      fontSize: isMobile ? 8 : 12, color: 'var(--bg-3)',
                       fontFamily: 'var(--font-mono)', paddingLeft: 1,
                     }}>+</div>
                   )}

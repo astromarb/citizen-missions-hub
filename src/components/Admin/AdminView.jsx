@@ -466,10 +466,12 @@ function BroadcastLogEntry({ entry, onDelete }) {
 
   const handleDelete = async () => {
     setDeleting(true);
-    await onDelete(entry.broadcast_id);
+    await onDelete(entry.broadcast_id, entry.id);
     setDeleting(false);
     setConfirm(false);
   };
+
+  const confirmLabel = entry.broadcast_id ? 'Remove from all inboxes?' : 'Remove this message?';
 
   return (
     <div style={{ border: '2px solid #e0e0e0', background: '#fafafa', padding: '12px 16px' }}>
@@ -486,31 +488,28 @@ function BroadcastLogEntry({ entry, onDelete }) {
           <span style={{ ...mono, fontSize: 10, color: '#aaa' }}>admin</span>
         )}
         <span style={{ ...mono, fontSize: 9, color: '#aaa', marginLeft: 'auto' }}>{fmtRelative(entry.created_at)}</span>
-        {/* Delete control — only for entries that have a broadcast_id */}
-        {entry.broadcast_id && (
-          confirm ? (
-            <span style={{ display: 'flex', alignItems: 'center', gap: 5, flexShrink: 0 }}>
-              <span style={{ ...mono, fontSize: 9, color: '#c41e3a' }}>Remove from all inboxes?</span>
-              <button
-                onClick={handleDelete}
-                disabled={deleting}
-                style={{ ...mono, fontSize: 9, padding: '2px 8px', cursor: 'pointer', background: '#c41e3a', border: '1.5px solid #a01830', color: '#fff' }}
-              >{deleting ? '…' : 'Yes'}</button>
-              <button
-                onClick={() => setConfirm(false)}
-                disabled={deleting}
-                style={{ ...mono, fontSize: 9, padding: '2px 8px', cursor: 'pointer', background: 'transparent', border: '1.5px solid #ccc', color: '#555' }}
-              >No</button>
-            </span>
-          ) : (
+        {confirm ? (
+          <span style={{ display: 'flex', alignItems: 'center', gap: 5, flexShrink: 0 }}>
+            <span style={{ ...mono, fontSize: 9, color: '#c41e3a' }}>{confirmLabel}</span>
             <button
-              onClick={() => setConfirm(true)}
-              title="Delete broadcast from all inboxes"
-              style={{ background: 'none', border: 'none', cursor: 'pointer', ...mono, fontSize: 13, color: '#bbb', lineHeight: 1, padding: '0 2px', flexShrink: 0 }}
-              onMouseEnter={e => { e.currentTarget.style.color = '#c41e3a'; }}
-              onMouseLeave={e => { e.currentTarget.style.color = '#bbb'; }}
-            >×</button>
-          )
+              onClick={handleDelete}
+              disabled={deleting}
+              style={{ ...mono, fontSize: 9, padding: '2px 8px', cursor: 'pointer', background: '#c41e3a', border: '1.5px solid #a01830', color: '#fff' }}
+            >{deleting ? '…' : 'Yes'}</button>
+            <button
+              onClick={() => setConfirm(false)}
+              disabled={deleting}
+              style={{ ...mono, fontSize: 9, padding: '2px 8px', cursor: 'pointer', background: 'transparent', border: '1.5px solid #ccc', color: '#555' }}
+            >No</button>
+          </span>
+        ) : (
+          <button
+            onClick={() => setConfirm(true)}
+            title="Delete"
+            style={{ background: 'none', border: 'none', cursor: 'pointer', ...mono, fontSize: 13, color: '#bbb', lineHeight: 1, padding: '0 2px', flexShrink: 0 }}
+            onMouseEnter={e => { e.currentTarget.style.color = '#c41e3a'; }}
+            onMouseLeave={e => { e.currentTarget.style.color = '#bbb'; }}
+          >×</button>
         )}
       </div>
       <div style={{ ...mono, fontSize: 11, color: '#333', lineHeight: 1.55, whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>
@@ -611,16 +610,19 @@ function BroadcastsPanel() {
     }
   };
 
-  const deleteBroadcast = useCallback(async (broadcastId) => {
-    if (!broadcastId) return;
-    const { error } = await supabase
-      .from('messages')
-      .delete()
-      .eq('broadcast_id', broadcastId);
+  const deleteBroadcast = useCallback(async (broadcastId, messageId) => {
+    let error;
+    if (broadcastId) {
+      ({ error } = await supabase.from('messages').delete().eq('broadcast_id', broadcastId));
+    } else {
+      ({ error } = await supabase.from('messages').delete().eq('id', messageId));
+    }
     if (error) {
       alert('Delete failed: ' + error.message);
     } else {
-      setLog(prev => prev.filter(e => e.broadcast_id !== broadcastId));
+      setLog(prev => broadcastId
+        ? prev.filter(e => e.broadcast_id !== broadcastId)
+        : prev.filter(e => e.id !== messageId));
     }
   }, []);
 
