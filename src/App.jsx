@@ -251,7 +251,7 @@ function AppInner() {
     updateWaypoint, updateCargoItem, addCargoItemLive, addWaypointLive, logTradeSell,
     leaveSession, removePlayerFromSession,
   } = useSessions(!!authSession, userId);
-  const { commodities, systemsMap } = useRefData(!!authSession);
+  const { commodities, systemsMap, ships, shipsByName } = useRefData(!!authSession);
   const { profile, loading: profileLoading, checkCallsign, updateProfile, reload: reloadProfile } = useProfile(userId);
   const { friends, pending, sent, searchUsers, sendRequest, respond, remove: removeFriend } = useFriends(userId, !!authSession);
   const [joinToken, setJoinToken] = useState(() => new URLSearchParams(window.location.search).get('join'));
@@ -780,7 +780,7 @@ function AppInner() {
 
           {activeTab === 'missions' && (
             <div style={{ animation: A.fadeUp(), flex: 1, minHeight: 0 }}>
-              <MissionsView sessions={sessions} myProfileId={myProfileId} profile={profile} avatarUrl={avatarUrl} onOpenSession={handleOpenSession} cardTheme={getTheme(profile?.card_theme)} />
+              <MissionsView sessions={sessions} myProfileId={myProfileId} profile={profile} avatarUrl={avatarUrl} onOpenSession={handleOpenSession} cardTheme={getTheme(profile?.card_theme)} shipsByName={shipsByName} />
             </div>
           )}
           {activeTab === 'active-sessions' && (
@@ -833,7 +833,7 @@ function AppInner() {
           )}
           {activeTab === 'stats' && (
             <div style={{ animation: A.fadeUp(), flex: 1, minHeight: 0 }}>
-              <StatsView sessions={sessions} myProfileId={myProfileId} profiles={profiles} friends={friends} />
+              <StatsView sessions={sessions} myProfileId={myProfileId} profiles={profiles} friends={friends} shipsByName={shipsByName} />
             </div>
           )}
           {activeTab === 'friends' && !viewingFriend && (
@@ -879,6 +879,8 @@ function AppInner() {
                 deleteAllSystemMessages={deleteAllSystemMessages}
                 darkMode={darkMode}
                 setDarkMode={setDarkMode}
+                ships={ships}
+                shipsByName={shipsByName}
               />
             </div>
           )}
@@ -892,32 +894,6 @@ function AppInner() {
           </>)}
         </div>
       </div>
-
-      {/* ── Mobile bottom nav ── */}
-      {isMobile && (
-        <div style={{
-          position: 'fixed', bottom: 0, left: 0, right: 0, zIndex: 500,
-          background: 'var(--bg-1)', borderTop: '2px solid #000',
-          display: 'flex', alignItems: 'stretch',
-        }}>
-          {TABS.map(([tab, label, icon]) => (
-            <button key={tab}
-              onClick={() => switchTab(tab)}
-              style={{
-                flex: 1, padding: '8px 2px 6px', border: 'none', cursor: 'pointer',
-                background: 'transparent', display: 'flex', flexDirection: 'column',
-                alignItems: 'center', justifyContent: 'center', gap: 2,
-                color: activeTab === tab ? '#c41e3a' : 'var(--muted)',
-                borderTop: activeTab === tab ? '2px solid #c41e3a' : '2px solid transparent',
-                marginTop: -2,
-              }}
-            >
-              <span style={{ fontSize: 16, lineHeight: 1 }}>{icon}</span>
-              <span style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 8, textTransform: 'uppercase', letterSpacing: '0.06em', lineHeight: 1 }}>{label.split(' (')[0]}</span>
-            </button>
-          ))}
-        </div>
-      )}
 
       {/* ── Join Session Modal (from invite link ?join=TOKEN) ── */}
       {joinToken && myProfileId && (

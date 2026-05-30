@@ -246,7 +246,7 @@ function SessionDebrief({ session, myProfileId, onOpenSession, cardTheme }) {
   );
 }
 
-export default function MissionsView({ sessions, myProfileId, profile, avatarUrl, onOpenSession, cardTheme }) {
+export default function MissionsView({ sessions, myProfileId, profile, avatarUrl, onOpenSession, cardTheme, shipsByName }) {
   const isMobile = useIsMobile();
   const mySessions = Object.values(sessions)
     .filter(s => s.members?.some(m => m.id === myProfileId))
@@ -277,7 +277,7 @@ export default function MissionsView({ sessions, myProfileId, profile, avatarUrl
     return null;
   };
 
-  const netWorth = (Number(profile?.auec_balance) || 0) + calcFleetValue(profile?.owned_ships);
+  const netWorth = (Number(profile?.auec_balance) || 0) + calcFleetValue(profile?.owned_ships, shipsByName);
 
   const statsRows = [
     ['Sessions',         mySessions.length.toLocaleString()],

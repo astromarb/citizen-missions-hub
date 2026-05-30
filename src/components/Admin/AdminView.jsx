@@ -1,6 +1,8 @@
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/lib/supabase.js';
 import { useBanners } from '../../hooks/useBanners.js';
+import { invalidateBadgeIcons } from '../../hooks/useBadgeIcons.js';
+import DataTablesPanel from './DataTablesPanel.jsx';
 
 // ── Shared styles ─────────────────────────────────────────────────────────────
 const mono = { fontFamily: 'var(--font-mono)' };
@@ -773,7 +775,7 @@ function BadgeEditorPanel() {
         // Merge DB data with defaults (DB wins)
         const merged = DEFAULT_BADGE_DEFS.map(def => {
           const db = data.find(d => d.badge_id === def.id);
-          return db ? { id: db.badge_id, label: db.label, description: db.description, bgColor: db.bg_color, accentColor: db.accent_color, shape: db.shape } : def;
+          return db ? { id: db.badge_id, label: db.label, description: db.description, bgColor: db.bg_color, accentColor: db.accent_color, shape: db.shape, iconUrl: db.icon_url || null } : def;
         });
         setDefs(merged);
       } else {
@@ -783,8 +785,26 @@ function BadgeEditorPanel() {
     });
   }, []);
 
+  const [uploading, setUploading] = useState({});
+
   const update = (id, field, value) =>
     setDefs(prev => prev.map(d => d.id === id ? { ...d, [field]: value } : d));
+
+  const uploadIcon = async (def, file) => {
+    if (!file) return;
+    setUploading(p => ({ ...p, [def.id]: true }));
+    const ext = (file.name.split('.').pop() || 'png').toLowerCase();
+    const path = `badge-icons/${def.id}-${Date.now()}.${ext}`;
+    const { error: upErr } = await supabase.storage.from('images').upload(path, file, { upsert: true, contentType: file.type });
+    if (upErr) {
+      alert('Upload failed: ' + upErr.message);
+      setUploading(p => ({ ...p, [def.id]: false }));
+      return;
+    }
+    const { data } = supabase.storage.from('images').getPublicUrl(path);
+    update(def.id, 'iconUrl', data.publicUrl);
+    setUploading(p => ({ ...p, [def.id]: false }));
+  };
 
   const saveBadge = async (def) => {
     setSaving(p => ({ ...p, [def.id]: true }));
@@ -795,8 +815,10 @@ function BadgeEditorPanel() {
       bg_color: def.bgColor,
       accent_color: def.accentColor,
       shape: def.shape,
+      icon_url: def.iconUrl || null,
       updated_at: new Date().toISOString(),
     }, { onConflict: 'badge_id' });
+    invalidateBadgeIcons();
     setSaving(p => ({ ...p, [def.id]: false }));
     setSaved(p => ({ ...p, [def.id]: true }));
     setTimeout(() => setSaved(p => ({ ...p, [def.id]: false })), 2000);
@@ -809,6 +831,7 @@ function BadgeEditorPanel() {
       <div style={{ ...display, fontWeight: 700, fontSize: 14, marginBottom: 6 }}>Badge Definitions</div>
       <div style={{ ...mono, fontSize: 10, color: 'var(--muted)', marginBottom: 20 }}>
         Edit badge appearance and descriptions. Changes affect all users globally.
+        Upload an icon to use a custom symbol in place of the letters — clear it to revert.
       </div>
       <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
         {defs.map(def => (
@@ -820,20 +843,45 @@ function BadgeEditorPanel() {
                 width: 44, height: 44, background: def.bgColor,
                 border: `1.5px solid ${def.accentColor}66`,
                 display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
-                flexShrink: 0, gap: 2,
+                flexShrink: 0, gap: 2, overflow: 'hidden',
                 borderRadius: def.shape === 'circle' ? '50%' : def.shape === 'rounded' ? '8px' : 0,
                 transform: def.shape === 'diamond' ? 'rotate(45deg)' : 'none',
                 boxShadow: `0 0 8px ${def.accentColor}22`,
               }}>
-                <span style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: def.accentColor, fontWeight: 700, transform: def.shape === 'diamond' ? 'rotate(-45deg)' : 'none' }}>
-                  {def.shape === 'diamond' ? def.label.slice(0,2) : def.label.slice(0,6)}
-                </span>
+                {def.iconUrl ? (
+                  <img src={def.iconUrl} alt="" style={{ width: 28, height: 28, objectFit: 'contain', transform: def.shape === 'diamond' ? 'rotate(-45deg)' : 'none' }} />
+                ) : (
+                  <span style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: def.accentColor, fontWeight: 700, transform: def.shape === 'diamond' ? 'rotate(-45deg)' : 'none' }}>
+                    {def.shape === 'diamond' ? def.label.slice(0,2) : def.label.slice(0,6)}
+                  </span>
+                )}
               </div>
               <div>
                 <div style={{ ...mono, fontWeight: 700, fontSize: 11 }}>{def.id}</div>
                 <div style={{ ...mono, fontSize: 9, color: 'var(--muted)' }}>badge_id</div>
               </div>
-              {saved[def.id] && <span style={{ ...mono, fontSize: 10, color: '#2d8659', marginLeft: 'auto' }}>Saved ✓</span>}
+              {/* Icon upload */}
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginLeft: 'auto' }}>
+                <label style={{
+                  padding: '5px 12px', cursor: uploading[def.id] ? 'default' : 'pointer',
+                  fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 9,
+                  textTransform: 'uppercase', letterSpacing: '0.06em',
+                  border: '1.5px solid #555', background: 'transparent', color: '#555',
+                }}>
+                  {uploading[def.id] ? 'Uploading…' : def.iconUrl ? '↻ Replace Icon' : '⬆ Upload Icon'}
+                  <input type="file" accept="image/*" style={{ display: 'none' }}
+                    disabled={uploading[def.id]}
+                    onChange={e => { uploadIcon(def, e.target.files?.[0]); e.target.value = ''; }} />
+                </label>
+                {def.iconUrl && (
+                  <button onClick={() => update(def.id, 'iconUrl', null)}
+                    title="Remove icon (revert to letters)"
+                    style={{ background: 'none', border: '1.5px solid #ccc', cursor: 'pointer', ...mono, fontSize: 11, color: '#c41e3a', padding: '4px 8px' }}>
+                    ✕ Clear
+                  </button>
+                )}
+                {saved[def.id] && <span style={{ ...mono, fontSize: 10, color: '#2d8659' }}>Saved ✓</span>}
+              </div>
             </div>
 
             {/* Fields */}
@@ -897,6 +945,7 @@ const PANELS = [
   { key: 'sessions',   label: 'Sessions & Contracts' },
   { key: 'banners',    label: 'Banner Manager' },
   { key: 'badges',     label: 'Badges' },
+  { key: 'data',       label: 'Data Tables' },
   { key: 'broadcasts', label: 'Broadcasts' },
 ];
 
@@ -931,6 +980,7 @@ export default function AdminView() {
       {panel === 'sessions'   && <SessionsPanel />}
       {panel === 'banners'    && <BannerManagerPanel />}
       {panel === 'badges'     && <BadgeEditorPanel />}
+      {panel === 'data'       && <DataTablesPanel />}
       {panel === 'broadcasts' && <BroadcastsPanel />}
     </div>
   );

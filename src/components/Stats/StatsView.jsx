@@ -1,6 +1,6 @@
 import LeaderboardView from '../Leaderboard/LeaderboardView.jsx';
 
-export default function StatsView({ sessions, myProfileId, profiles = [], friends = [] }) {
+export default function StatsView({ sessions, myProfileId, profiles = [], friends = [], shipsByName }) {
   const allSessions = Object.values(sessions);
   const allContracts = allSessions.flatMap(s => s.contracts);
   const totalSCU = allContracts.reduce((t, c) => t + c.cargo.reduce((s, ci) => s + Number(ci.scu || 0), 0), 0);
@@ -56,7 +56,7 @@ export default function StatsView({ sessions, myProfileId, profiles = [], friend
   );
 
   const leaderboards = (
-    <LeaderboardView sessions={sessions} myProfileId={myProfileId} profiles={profiles} friends={friends} />
+    <LeaderboardView sessions={sessions} myProfileId={myProfileId} profiles={profiles} friends={friends} shipsByName={shipsByName} />
   );
 
   if (allContracts.length === 0) {

@@ -1,4 +1,13 @@
 import { useState } from 'react';
+import { useBadgeIcon } from '../../hooks/useBadgeIcons.js';
+
+// Region label → badge_config id (used to look up an admin-uploaded icon).
+const REGION_BADGE_ID = {
+  'Area 18':     'home_region_area18',
+  'Lorville':    'home_region_lorville',
+  'Orison':      'home_region_orison',
+  'New Babbage': 'home_region_new_babbage',
+};
 
 const BADGES = {
   'Area 18': {
@@ -105,8 +114,19 @@ function BadgeTooltip({ text, children }) {
   );
 }
 
+function BadgeIconImage({ src, dim }) {
+  return (
+    <img
+      src={src}
+      alt=""
+      style={{ width: dim * 0.6, height: dim * 0.6, objectFit: 'contain', flexShrink: 0 }}
+    />
+  );
+}
+
 export function AlphaBadge({ size = 'md' }) {
   const { dim, iconSz, alphaTextSz, pad, gap } = SIZES[size] || SIZES.md;
+  const iconUrl = useBadgeIcon('alpha');
   return (
     <BadgeTooltip text="Been around since the very beginning.">
       <div style={{
@@ -117,11 +137,17 @@ export function AlphaBadge({ size = 'md' }) {
         boxShadow: `0 0 10px ${ALPHA_ACCENT}1a`,
         boxSizing: 'border-box', flexShrink: 0,
       }}>
-        <AlphaIcon c={ALPHA_ACCENT} s={iconSz} />
-        <span style={{
-          fontFamily: 'var(--font-mono)', fontSize: alphaTextSz, color: ALPHA_ACCENT,
-          letterSpacing: '0.04em', textAlign: 'center', lineHeight: 1, fontWeight: 700,
-        }}>α</span>
+        {iconUrl ? (
+          <BadgeIconImage src={iconUrl} dim={dim} />
+        ) : (
+          <>
+            <AlphaIcon c={ALPHA_ACCENT} s={iconSz} />
+            <span style={{
+              fontFamily: 'var(--font-mono)', fontSize: alphaTextSz, color: ALPHA_ACCENT,
+              letterSpacing: '0.04em', textAlign: 'center', lineHeight: 1, fontWeight: 700,
+            }}>α</span>
+          </>
+        )}
       </div>
     </BadgeTooltip>
   );
@@ -133,6 +159,7 @@ export default function LandingZoneBadge({ region, size = 'md' }) {
 
   const { dim, iconSz, cityTextSz, pad, gap } = SIZES[size] || SIZES.md;
   const { Icon } = cfg;
+  const iconUrl = useBadgeIcon(REGION_BADGE_ID[region] ?? '');
 
   return (
     <BadgeTooltip text={`This user's primary residence is ${region}.`}>
@@ -145,20 +172,26 @@ export default function LandingZoneBadge({ region, size = 'md' }) {
         boxShadow: `0 0 10px ${cfg.accent}1a`,
         boxSizing: 'border-box', flexShrink: 0,
       }}>
-        <Icon c={cfg.accent} s={iconSz} />
-        <span style={{
-          fontFamily: 'var(--font-mono)',
-          fontSize: cityTextSz,
-          color: cfg.accent,
-          letterSpacing: '0.08em',
-          textAlign: 'center',
-          lineHeight: 1.15,
-          textTransform: 'uppercase',
-          fontWeight: 700,
-          whiteSpace: 'pre-line',
-        }}>
-          {cfg.label}
-        </span>
+        {iconUrl ? (
+          <BadgeIconImage src={iconUrl} dim={dim} />
+        ) : (
+          <>
+            <Icon c={cfg.accent} s={iconSz} />
+            <span style={{
+              fontFamily: 'var(--font-mono)',
+              fontSize: cityTextSz,
+              color: cfg.accent,
+              letterSpacing: '0.08em',
+              textAlign: 'center',
+              lineHeight: 1.15,
+              textTransform: 'uppercase',
+              fontWeight: 700,
+              whiteSpace: 'pre-line',
+            }}>
+              {cfg.label}
+            </span>
+          </>
+        )}
       </div>
     </BadgeTooltip>
   );

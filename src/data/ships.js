@@ -136,7 +136,8 @@ export const searchShips = (query) => {
   return SHIPS.filter(s => s.name.toLowerCase().includes(q) || s.manufacturer.toLowerCase().includes(q)).slice(0, 10);
 };
 
-export const calcFleetValue = (ownedShipNames) => {
+// `byName` lets callers pass a live (DB-sourced) ship map; falls back to static.
+export const calcFleetValue = (ownedShipNames, byName = shipsByName) => {
   if (!ownedShipNames?.length) return 0;
-  return ownedShipNames.reduce((sum, name) => sum + (shipsByName[name]?.value || 0), 0);
+  return ownedShipNames.reduce((sum, name) => sum + (byName[name]?.value || 0), 0);
 };

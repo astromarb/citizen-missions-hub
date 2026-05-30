@@ -186,7 +186,7 @@ function WalletBoard({ rows, myProfileId, emptyMsg, title = 'Verified Balance', 
   );
 }
 
-export default function LeaderboardView({ sessions, myProfileId, profiles = [], friends = [] }) {
+export default function LeaderboardView({ sessions, myProfileId, profiles = [], friends = [], shipsByName }) {
   const isMobile = useIsMobile();
   const [scope, setScope] = useState('global');
   const [walletOpen, setWalletOpen] = useState(true);
@@ -238,7 +238,7 @@ export default function LeaderboardView({ sessions, myProfileId, profiles = [], 
       id: p.id,
       callsign: p.callsign,
       color: p.color || '#8b949e',
-      balance: (Number(p.auec_balance) || 0) + calcFleetValue(p.owned_ships || []),
+      balance: (Number(p.auec_balance) || 0) + calcFleetValue(p.owned_ships || [], shipsByName),
     }))
     .filter(p => p.balance > 0)
     .sort((a, b) => b.balance - a.balance);

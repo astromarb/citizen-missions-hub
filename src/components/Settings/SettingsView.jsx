@@ -5,7 +5,7 @@ import LandingZoneBadge, { AlphaBadge } from '../shared/LandingZoneBadge.jsx';
 import { getBanner } from '../../data/profileBanners.js';
 import { useBanners } from '../../hooks/useBanners.js';
 import { useBannerMetadata } from '../../hooks/useBannerMetadata.js';
-import { SHIPS, searchShips, calcFleetValue } from '../../data/ships.js';
+import { SHIPS, calcFleetValue } from '../../data/ships.js';
 import { CARD_THEMES } from '../../data/cardThemes.js';
 
 // ── Color palette ─────────────────────────────────────────────────────────────
@@ -124,7 +124,14 @@ function LastChangedNote({ ts }) {
   );
 }
 
-export default function SettingsView({ profile, updateProfile, checkCallsign, systemMsgCount = 0, deleteAllSystemMessages, darkMode, setDarkMode }) {
+export default function SettingsView({ profile, updateProfile, checkCallsign, systemMsgCount = 0, deleteAllSystemMessages, darkMode, setDarkMode, ships = SHIPS, shipsByName: shipsByNameProp }) {
+  // Search the live (DB-sourced) ship list when available, else the static one.
+  const searchShipList = (query) => {
+    if (!query.trim()) return [];
+    const q = query.toLowerCase();
+    return ships.filter(s => s.name.toLowerCase().includes(q) || (s.manufacturer || '').toLowerCase().includes(q)).slice(0, 10);
+  };
+  const shipsByNameLive = shipsByNameProp || Object.fromEntries(ships.map(s => [s.name, s]));
   const isMobile = useIsMobile();
   // ── Colour ─────────────────────────────────────────────────────────────────
   const [color,      setColor]      = useState(profile?.color || '#3b82f6');
@@ -1008,7 +1015,7 @@ export default function SettingsView({ profile, updateProfile, checkCallsign, sy
 
         {/* Net worth summary */}
         {(() => {
-          const fleetVal   = calcFleetValue(ownedShips);
+          const fleetVal   = calcFleetValue(ownedShips, shipsByNameLive);
           const balance    = Number(profile?.auec_balance) || 0;
           const totalWorth = fleetVal + balance;
           return (
@@ -1037,7 +1044,7 @@ export default function SettingsView({ profile, updateProfile, checkCallsign, sy
           <div style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 10, letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: 6 }}>Add a Ship</div>
           <input
             value={shipQuery}
-            onChange={e => { setShipQuery(e.target.value); setShipResults(searchShips(e.target.value)); }}
+            onChange={e => { setShipQuery(e.target.value); setShipResults(searchShipList(e.target.value)); }}
             onKeyDown={e => { if (e.key === 'Escape') { setShipQuery(''); setShipResults([]); } }}
             placeholder="Search by ship name or manufacturer…"
             style={{ width: '100%', boxSizing: 'border-box', padding: '9px 12px', border: '2px solid #000', fontFamily: 'var(--font-mono)', fontSize: 12, outline: 'none', letterSpacing: '0.02em' }}
@@ -1085,7 +1092,7 @@ export default function SettingsView({ profile, updateProfile, checkCallsign, sy
         ) : (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
             {ownedShips.map(name => {
-              const ship = SHIPS.find(s => s.name === name);
+              const ship = shipsByNameLive[name];
               return (
                 <div key={name} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 12px', border: '2px solid var(--bg-3)', background: 'var(--bg-2)' }}>
                   <div style={{ flex: 1, minWidth: 0 }}>
